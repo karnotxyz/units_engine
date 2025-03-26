@@ -1,0 +1,9 @@
+[package]
+name = "units-handlers"
+description = "Units Handlers"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+version.workspace = true
+homepage.workspace = true

@@ -1,0 +1,2 @@
+1. By default programs are public
+2. If you want read ACL on your program, you need to define a function called `fn contract_read_acl(address)`. If this returns true, only then the contract class can be read.

@@ -1,0 +1,9 @@
+[package]
+name = "units-db"
+description = "Units DB"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+version.workspace = true
+homepage.workspace = true

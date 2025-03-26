@@ -1,0 +1,20 @@
+[package]
+name = "units-utils"
+description = "Units Utils"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+version.workspace = true
+homepage.workspace = true
+
+[dependencies]
+url.workspace = true
+tokio = { workspace = true, features = ["sync", "time", "rt-multi-thread", "macros"] }
+tracing.workspace = true
+futures.workspace = true
+async-trait.workspace = true
+anyhow.workspace = true
+
+[dev-dependencies]
+rstest = "0.18.2"

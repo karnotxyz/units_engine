@@ -1,0 +1,28 @@
+[package]
+name = "units-rpc"
+description = "Units RPC"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+version.workspace = true
+homepage.workspace = true
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[package.metadata.attribution]
+includes-code-from = [
+    "madara (Apache-2.0/MIT) - https://github.com/madara-alliance/madara"
+]
+
+[dependencies]
+jsonrpsee = { workspace = true, default-features = true, features = [
+  "macros",
+  "server",
+]}
+anyhow.workspace = true
+mp-rpc.workspace = true
+starknet-types-core.workspace = true
+units-proc-macros.workspace = true
+units-utils.workspace = true

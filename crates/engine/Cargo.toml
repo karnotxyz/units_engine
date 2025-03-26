@@ -1,0 +1,33 @@
+[package]
+name = "units-engine"
+description = "Units Engine"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+version.workspace = true
+homepage.workspace = true
+
+[[bin]]
+name = "units_engine"
+path = "src/main.rs"
+
+[dependencies]
+tracing.workspace = true
+tokio.workspace = true
+clap.workspace = true
+units-telemetery.workspace = true
+anyhow.workspace = true
+units-utils.workspace = true
+url.workspace = true
+serde.workspace = true
+jsonrpsee.workspace = true
+hyper.workspace = true
+opentelemetry.workspace = true
+futures.workspace = true
+tower.workspace = true
+serde_json.workspace = true
+async-trait.workspace = true
+tower-http.workspace = true
+thiserror.workspace = true
+units-rpc.workspace = true
