@@ -22,7 +22,6 @@ jsonrpsee = { workspace = true, default-features = true, features = [
   "server",
 ]}
 anyhow.workspace = true
-mp-rpc.workspace = true
-starknet-types-core.workspace = true
+starknet.workspace = true
 units-proc-macros.workspace = true
 units-utils.workspace = true

@@ -20,7 +20,7 @@ async fn main() -> anyhow::Result<()> {
     telemetery.setup()?;
     info!("Starting UNITS Engine");
 
-    let global_ctx = Arc::new(GlobalContext::new());
+    let global_ctx = Arc::new(GlobalContext::new(args.madara.madara_rpc_url)?);
     let service_manager = ServiceManager::new();
     service_manager
         .register_service(Arc::new(RpcService::user(

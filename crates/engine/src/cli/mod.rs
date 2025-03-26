@@ -1,7 +1,9 @@
 use clap::Parser;
 
-mod telemetery;
+pub mod madara;
 pub mod rpc;
+mod telemetery;
+use madara::MadaraParams;
 use rpc::RpcParams;
 use telemetery::TelemetryParams;
 
@@ -12,4 +14,6 @@ pub struct CliArgs {
     pub telemetry: TelemetryParams,
     #[command(flatten)]
     pub rpc: RpcParams,
+    #[command(flatten)]
+    pub madara: MadaraParams,
 }

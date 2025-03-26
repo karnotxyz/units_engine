@@ -54,7 +54,6 @@ jsonrpsee = { version = "0.22", default-features = false, features = [
   "server",
   "client",
 ] }
-starknet-types-core = { git = "https://github.com/kasarlabs/types-rs.git", branch = "feat-deserialize-v0.1.7", features = ["serde"] }
 async-trait = "0.1"
 futures = "0.3"
 serde = "1.0"
@@ -65,6 +64,7 @@ hyper-util = "0.1.9"
 tower = { version = "0.4", features = ["util"] }
 tower-http = { version = "0.4", features = ["cors"] }
 thiserror = "2.0"
+starknet = "0.13.0"
 
 # Members
 units-telemetery = { path = "crates/telemetery" }
@@ -79,9 +79,6 @@ indoc = "2"
 proc-macro2 = "1.0.86"
 quote = "1.0.26"
 syn = { version = "2.0.39", features = ["full"] }
-
-# Madara
-mp-rpc = { git = "https://github.com/madara-alliance/madara.git", commit = "2267214bcb2142b6eddf990105008f9e467425e8" }
 
 # Instrumentation
 opentelemetry = { version = "0.25.0", features = ["metrics", "logs"] }
@@ -103,7 +100,3 @@ tracing-subscriber = { version = "0.3.18", features = [
 ] }
 tracing-test = "0.2.5"
 tracing-opentelemetry = "0.26.0"
-
-[patch.crates-io]
-# Added to ensure mp-rpc uses the correct version
-starknet-types-core = { git = "https://github.com/kasarlabs/types-rs.git", branch = "feat-deserialize-v0.1.7", features = ["serde"] }

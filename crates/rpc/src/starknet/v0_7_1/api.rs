@@ -1,13 +1,12 @@
 use jsonrpsee::core::RpcResult;
-use mp_rpc::{
-    AddInvokeTransactionResult, BlockHashAndNumber, BlockId, BroadcastedDeclareTxn,
-    BroadcastedDeployAccountTxn, BroadcastedInvokeTxn, BroadcastedTxn, ClassAndTxnHash,
-    ContractAndTxnHash, EventFilterWithPageRequest, EventsChunk, FeeEstimate, FunctionCall,
-    MaybeDeprecatedContractClass, MsgFromL1, SimulateTransactionsResult, SimulationFlag,
-    SimulationFlagForEstimateFee, SyncingStatus, TraceBlockTransactionsResult,
-    TxnFinalityAndExecutionStatus, TxnReceiptWithBlockInfo, TxnWithHash,
+use starknet::core::types::{
+    BlockHashAndNumber, BlockId, BroadcastedDeclareTransaction,
+    BroadcastedDeployAccountTransaction, BroadcastedInvokeTransaction, BroadcastedTransaction,
+    ContractClass, DeclareTransactionResult, DeployAccountTransactionResult, EventFilterWithPage,
+    EventsPage, FeeEstimate, Felt, FunctionCall, InvokeTransactionResult, MsgFromL1,
+    SimulatedTransaction, SimulationFlag, SimulationFlagForEstimateFee, SyncStatusType,
+    Transaction, TransactionReceiptWithBlockInfo, TransactionStatus, TransactionTrace,
 };
-use starknet_types_core::felt::Felt;
 use units_proc_macros::versioned_rpc;
 
 // Starknet RPC API trait and types
@@ -22,22 +21,22 @@ pub trait StarknetWriteRpcApi {
     #[method(name = "addInvokeTransaction", and_versions = ["V0_8_0"])]
     async fn add_invoke_transaction(
         &self,
-        invoke_transaction: BroadcastedInvokeTxn,
-    ) -> RpcResult<AddInvokeTransactionResult>;
+        invoke_transaction: BroadcastedInvokeTransaction,
+    ) -> RpcResult<InvokeTransactionResult>;
 
     /// Submit a new deploy account transaction
     #[method(name = "addDeployAccountTransaction", and_versions = ["V0_8_0"])]
     async fn add_deploy_account_transaction(
         &self,
-        deploy_account_transaction: BroadcastedDeployAccountTxn,
-    ) -> RpcResult<ContractAndTxnHash>;
+        deploy_account_transaction: BroadcastedDeployAccountTransaction,
+    ) -> RpcResult<DeployAccountTransactionResult>;
 
     /// Submit a new class declaration transaction
     #[method(name = "addDeclareTransaction", and_versions = ["V0_8_0"])]
     async fn add_declare_transaction(
         &self,
-        declare_transaction: BroadcastedDeclareTxn,
-    ) -> RpcResult<ClassAndTxnHash>;
+        declare_transaction: BroadcastedDeclareTransaction,
+    ) -> RpcResult<DeclareTransactionResult>;
 }
 
 #[versioned_rpc("V0_7_1", "starknet")]
@@ -66,7 +65,7 @@ pub trait StarknetReadRpcApi {
     #[method(name = "estimateFee", and_versions = ["V0_8_0"])]
     async fn estimate_fee(
         &self,
-        request: Vec<BroadcastedTxn>,
+        request: Vec<BroadcastedTransaction>,
         simulation_flags: Vec<SimulationFlagForEstimateFee>,
         block_id: BlockId,
     ) -> RpcResult<Vec<FeeEstimate>>;
@@ -81,11 +80,7 @@ pub trait StarknetReadRpcApi {
 
     /// Get the contract class at a given contract address for a given block id
     #[method(name = "getClassAt", and_versions = ["V0_8_0"])]
-    fn get_class_at(
-        &self,
-        block_id: BlockId,
-        contract_address: Felt,
-    ) -> RpcResult<MaybeDeprecatedContractClass>;
+    fn get_class_at(&self, block_id: BlockId, contract_address: Felt) -> RpcResult<ContractClass>;
 
     /// Get the contract class hash in the given block for the contract deployed at the given
     /// address
@@ -94,15 +89,11 @@ pub trait StarknetReadRpcApi {
 
     /// Get the contract class definition in the given block associated with the given hash
     #[method(name = "getClass", and_versions = ["V0_8_0"])]
-    fn get_class(
-        &self,
-        block_id: BlockId,
-        class_hash: Felt,
-    ) -> RpcResult<MaybeDeprecatedContractClass>;
+    fn get_class(&self, block_id: BlockId, class_hash: Felt) -> RpcResult<ContractClass>;
 
     /// Returns all events matching the given filter
     #[method(name = "getEvents", and_versions = ["V0_8_0"])]
-    async fn get_events(&self, filter: EventFilterWithPageRequest) -> RpcResult<EventsChunk>;
+    async fn get_events(&self, filter: EventFilterWithPage) -> RpcResult<EventsPage>;
 
     /// Get the nonce associated with the given address at the given block
     #[method(name = "getNonce", and_versions = ["V0_8_0"])]
@@ -114,29 +105,26 @@ pub trait StarknetReadRpcApi {
         &self,
         block_id: BlockId,
         index: u64,
-    ) -> RpcResult<TxnWithHash>;
+    ) -> RpcResult<Transaction>;
 
     /// Returns the information about a transaction by transaction hash.
     #[method(name = "getTransactionByHash", and_versions = ["V0_8_0"])]
-    fn get_transaction_by_hash(&self, transaction_hash: Felt) -> RpcResult<TxnWithHash>;
+    fn get_transaction_by_hash(&self, transaction_hash: Felt) -> RpcResult<Transaction>;
 
     /// Returns the receipt of a transaction by transaction hash.
     #[method(name = "getTransactionReceipt", and_versions = ["V0_8_0"])]
     async fn get_transaction_receipt(
         &self,
         transaction_hash: Felt,
-    ) -> RpcResult<TxnReceiptWithBlockInfo>;
+    ) -> RpcResult<TransactionReceiptWithBlockInfo>;
 
     /// Gets the Transaction Status, Including Mempool Status and Execution Details
     #[method(name = "getTransactionStatus", and_versions = ["V0_8_0"])]
-    fn get_transaction_status(
-        &self,
-        transaction_hash: Felt,
-    ) -> RpcResult<TxnFinalityAndExecutionStatus>;
+    fn get_transaction_status(&self, transaction_hash: Felt) -> RpcResult<TransactionStatus>;
 
     /// Get an object about the sync status, or false if the node is not syncing
     #[method(name = "syncing", and_versions = ["V0_8_0"])]
-    async fn syncing(&self) -> RpcResult<SyncingStatus>;
+    async fn syncing(&self) -> RpcResult<SyncStatusType>;
 }
 
 #[versioned_rpc("V0_7_1", "starknet")]
@@ -146,14 +134,11 @@ pub trait StarknetTraceRpcApi {
     async fn simulate_transactions(
         &self,
         block_id: BlockId,
-        transactions: Vec<BroadcastedTxn>,
+        transactions: Vec<BroadcastedTransaction>,
         simulation_flags: Vec<SimulationFlag>,
-    ) -> RpcResult<Vec<SimulateTransactionsResult>>;
+    ) -> RpcResult<Vec<SimulatedTransaction>>;
 
     #[method(name = "traceTransaction", and_versions = ["V0_8_0"])]
     /// Returns the execution trace of a transaction
-    async fn trace_transaction(
-        &self,
-        transaction_hash: Felt,
-    ) -> RpcResult<TraceBlockTransactionsResult>;
+    async fn trace_transaction(&self, transaction_hash: Felt) -> RpcResult<TransactionTrace>;
 }

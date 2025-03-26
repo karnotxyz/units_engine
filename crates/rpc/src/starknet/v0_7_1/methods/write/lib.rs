@@ -1,10 +1,10 @@
 use crate::{starknet::v0_7_1::StarknetWriteRpcApiV0_7_1Server, RpcContext};
 use jsonrpsee::core::{async_trait, RpcResult};
-use mp_rpc::{
-    AddInvokeTransactionResult, BroadcastedDeclareTxn, BroadcastedDeployAccountTxn,
-    BroadcastedInvokeTxn, ClassAndTxnHash, ContractAndTxnHash,
+use starknet::core::types::{
+    BroadcastedDeclareTransaction, BroadcastedDeployAccountTransaction,
+    BroadcastedInvokeTransaction, DeclareTransactionResult, DeployAccountTransactionResult, Felt,
+    InvokeTransactionResult,
 };
-use starknet_types_core::felt::Felt;
 
 #[async_trait]
 impl StarknetWriteRpcApiV0_7_1Server for RpcContext {
@@ -19,11 +19,11 @@ impl StarknetWriteRpcApiV0_7_1Server for RpcContext {
     /// * `declare_transaction_result` - the result of the declare transaction
     async fn add_declare_transaction(
         &self,
-        declare_transaction: BroadcastedDeclareTxn,
-    ) -> RpcResult<ClassAndTxnHash> {
-        Ok(ClassAndTxnHash {
-            class_hash: Felt::from(0),
+        declare_transaction: BroadcastedDeclareTransaction,
+    ) -> RpcResult<DeclareTransactionResult> {
+        Ok(DeclareTransactionResult {
             transaction_hash: Felt::from(0),
+            class_hash: Felt::from(0),
         })
     }
 
@@ -39,9 +39,9 @@ impl StarknetWriteRpcApiV0_7_1Server for RpcContext {
     /// * `contract_address` - address of the deployed contract account
     async fn add_deploy_account_transaction(
         &self,
-        deploy_account_transaction: BroadcastedDeployAccountTxn,
-    ) -> RpcResult<ContractAndTxnHash> {
-        Ok(ContractAndTxnHash {
+        deploy_account_transaction: BroadcastedDeployAccountTransaction,
+    ) -> RpcResult<DeployAccountTransactionResult> {
+        Ok(DeployAccountTransactionResult {
             contract_address: Felt::from(0),
             transaction_hash: Felt::from(0),
         })
@@ -58,9 +58,9 @@ impl StarknetWriteRpcApiV0_7_1Server for RpcContext {
     /// * `transaction_hash` - transaction hash corresponding to the invocation
     async fn add_invoke_transaction(
         &self,
-        invoke_transaction: BroadcastedInvokeTxn,
-    ) -> RpcResult<AddInvokeTransactionResult> {
-        Ok(AddInvokeTransactionResult {
+        invoke_transaction: BroadcastedInvokeTransaction,
+    ) -> RpcResult<InvokeTransactionResult> {
+        Ok(InvokeTransactionResult {
             transaction_hash: Felt::from(0),
         })
     }
