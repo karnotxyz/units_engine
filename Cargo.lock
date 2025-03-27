@@ -3971,6 +3971,7 @@ dependencies = [
  "reqwest 0.12.15",
  "starknet 0.9.0",
  "tokio",
+ "units-tests-utils",
  "url",
  "uuid 1.16.0",
 ]
@@ -4005,6 +4006,8 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "starknet 0.13.0",
+ "tokio",
+ "units-tests-utils",
  "units-utils",
 ]
 
@@ -4025,7 +4028,10 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "jsonrpsee",
+ "serde_json",
  "starknet 0.13.0",
+ "thiserror 2.0.12",
+ "units-handlers",
  "units-proc-macros",
  "units-utils",
 ]
@@ -4047,6 +4053,19 @@ dependencies = [
  "tracing-opentelemetry",
  "tracing-subscriber",
  "url",
+]
+
+[[package]]
+name = "units-tests-utils"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "once_cell",
+ "reqwest 0.12.15",
+ "starknet 0.9.0",
+ "tokio",
+ "url",
+ "uuid 1.16.0",
 ]
 
 [[package]]

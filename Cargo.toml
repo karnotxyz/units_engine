@@ -22,7 +22,8 @@ members = [
   "crates/telemetery",
   "crates/utils",
   "crates/proc-macros",
-  "e2e-tests"
+  "e2e-tests",
+  "test-utils"
 ]
 resolver = "2"
 default-members = [
@@ -72,10 +73,11 @@ uuid = { version = "1.16", features = ["v4"] }
 # Members
 units-telemetery = { path = "crates/telemetery" }
 units-utils = { path = "crates/utils" }
-units-proving = { path = "crates/proving" }
+units-handlers = { path = "crates/handlers" }
 units-rpc = { path = "crates/rpc" }
 units-db = { path = "crates/db" }
 units-proc-macros = { path = "crates/proc-macros" }
+units-tests-utils = { path = "test-utils" }
 
 # Macros
 indoc = "2"

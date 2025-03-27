@@ -25,3 +25,6 @@ anyhow.workspace = true
 starknet.workspace = true
 units-proc-macros.workspace = true
 units-utils.workspace = true
+units-handlers.workspace = true
+thiserror.workspace = true
+serde_json.workspace = true

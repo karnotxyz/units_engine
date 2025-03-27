@@ -2,55 +2,35 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use starknet::{
-    accounts::{AccountFactory, OpenZeppelinAccountFactory},
-    core::types::{ExecutionResult, FieldElement},
+    accounts::{Account, AccountFactory, OpenZeppelinAccountFactory},
+    core::types::{BlockId, BlockTag, ExecutionResult, FieldElement},
     providers::{jsonrpc::HttpTransport, JsonRpcClient, Provider},
     signers::{LocalWallet, SigningKey},
 };
 use url::Url;
 
-use crate::{devnet::MadaraRunner, utils::starknet::wait_for_receipt};
-
-const PREDEPLOYED_ACCOUNT_CLASS_HASH: &str =
-    "0x00e2eb8f5672af4e6a4e8a8f1b44989685e668489b0a25437733756c5a34a1d6";
+use units_tests_utils::{madara::MadaraRunner, starknet::wait_for_receipt, units::UnitsRunner};
 
 #[tokio::test]
 async fn test_deploy_account_works() -> Result<()> {
     // Start a Madara node
-    let mut runner = MadaraRunner::new()?;
+    let mut runner = UnitsRunner::new()?;
     runner.run().await?;
 
     // Get the port that Madara is running on
-    let port = runner.port().unwrap();
+    let rpc_url = runner.rpc_url().unwrap();
 
     // Create a Starknet provider
-    let rpc_url = format!("http://localhost:{}", port);
-    let provider = Arc::new(JsonRpcClient::new(HttpTransport::new(Url::parse(
-        &rpc_url,
-    )?)));
+    let provider = Arc::new(JsonRpcClient::new(HttpTransport::new(rpc_url)));
 
-    let signer = LocalWallet::from(SigningKey::from_secret_scalar(FieldElement::ONE));
-    let chain_id = provider.chain_id().await.unwrap();
-    let account_factory = OpenZeppelinAccountFactory::new(
-        FieldElement::from_hex_be(PREDEPLOYED_ACCOUNT_CLASS_HASH).unwrap(),
-        chain_id,
-        signer,
-        provider.clone(),
-    )
-    .await
-    .unwrap();
+    // Deploy a dummy account and asserts on receipt
+    let wallet = units_tests_utils::starknet::deploy_dummy_account(provider.clone()).await?;
 
-    // Create a deploy account transaction
-    let deployment = account_factory
-        .deploy(FieldElement::ONE)
-        .max_fee(FieldElement::ZERO)
-        .send()
+    let nonce = provider
+        .get_nonce(BlockId::Tag(BlockTag::Pending), wallet.address())
         .await
         .unwrap();
-
-    let receipt = wait_for_receipt(provider.clone(), deployment.transaction_hash).await?;
-
-    assert!(*receipt.execution_result() == ExecutionResult::Succeeded);
+    assert_eq!(nonce, FieldElement::ONE);
 
     // The runner will be dropped here and Madara will be killed automatically
     Ok(())

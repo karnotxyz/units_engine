@@ -1,10 +1,13 @@
-use crate::utils::port::{get_free_port, PortAllocation};
+use crate::port::{get_free_port, PortAllocation};
 use anyhow::{anyhow, Result};
 use reqwest::Client;
+use url::Url;
 use std::{
     fs,
+    io::{BufRead, BufReader},
     path::PathBuf,
-    process::{Child, Command},
+    process::{Child, Command, Stdio},
+    thread,
     time::Duration,
 };
 use tokio::time::sleep;
@@ -37,7 +40,7 @@ impl MadaraRunner {
         fs::create_dir_all(&temp_dir)?;
 
         // Start the Madara process
-        let process = Command::new(format!(
+        let mut process = Command::new(format!(
             "{}/{}",
             std::env::var("CARGO_MANIFEST_DIR").unwrap(),
             MADARA_BINARY_PATH
@@ -57,7 +60,32 @@ impl MadaraRunner {
         .arg("0")
         .arg("--chain-config-override")
         .arg("pending_block_update_time=200ms")
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
         .spawn()?;
+
+        // Get handles to stdout and stderr
+        let stdout = process.stdout.take().unwrap();
+        let stderr = process.stderr.take().unwrap();
+
+        // Spawn threads to handle stdout and stderr
+        thread::spawn(move || {
+            let reader = BufReader::new(stdout);
+            for line in reader.lines() {
+                if let Ok(line) = line {
+                    println!("[MADARA] {}", line);
+                }
+            }
+        });
+
+        thread::spawn(move || {
+            let reader = BufReader::new(stderr);
+            for line in reader.lines() {
+                if let Ok(line) = line {
+                    eprintln!("[MADARA] {}", line);
+                }
+            }
+        });
 
         self.process = Some(process);
         self.port_allocation = Some(port_allocation);
@@ -68,7 +96,7 @@ impl MadaraRunner {
         let url = format!("http://localhost:{}/health", port);
 
         let mut attempts = 0;
-        const MAX_ATTEMPTS: u32 = 10; // Try for 60 seconds
+        const MAX_ATTEMPTS: u32 = 10;
 
         while attempts < MAX_ATTEMPTS {
             match client.get(&url).send().await {
@@ -91,6 +119,13 @@ impl MadaraRunner {
     /// Returns the port number that Madara is running on, if it has been started
     pub fn port(&self) -> Option<u16> {
         self.port_allocation.as_ref().map(|alloc| alloc.port())
+    }
+
+    /// Returns the RPC URL of the Madara node, if it has been started
+    pub fn rpc_url(&self) -> Option<Url> {
+        self.port_allocation.as_ref().map(|alloc| {
+            Url::parse(&format!("http://localhost:{}", alloc.port())).unwrap()
+        })
     }
 }
 

@@ -8,6 +8,7 @@ use starknet::core::types::{
     TransactionReceiptWithBlockInfo, TransactionStatus,
 };
 
+use crate::starknet::errors::StarknetRpcApiError;
 use crate::starknet::v0_7_1::StarknetReadRpcApiV0_7_1Server;
 use crate::RpcContext;
 
@@ -32,8 +33,8 @@ impl StarknetReadRpcApiV0_7_1Server for RpcContext {
         Ok(vec![])
     }
 
-    fn chain_id(&self) -> RpcResult<Felt> {
-        Ok(Felt::from(1))
+    async fn chain_id(&self) -> RpcResult<Felt> {
+        Ok(units_handlers::chain_id::chain_id(self.global_ctx.clone()).await.map_err(StarknetRpcApiError::from)?)
     }
 
     async fn estimate_fee(
@@ -101,8 +102,8 @@ impl StarknetReadRpcApiV0_7_1Server for RpcContext {
         })
     }
 
-    fn get_nonce(&self, _block_id: BlockId, _contract_address: Felt) -> RpcResult<Felt> {
-        Ok(Felt::from(0))
+    async fn get_nonce(&self, _block_id: BlockId, _contract_address: Felt) -> RpcResult<Felt> {
+        Ok(units_handlers::nonce::get_nonce(self.global_ctx.clone(), _block_id, _contract_address).await.map_err(StarknetRpcApiError::from)?)
     }
 
     fn get_transaction_by_block_id_and_index(
@@ -139,40 +140,7 @@ impl StarknetReadRpcApiV0_7_1Server for RpcContext {
         &self,
         _transaction_hash: Felt,
     ) -> RpcResult<TransactionReceiptWithBlockInfo> {
-        Ok(TransactionReceiptWithBlockInfo {
-            receipt: starknet::core::types::TransactionReceipt::Invoke(InvokeTransactionReceipt {
-                transaction_hash: Felt::from(0),
-                actual_fee: FeePayment {
-                    amount: Felt::from(0),
-                    unit: PriceUnit::Wei,
-                },
-                finality_status: starknet::core::types::TransactionFinalityStatus::AcceptedOnL1,
-                messages_sent: vec![],
-                events: vec![],
-                execution_resources: ExecutionResources {
-                    computation_resources: ComputationResources {
-                        steps: 0,
-                        memory_holes: None,
-                        range_check_builtin_applications: None,
-                        pedersen_builtin_applications: None,
-                        poseidon_builtin_applications: None,
-                        ec_op_builtin_applications: None,
-                        ecdsa_builtin_applications: None,
-                        bitwise_builtin_applications: None,
-                        keccak_builtin_applications: None,
-                        segment_arena_builtin: None,
-                    },
-                    data_resources: DataResources {
-                        data_availability: DataAvailabilityResources {
-                            l1_gas: 0,
-                            l1_data_gas: 0,
-                        },
-                    },
-                },
-                execution_result: ExecutionResult::Succeeded,
-            }),
-            block: ReceiptBlock::Pending,
-        })
+        Ok(units_handlers::transaction_receipt::get_transaction_receipt(self.global_ctx.clone(), _transaction_hash).await.map_err(StarknetRpcApiError::from)?)
     }
 
     fn get_transaction_status(&self, _transaction_hash: Felt) -> RpcResult<TransactionStatus> {

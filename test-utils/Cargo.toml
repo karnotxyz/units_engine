@@ -1,5 +1,5 @@
 [package]
-name = "units-e2e-tests"
+name = "units-tests-utils"
 homepage.workspace = true
 edition.workspace = true
 authors.workspace = true
@@ -15,7 +15,6 @@ once_cell = "1.19"
 starknet = "0.9"
 url = "2.5"
 uuid.workspace = true
-units-tests-utils.workspace = true
 
 [lints]
 workspace = true

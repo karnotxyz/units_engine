@@ -59,7 +59,7 @@ pub trait StarknetReadRpcApi {
 
     /// Get the chain id
     #[method(name = "chainId", and_versions = ["V0_8_0"])]
-    fn chain_id(&self) -> RpcResult<Felt>;
+    async fn chain_id(&self) -> RpcResult<Felt>;
 
     /// Estimate the fee associated with transaction
     #[method(name = "estimateFee", and_versions = ["V0_8_0"])]
@@ -97,7 +97,7 @@ pub trait StarknetReadRpcApi {
 
     /// Get the nonce associated with the given address at the given block
     #[method(name = "getNonce", and_versions = ["V0_8_0"])]
-    fn get_nonce(&self, block_id: BlockId, contract_address: Felt) -> RpcResult<Felt>;
+    async fn get_nonce(&self, block_id: BlockId, contract_address: Felt) -> RpcResult<Felt>;
 
     /// Get the details of a transaction by a given block id and index
     #[method(name = "getTransactionByBlockIdAndIndex", and_versions = ["V0_8_0"])]

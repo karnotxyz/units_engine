@@ -1,4 +1,7 @@
-use crate::{starknet::v0_7_1::StarknetWriteRpcApiV0_7_1Server, RpcContext};
+use crate::{
+    starknet::{errors::StarknetRpcApiError, v0_7_1::StarknetWriteRpcApiV0_7_1Server},
+    RpcContext,
+};
 use jsonrpsee::core::{async_trait, RpcResult};
 use starknet::core::types::{
     BroadcastedDeclareTransaction, BroadcastedDeployAccountTransaction,
@@ -41,10 +44,14 @@ impl StarknetWriteRpcApiV0_7_1Server for RpcContext {
         &self,
         deploy_account_transaction: BroadcastedDeployAccountTransaction,
     ) -> RpcResult<DeployAccountTransactionResult> {
-        Ok(DeployAccountTransactionResult {
-            contract_address: Felt::from(0),
-            transaction_hash: Felt::from(0),
-        })
+        Ok(
+            units_handlers::deploy_account::add_deploy_account_transaction(
+                self.global_ctx.clone(),
+                deploy_account_transaction,
+            )
+            .await
+            .map_err(StarknetRpcApiError::from)?,
+        )
     }
 
     /// Add an Invoke Transaction to invoke a contract function
