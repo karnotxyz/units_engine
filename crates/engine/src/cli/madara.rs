@@ -9,7 +9,7 @@ pub struct MadaraParams {
     #[arg(
         env = "UNITS_ENGINE_MADARA_RPC_URL",
         long,
-        default_value = "units_engine"
+        value_parser = parse_url
     )]
-    pub madara_rpc_url: String,
+    pub madara_rpc_url: Url,
 }

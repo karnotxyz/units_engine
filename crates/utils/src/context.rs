@@ -1,19 +1,15 @@
 use std::sync::Arc;
 
-use anyhow::Context;
 use starknet::providers::{jsonrpc::HttpTransport, JsonRpcClient};
-
-use crate::url::parse_url;
+use url::Url;
 
 pub struct GlobalContext {
     starknet_provider: Arc<JsonRpcClient<HttpTransport>>,
 }
 
 impl GlobalContext {
-    pub fn new(madara_rpc_url: String) -> anyhow::Result<Self> {
-        let starknet_provider = JsonRpcClient::new(HttpTransport::new(
-            parse_url(&madara_rpc_url).context("Invalid madara RPC URL")?,
-        ));
+    pub fn new(madara_rpc_url: Url) -> anyhow::Result<Self> {
+        let starknet_provider = JsonRpcClient::new(HttpTransport::new(madara_rpc_url));
         Ok(Self {
             starknet_provider: Arc::new(starknet_provider),
         })

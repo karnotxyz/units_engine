@@ -21,7 +21,8 @@ members = [
   "crates/handlers",
   "crates/telemetery",
   "crates/utils",
-  "crates/proc-macros"
+  "crates/proc-macros",
+  "e2e-tests"
 ]
 resolver = "2"
 default-members = [
@@ -65,6 +66,8 @@ tower = { version = "0.4", features = ["util"] }
 tower-http = { version = "0.4", features = ["cors"] }
 thiserror = "2.0"
 starknet = "0.13.0"
+reqwest = "0.12"
+uuid = { version = "1.16", features = ["v4"] }
 
 # Members
 units-telemetery = { path = "crates/telemetery" }
