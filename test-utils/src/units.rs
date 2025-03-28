@@ -2,6 +2,7 @@ use anyhow::{anyhow, Result};
 use reqwest::Client;
 use std::{
     io::{BufRead, BufReader},
+    path::PathBuf,
     process::{Child, Command, Stdio},
     thread,
 };
@@ -11,6 +12,7 @@ use url::Url;
 use crate::{
     madara::MadaraRunner,
     port::{get_free_port, PortAllocation},
+    workspace::WORKSPACE_ROOT,
 };
 
 const UNITS_BINARY_PATH: &str = "target/debug/units_engine";
@@ -46,7 +48,7 @@ impl UnitsRunner {
         println!("Building the project...");
         let build_status = Command::new("cargo")
             .arg("build")
-            .current_dir("../") // Go to parent directory where main project is
+            .current_dir(&*WORKSPACE_ROOT)
             .status()?;
 
         if !build_status.success() {
@@ -55,18 +57,15 @@ impl UnitsRunner {
 
         // Start the Units process
         println!("Starting Units engine...");
-        let mut process = Command::new(format!(
-            "{}/../{}",
-            std::env::var("CARGO_MANIFEST_DIR").unwrap(),
-            UNITS_BINARY_PATH
-        ))
-        .arg("--rpc-port")
-        .arg(units_port.to_string())
-        .arg("--madara-rpc-url")
-        .arg(format!("http://localhost:{}", madara_port))
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()?;
+        let units_path = WORKSPACE_ROOT.join(UNITS_BINARY_PATH);
+        let mut process = Command::new(units_path)
+            .arg("--rpc-port")
+            .arg(units_port.to_string())
+            .arg("--madara-rpc-url")
+            .arg(format!("http://localhost:{}", madara_port))
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()?;
 
         // Get handles to stdout and stderr
         let stdout = process.stdout.take().unwrap();

@@ -1,19 +1,24 @@
 use crate::port::{get_free_port, PortAllocation};
+use crate::workspace::WORKSPACE_ROOT;
 use anyhow::{anyhow, Result};
 use reqwest::Client;
-use url::Url;
+use rstest::*;
+use starknet::providers::{jsonrpc::HttpTransport, JsonRpcClient};
+use units_utils::starknet::StarknetProvider;
 use std::{
     fs,
     io::{BufRead, BufReader},
     path::PathBuf,
     process::{Child, Command, Stdio},
+    sync::Arc,
     thread,
     time::Duration,
 };
 use tokio::time::sleep;
+use url::Url;
 use uuid::Uuid;
 
-const MADARA_BINARY_PATH: &str = "build/madara";
+const MADARA_BINARY_PATH: &str = "test-utils/build/madara";
 
 pub struct MadaraRunner {
     port_allocation: Option<PortAllocation>,
@@ -39,30 +44,30 @@ impl MadaraRunner {
         let temp_dir = std::env::temp_dir().join(format!("madara-{}", Uuid::new_v4()));
         fs::create_dir_all(&temp_dir)?;
 
+        // Get binary path from workspace root
+        let madara_path = WORKSPACE_ROOT.join(MADARA_BINARY_PATH);
+        println!("madara_path: {}", madara_path.display());
+
         // Start the Madara process
-        let mut process = Command::new(format!(
-            "{}/{}",
-            std::env::var("CARGO_MANIFEST_DIR").unwrap(),
-            MADARA_BINARY_PATH
-        ))
-        .arg("--devnet")
-        .arg("--rpc-port")
-        .arg(port.to_string())
-        .arg("--base-path")
-        .arg(temp_dir.to_str().unwrap())
-        .arg("--gas-price")
-        .arg("0")
-        .arg("--blob-gas-price")
-        .arg("0")
-        .arg("--strk-gas-price")
-        .arg("0")
-        .arg("--strk-blob-gas-price")
-        .arg("0")
-        .arg("--chain-config-override")
-        .arg("pending_block_update_time=200ms")
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()?;
+        let mut process = Command::new(madara_path)
+            .arg("--devnet")
+            .arg("--rpc-port")
+            .arg(port.to_string())
+            .arg("--base-path")
+            .arg(temp_dir.to_str().unwrap())
+            .arg("--gas-price")
+            .arg("0")
+            .arg("--blob-gas-price")
+            .arg("0")
+            .arg("--strk-gas-price")
+            .arg("0")
+            .arg("--strk-blob-gas-price")
+            .arg("0")
+            .arg("--chain-config-override")
+            .arg("pending_block_update_time=200ms")
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()?;
 
         // Get handles to stdout and stderr
         let stdout = process.stdout.take().unwrap();
@@ -123,9 +128,9 @@ impl MadaraRunner {
 
     /// Returns the RPC URL of the Madara node, if it has been started
     pub fn rpc_url(&self) -> Option<Url> {
-        self.port_allocation.as_ref().map(|alloc| {
-            Url::parse(&format!("http://localhost:{}", alloc.port())).unwrap()
-        })
+        self.port_allocation
+            .as_ref()
+            .map(|alloc| Url::parse(&format!("http://localhost:{}", alloc.port())).unwrap())
     }
 }
 
@@ -142,4 +147,16 @@ impl Drop for MadaraRunner {
         }
         // Port will be automatically freed when port_allocation is dropped
     }
+}
+
+/// Returns a running Madara node and configured Starknet provider
+#[fixture]
+pub async fn madara_node() -> (MadaraRunner, Arc<StarknetProvider>) {
+    let mut runner = MadaraRunner::new().unwrap();
+    runner.run().await.unwrap();
+
+    let rpc_url = runner.rpc_url().unwrap();
+    let provider = Arc::new(JsonRpcClient::new(HttpTransport::new(rpc_url)));
+
+    (runner, provider)
 }

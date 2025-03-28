@@ -11,10 +11,13 @@ license.workspace = true
 anyhow.workspace = true
 reqwest.workspace = true
 tokio.workspace = true
-once_cell = "1.19"
-starknet = "0.9"
-url = "2.5"
+once_cell.workspace = true
+starknet.workspace = true
+url.workspace = true
 uuid.workspace = true
+serde_json.workspace = true
+units-utils.workspace = true
+rstest.workspace = true
 
 [lints]
 workspace = true

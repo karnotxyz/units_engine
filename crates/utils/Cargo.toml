@@ -18,4 +18,5 @@ anyhow.workspace = true
 starknet.workspace = true
 
 [dev-dependencies]
-rstest = "0.18.2"
+rstest.workspace = true
+units-tests-utils.workspace = true

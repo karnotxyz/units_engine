@@ -3,8 +3,10 @@ use std::sync::Arc;
 use starknet::providers::{jsonrpc::HttpTransport, JsonRpcClient};
 use url::Url;
 
+use crate::starknet::StarknetProvider;
+
 pub struct GlobalContext {
-    starknet_provider: Arc<JsonRpcClient<HttpTransport>>,
+    starknet_provider: Arc<StarknetProvider>,
 }
 
 impl GlobalContext {
@@ -15,7 +17,7 @@ impl GlobalContext {
         })
     }
 
-    pub fn starknet_provider(&self) -> Arc<JsonRpcClient<HttpTransport>> {
+    pub fn starknet_provider(&self) -> Arc<StarknetProvider> {
         self.starknet_provider.clone()
     }
 }

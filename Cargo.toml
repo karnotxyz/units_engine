@@ -69,6 +69,7 @@ thiserror = "2.0"
 starknet = "0.13.0"
 reqwest = "0.12"
 uuid = { version = "1.16", features = ["v4"] }
+once_cell = "1.21"
 
 # Members
 units-telemetery = { path = "crates/telemetery" }
@@ -105,3 +106,6 @@ tracing-subscriber = { version = "0.3.18", features = [
 ] }
 tracing-test = "0.2.5"
 tracing-opentelemetry = "0.26.0"
+
+# Tests
+rstest = "0.25"

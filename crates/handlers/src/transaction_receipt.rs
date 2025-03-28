@@ -18,13 +18,30 @@ pub async fn get_transaction_receipt(
 }
 
 mod tests {
+    use std::{thread::sleep, time::Duration};
+
     use super::*;
-    use units_tests_utils::madara::MadaraRunner;
+    use starknet::core::types::ExecutionResult;
+    use units_tests_utils::{
+        madara::MadaraRunner,
+        starknet::{deploy_dummy_account, dummy_transfer},
+    };
 
     #[tokio::test]
-    async fn test_get_transaction_receipt() {
-        let madara_runner = MadaraRunner::new().unwrap();
+    async fn test_get_transaction_receipt_works() {
+        let mut madara_runner = MadaraRunner::new().unwrap();
+        madara_runner.run().await.unwrap();
         let rpc_url = madara_runner.rpc_url();
-        let global_ctx = GlobalContext::new(rpc_url.unwrap());
+        let global_ctx = Arc::new(GlobalContext::new(rpc_url.unwrap()).unwrap());
+        let wallet = deploy_dummy_account(global_ctx.starknet_provider())
+            .await
+            .unwrap();
+        let (txn_result, madara_receipt) = dummy_transfer(wallet).await.unwrap();
+
+        let receipt = get_transaction_receipt(global_ctx, txn_result.transaction_hash)
+            .await
+            .unwrap();
+
+        assert_eq!(receipt, madara_receipt);
     }
 }
