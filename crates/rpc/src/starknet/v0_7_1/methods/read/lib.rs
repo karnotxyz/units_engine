@@ -7,6 +7,7 @@ use starknet::core::types::{
     PriceUnit, ReceiptBlock, SimulationFlagForEstimateFee, SyncStatusType, Transaction,
     TransactionReceiptWithBlockInfo, TransactionStatus,
 };
+use starknet::providers::ProviderError;
 
 use crate::starknet::errors::StarknetRpcApiError;
 use crate::starknet::v0_7_1::StarknetReadRpcApiV0_7_1Server;
@@ -112,6 +113,7 @@ impl StarknetReadRpcApiV0_7_1Server for RpcContext {
             None,
         )
         .await
+        .map_err(ProviderError::from)
         .map_err(StarknetRpcApiError::from)?)
     }
 

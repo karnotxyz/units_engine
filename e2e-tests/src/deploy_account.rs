@@ -13,7 +13,7 @@ use url::Url;
 
 use units_tests_utils::{
     madara::{madara_node, MadaraRunner},
-    starknet::{deploy_dummy_account, wait_for_receipt},
+    starknet::{deploy_dummy_account},
 };
 
 #[tokio::test]

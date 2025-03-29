@@ -1,10 +1,11 @@
 use crate::port::{get_free_port, PortAllocation};
+use crate::starknet::PREDEPLOYED_ACCOUNT_CLASS_HASH;
 use crate::workspace::WORKSPACE_ROOT;
 use anyhow::{anyhow, Result};
 use reqwest::Client;
 use rstest::*;
+use starknet::core::types::Felt;
 use starknet::providers::{jsonrpc::HttpTransport, JsonRpcClient};
-use units_utils::starknet::StarknetProvider;
 use std::{
     fs,
     io::{BufRead, BufReader},
@@ -15,6 +16,7 @@ use std::{
     time::Duration,
 };
 use tokio::time::sleep;
+use units_utils::starknet::{deploy_account, BuildAccount, StarknetProvider, StarknetWallet};
 use url::Url;
 use uuid::Uuid;
 
@@ -159,4 +161,43 @@ pub async fn madara_node() -> (MadaraRunner, Arc<StarknetProvider>) {
     let provider = Arc::new(JsonRpcClient::new(HttpTransport::new(rpc_url)));
 
     (runner, provider)
+}
+
+pub struct StarknetWalletWithPrivateKey {
+    pub account: Arc<StarknetWallet>,
+    pub private_key: Felt,
+}
+
+/// Returns a running Madara node, configured Starknet provider, and a vector of deployed accounts
+#[fixture]
+pub async fn madara_node_with_accounts(
+    #[default(1)] num_accounts: u32,
+) -> (
+    MadaraRunner,
+    Arc<StarknetProvider>,
+    Vec<StarknetWalletWithPrivateKey>,
+) {
+    let (runner, provider) = madara_node().await;
+
+    let mut accounts = Vec::new();
+    // start from 1 because 0 is an invalid private key
+    for i in 1..=num_accounts {
+        let private_key = Felt::from(i);
+        let account = deploy_account(
+            provider.clone(),
+            private_key,
+            Felt::from_hex_unchecked(PREDEPLOYED_ACCOUNT_CLASS_HASH),
+        )
+        .await
+        .expect("Failed to deploy account")
+        .wait_for_receipt_and_build_account(provider.clone(), private_key)
+        .await
+        .expect("Failed to build account");
+        accounts.push(StarknetWalletWithPrivateKey {
+            account,
+            private_key,
+        });
+    }
+
+    (runner, provider, accounts)
 }

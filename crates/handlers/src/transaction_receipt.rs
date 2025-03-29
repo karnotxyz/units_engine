@@ -17,6 +17,7 @@ pub async fn get_transaction_receipt(
         .await
 }
 
+#[cfg(test)]
 mod tests {
     use std::{thread::sleep, time::Duration};
 

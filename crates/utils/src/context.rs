@@ -17,6 +17,10 @@ impl GlobalContext {
         })
     }
 
+    pub fn new_with_provider(starknet_provider: Arc<StarknetProvider>) -> Self {
+        Self { starknet_provider }
+    }
+
     pub fn starknet_provider(&self) -> Arc<StarknetProvider> {
         self.starknet_provider.clone()
     }

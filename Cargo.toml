@@ -109,3 +109,4 @@ tracing-opentelemetry = "0.26.0"
 
 # Tests
 rstest = "0.25"
+assert_matches = "1.5"

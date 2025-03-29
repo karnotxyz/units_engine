@@ -1,22 +1,28 @@
 use starknet::{
     accounts::{
-        Account, AccountFactory, ConnectedAccount, ExecutionEncoding, OpenZeppelinAccountFactory,
-        SingleOwnerAccount,
+        Account, AccountFactory, ConnectedAccount, ExecutionEncoder, ExecutionEncoding,
+        OpenZeppelinAccountFactory, SingleOwnerAccount,
     },
     core::types::{
-        BlockId, BlockTag, Call, CallType, ComputationResources, DataAvailabilityResources,
-        DataResources, DeclareTransactionTrace, DeployAccountTransactionTrace, EntryPointType,
-        ExecuteInvocation, ExecutionResources, ExecutionResult, Felt, FunctionInvocation,
-        InvokeTransactionResult, InvokeTransactionTrace, L1HandlerTransactionTrace,
+        BlockId, BlockTag, BroadcastedInvokeTransactionV3, Call, CallType, ComputationResources,
+        DataAvailabilityMode, DataAvailabilityResources, DataResources, DeclareTransactionTrace,
+        DeployAccountTransactionTrace, EntryPointType, ExecuteInvocation, ExecutionResources,
+        ExecutionResult, Felt, FunctionInvocation, InvokeTransactionResult, InvokeTransactionTrace,
+        L1HandlerTransactionTrace, ResourceBounds, ResourceBoundsMapping,
         TransactionReceiptWithBlockInfo,
     },
     macros::selector,
     providers::{jsonrpc::HttpTransport, JsonRpcClient, Provider, ProviderError},
-    signers::{LocalWallet, SigningKey},
+    signers::{LocalWallet, Signer, SigningKey},
 };
 use std::sync::Arc;
 use tokio::time::{sleep, Duration, Instant};
-use units_utils::starknet::StarknetProvider;
+use units_utils::starknet::{
+    deploy_account, wait_for_receipt, BuildAccount, StarknetProvider, StarknetWallet,
+    WaitForReceipt,
+};
+
+use crate::madara::StarknetWalletWithPrivateKey;
 
 pub const PREDEPLOYED_ACCOUNT_CLASS_HASH: &str =
     "0x00e2eb8f5672af4e6a4e8a8f1b44989685e668489b0a25437733756c5a34a1d6";
@@ -25,74 +31,19 @@ pub const ETH_TOKEN_ADDRESS: &str =
 pub const PREDEPLOYED_ACCOUNT_ADDRESS: &str =
     "0x055be462e718c4166d656d11f89e341115b8bc82389c3762a10eade04fcb225d";
 
-pub async fn wait_for_receipt(
-    provider: Arc<StarknetProvider>,
-    txn_hash: Felt,
-) -> anyhow::Result<TransactionReceiptWithBlockInfo> {
-    let start_time = Instant::now();
-    let timeout = Duration::from_secs(10);
-    let retry_delay = Duration::from_millis(200);
-
-    loop {
-        match provider.get_transaction_receipt(txn_hash).await {
-            Ok(receipt) => return Ok(receipt),
-            Err(err) => match err {
-                ProviderError::StarknetError(
-                    starknet::core::types::StarknetError::TransactionHashNotFound,
-                ) => {
-                    if start_time.elapsed() >= timeout {
-                        anyhow::bail!("Transaction not found after 10 seconds timeout");
-                    }
-                    sleep(retry_delay).await;
-                    continue;
-                }
-                err => return Err(err.into()),
-            },
-        }
-    }
-}
-
 pub async fn deploy_dummy_account(
     provider: Arc<StarknetProvider>,
-) -> anyhow::Result<Arc<SingleOwnerAccount<Arc<StarknetProvider>, Arc<LocalWallet>>>> {
-    let signer = Arc::new(LocalWallet::from(SigningKey::from_secret_scalar(Felt::ONE)));
-    let chain_id = provider.chain_id().await.unwrap();
-    let account_factory = OpenZeppelinAccountFactory::new(
-        Felt::from_hex_unchecked(PREDEPLOYED_ACCOUNT_CLASS_HASH),
-        chain_id,
-        signer.clone(),
+) -> anyhow::Result<Arc<StarknetWallet>> {
+    let private_key = Felt::ONE;
+    deploy_account(
         provider.clone(),
+        private_key,
+        Felt::from_hex_unchecked(PREDEPLOYED_ACCOUNT_CLASS_HASH),
     )
     .await
-    .unwrap();
-
-    // Create a deploy account transaction
-    let deployment = account_factory
-        .deploy_v3(Felt::ONE)
-        .gas(0)
-        .gas_price(0)
-        .send()
-        .await
-        .unwrap();
-
-    let receipt = wait_for_receipt(provider.clone(), deployment.transaction_hash).await?;
-
-    let mut account = SingleOwnerAccount::new(
-        provider,
-        signer,
-        deployment.contract_address,
-        chain_id,
-        ExecutionEncoding::New,
-    );
-
-    assert_eq!(
-        *receipt.receipt.execution_result(),
-        ExecutionResult::Succeeded
-    );
-
-    account.set_block_id(BlockId::Tag(BlockTag::Pending));
-
-    Ok(Arc::new(account))
+    .expect("Failed to deploy account")
+    .wait_for_receipt_and_build_account(provider.clone(), private_key)
+    .await
 }
 
 pub async fn dummy_transfer(
@@ -112,7 +63,7 @@ pub async fn dummy_transfer(
         .gas_price(0)
         .send()
         .await?;
-    let receipt = wait_for_receipt(wallet.provider().clone(), txn.transaction_hash).await?;
+    let receipt = wait_for_receipt(wallet.provider().clone(), txn.transaction_hash, None).await?;
     Ok((txn, receipt))
 }
 
@@ -198,5 +149,60 @@ pub fn build_l1_handler_trace() -> L1HandlerTransactionTrace {
         function_invocation: build_function_invocation(),
         state_diff: None,
         execution_resources: build_execution_resources(),
+    }
+}
+
+impl StarknetWalletWithPrivateKey {
+    // The `get_invoke_request` method is note exposed inside starknet-rs (https://github.com/xJonathanLEI/starknet-rs/blob/1af6c26d33f404e94e53a81d0fe875dfddfba939/starknet-accounts/src/account/execution.rs#L576)
+    // So we, build the invoke transaction manually by referencing the source code
+    pub async fn build_invoke_simulate_transaction(
+        &self,
+        calls: Vec<Call>,
+        skip_signature: bool,
+        query_only: bool,
+    ) -> anyhow::Result<BroadcastedInvokeTransactionV3> {
+        let nonce = self.account.get_nonce().await?;
+        let txn_hash = self
+            .account
+            .execute_v3(calls.clone())
+            .gas(0)
+            .gas_price(0)
+            .nonce(nonce)
+            .prepared()?
+            .transaction_hash(true);
+        let signer = Arc::new(LocalWallet::from(SigningKey::from_secret_scalar(
+            self.private_key,
+        )));
+        Ok(BroadcastedInvokeTransactionV3 {
+            sender_address: self.account.address(),
+            calldata: self.account.encode_calls(&calls),
+            signature: if skip_signature {
+                vec![]
+            } else {
+                let signature = signer.sign_hash(&txn_hash).await?;
+                vec![signature.r, signature.s]
+            },
+            nonce: nonce,
+            resource_bounds: ResourceBoundsMapping {
+                l1_gas: ResourceBounds {
+                    max_amount: 0,
+                    max_price_per_unit: 0,
+                },
+                l2_gas: ResourceBounds {
+                    max_amount: 0,
+                    max_price_per_unit: 0,
+                },
+            },
+            // Fee market has not been been activated yet so it's hard-coded to be 0
+            tip: 0,
+            // Hard-coded empty `paymaster_data`
+            paymaster_data: vec![],
+            // Hard-coded empty `account_deployment_data`
+            account_deployment_data: vec![],
+            // Hard-coded L1 DA mode for nonce and fee
+            nonce_data_availability_mode: DataAvailabilityMode::L1,
+            fee_data_availability_mode: DataAvailabilityMode::L1,
+            is_query: query_only,
+        })
     }
 }

@@ -1,14 +1,27 @@
-use std::{any, sync::Arc};
+use std::{
+    any,
+    sync::Arc,
+    time::{Duration, Instant},
+};
 
 use starknet::{
+    accounts::{
+        Account, AccountFactory, ConnectedAccount, ExecutionEncoding, OpenZeppelinAccountFactory,
+        SingleOwnerAccount,
+    },
+    contract::ContractFactory,
     core::types::{
-        BlockId, ContractClass, ExecuteInvocation, FeeEstimate, Felt, PriceUnit,
-        SimulatedTransaction, TransactionTrace,
+        BlockId, BlockTag, ContractClass, DeclareTransactionResult, DeployAccountTransactionResult,
+        ExecuteInvocation, ExecutionResult, FeeEstimate, Felt, FlattenedSierraClass,
+        InvokeTransactionResult, PriceUnit, SimulatedTransaction, TransactionReceiptWithBlockInfo,
+        TransactionTrace,
     },
     providers::{jsonrpc::HttpTransport, JsonRpcClient, Provider, ProviderError},
+    signers::{LocalWallet, SigningKey},
 };
 
 pub type StarknetProvider = JsonRpcClient<HttpTransport>;
+pub type StarknetWallet = SingleOwnerAccount<Arc<StarknetProvider>, Arc<LocalWallet>>;
 
 pub async fn get_contract_class(
     starknet_provider: Arc<StarknetProvider>,
@@ -71,19 +84,173 @@ impl GetExecutionResult for SimulatedTransaction {
     }
 }
 
+pub async fn wait_for_receipt(
+    provider: Arc<StarknetProvider>,
+    txn_hash: Felt,
+    timeout: Option<Duration>,
+) -> anyhow::Result<TransactionReceiptWithBlockInfo> {
+    let start_time = Instant::now();
+    let timeout = timeout.unwrap_or(Duration::from_secs(10));
+    let retry_delay = Duration::from_millis(200);
+
+    loop {
+        match provider.get_transaction_receipt(txn_hash).await {
+            Ok(receipt) => return Ok(receipt),
+            Err(err) => match err {
+                ProviderError::StarknetError(
+                    starknet::core::types::StarknetError::TransactionHashNotFound,
+                ) => {
+                    if start_time.elapsed() >= timeout {
+                        anyhow::bail!("Transaction not found after {:?} timeout", timeout);
+                    }
+                    tokio::time::sleep(retry_delay).await;
+                    continue;
+                }
+                err => return Err(err.into()),
+            },
+        }
+    }
+}
+
+pub async fn deploy_account(
+    provider: Arc<StarknetProvider>,
+    private_key: Felt,
+    class_hash: Felt,
+) -> anyhow::Result<DeployAccountTransactionResult> {
+    let signer = Arc::new(LocalWallet::from(SigningKey::from_secret_scalar(
+        private_key,
+    )));
+    let chain_id = provider.chain_id().await?;
+    let account_factory =
+        OpenZeppelinAccountFactory::new(class_hash, chain_id, signer.clone(), provider.clone())
+            .await?;
+
+    // Create a deploy account transaction
+    Ok(account_factory
+        .deploy_v3(Felt::ONE)
+        .gas(0)
+        .gas_price(0)
+        .send()
+        .await?)
+}
+
+pub trait BuildAccount: WaitForReceipt {
+    async fn build_account(
+        &self,
+        provider: Arc<StarknetProvider>,
+        private_key: Felt,
+    ) -> anyhow::Result<Arc<SingleOwnerAccount<Arc<StarknetProvider>, Arc<LocalWallet>>>>;
+
+    async fn wait_for_receipt_and_build_account(
+        &self,
+        provider: Arc<StarknetProvider>,
+        private_key: Felt,
+    ) -> anyhow::Result<Arc<StarknetWallet>> {
+        let receipt = self.wait_for_receipt(provider.clone(), None).await?;
+        self.build_account(provider.clone(), private_key).await
+    }
+}
+
+impl BuildAccount for DeployAccountTransactionResult {
+    async fn build_account(
+        &self,
+        provider: Arc<StarknetProvider>,
+        private_key: Felt,
+    ) -> anyhow::Result<Arc<StarknetWallet>> {
+        let signer = Arc::new(LocalWallet::from(SigningKey::from_secret_scalar(
+            private_key,
+        )));
+        let chain_id = provider.chain_id().await?;
+
+        let mut account = SingleOwnerAccount::new(
+            provider,
+            signer,
+            self.contract_address,
+            chain_id,
+            ExecutionEncoding::New,
+        );
+        account.set_block_id(BlockId::Tag(BlockTag::Pending));
+
+        Ok(Arc::new(account))
+    }
+}
+
+pub async fn declare_contract(
+    account: Arc<StarknetWallet>,
+    contract_class: Arc<FlattenedSierraClass>,
+    compiled_class_hash: Felt,
+) -> anyhow::Result<DeclareTransactionResult> {
+    Ok(account
+        .declare_v3(contract_class, compiled_class_hash)
+        .gas(0)
+        .gas_price(0)
+        .send()
+        .await?)
+}
+
+pub async fn deploy_contract(
+    account: Arc<StarknetWallet>,
+    class_hash: Felt,
+    constructor_calldata: Vec<Felt>,
+    salt: Felt,
+    unique: bool,
+) -> anyhow::Result<(InvokeTransactionResult, Felt)> {
+    let contract_factory = ContractFactory::new(class_hash, account.clone());
+    let deployment = contract_factory
+        .deploy_v3(constructor_calldata, salt, unique)
+        .gas(0)
+        .gas_price(0);
+    let deployed_address = deployment.deployed_address();
+    let invoke_result = deployment.send().await?;
+
+    Ok((invoke_result, deployed_address))
+}
+
+pub trait WaitForReceipt {
+    async fn wait_for_receipt(
+        &self,
+        provider: Arc<StarknetProvider>,
+        timeout: Option<Duration>,
+    ) -> anyhow::Result<TransactionReceiptWithBlockInfo>;
+}
+
+macro_rules! impl_wait_for_receipt {
+    ($t:ty) => {
+        impl WaitForReceipt for $t {
+            async fn wait_for_receipt(
+                &self,
+                provider: Arc<StarknetProvider>,
+                timeout: Option<Duration>,
+            ) -> anyhow::Result<TransactionReceiptWithBlockInfo> {
+                wait_for_receipt(provider, self.transaction_hash, timeout).await
+            }
+        }
+    };
+}
+
+impl_wait_for_receipt!(DeclareTransactionResult);
+impl_wait_for_receipt!(InvokeTransactionResult);
+impl_wait_for_receipt!(DeployAccountTransactionResult);
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use rstest::*;
     use starknet::{
-        core::types::{BlockTag, CallType, EntryPointType, InvokeTransactionTrace, RevertedInvocation},
+        accounts::Account,
+        core::types::{
+            BlockTag, CallType, EntryPointType, InvokeTransactionTrace, RevertedInvocation,
+        },
         macros::selector,
     };
     use units_tests_utils::{
-        madara::{madara_node, MadaraRunner},
+        madara::{
+            madara_node, madara_node_with_accounts, MadaraRunner, StarknetWalletWithPrivateKey,
+        },
         starknet::{
-            build_declare_trace, build_deploy_account_trace, build_function_invocation,
-            build_l1_handler_trace, PREDEPLOYED_ACCOUNT_ADDRESS, build_execution_resources
+            build_declare_trace, build_deploy_account_trace, build_execution_resources,
+            build_function_invocation, build_l1_handler_trace, dummy_transfer,
+            PREDEPLOYED_ACCOUNT_ADDRESS, PREDEPLOYED_ACCOUNT_CLASS_HASH,
         },
     };
 
@@ -260,6 +427,85 @@ mod tests {
 
         let result = simulated_transaction.get_execution_result();
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), ExecuteInvocation::Success(function_invocation));
+        assert_eq!(
+            result.unwrap(),
+            ExecuteInvocation::Success(function_invocation)
+        );
+    }
+
+    #[rstest]
+    #[tokio::test]
+    async fn test_wait_for_receipt_success(
+        #[future] madara_node_with_accounts: (
+            MadaraRunner,
+            Arc<StarknetProvider>,
+            Vec<StarknetWalletWithPrivateKey>,
+        ),
+    ) {
+        let (_runner, provider, accounts_with_private_key) = madara_node_with_accounts.await;
+        let account = accounts_with_private_key[0].account.clone();
+
+        // Do a simple transfer
+        let (execution, _) = dummy_transfer(account.clone()).await.unwrap();
+
+        // Wait for receipt
+        let receipt = wait_for_receipt(provider, execution.transaction_hash, None)
+            .await
+            .expect("Failed to get receipt");
+
+        assert_eq!(
+            receipt.receipt.execution_result(),
+            &ExecutionResult::Succeeded
+        );
+    }
+
+    #[rstest]
+    #[tokio::test]
+    async fn test_wait_for_receipt_timeout(
+        #[future] madara_node: (MadaraRunner, Arc<StarknetProvider>),
+    ) {
+        let (_runner, provider) = madara_node.await;
+
+        // Try to get receipt for a non-existent transaction hash
+        let fake_hash = Felt::from_hex_unchecked("0x1234");
+        let timeout = Duration::from_secs(2);
+
+        let start = Instant::now();
+        let result = wait_for_receipt(provider, fake_hash, Some(timeout)).await;
+
+        assert!(result.is_err());
+        assert!(start.elapsed() >= timeout);
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Transaction not found after 2s timeout"));
+    }
+
+    #[rstest]
+    #[tokio::test]
+    async fn test_deploy_account_success(
+        #[future] madara_node: (MadaraRunner, Arc<StarknetProvider>),
+    ) {
+        let (_runner, provider) = madara_node.await;
+
+        // Use a test private key and class hash
+        let private_key = Felt::from_hex_unchecked("0x1234");
+        let class_hash = Felt::from_hex_unchecked(PREDEPLOYED_ACCOUNT_CLASS_HASH);
+
+        // Deploy the account
+        let account = deploy_account(provider.clone(), private_key, class_hash)
+            .await
+            .expect("Failed to deploy account")
+            .wait_for_receipt_and_build_account(provider.clone(), private_key)
+            .await
+            .expect("Failed to build account");
+
+        // Verify the deployment by checking the class hash at the deployed address
+        let deployed_class_hash = provider
+            .get_class_hash_at(BlockId::Tag(BlockTag::Pending), account.address())
+            .await
+            .expect("Failed to get class hash");
+
+        assert_eq!(deployed_class_hash, class_hash);
     }
 }
