@@ -1,10 +1,15 @@
-# UNITS Engine
+# UNITS Engine 🔐
 
-UNITS (Universal Information Tokenisation System) Engine is a confidentiality layer built on top of [Madara](https://docs.madara.build), designed to offer transaction privacy while maintaining verifiability through Zero-Knowledge proofs. Together, UNITS Engine and Madara form a complete UNITS implementation, providing both the high-performance ZK infrastructure and the privacy layer needed for confidential transactions. UNITS is an integral part of the [Finternet](https://finternetlab.io/).
+UNITS (Universal Information Tokenisation System) Engine is a confidentiality layer built on top of [Madara](https://docs.madara.build),
+designed to offer transaction privacy while maintaining verifiability through Zero-Knowledge proofs. Together, UNITS Engine and Madara
+form a complete UNITS implementation, providing both the high-performance ZK infrastructure and the privacy layer needed for confidential
+transactions. UNITS is an integral part of the [Finternet](https://finternetlab.io/).
 
 ## Overview 🌟
 
-In traditional blockchain architectures and ZK rollups, while write access is carefully controlled through ACLs, read access remains completely public - anyone can read any data on the chain. UNITS engine takes a different approach by introducing a confidentiality layer that allows for controlled data visibility while maintaining the benefits of verifiability.
+In traditional blockchain architectures and ZK rollups, while write access is carefully controlled through ACLs, read access remains
+completely public - anyone can read any data on the chain. UNITS engine takes a different approach by introducing a confidentiality layer
+that allows for controlled data visibility while maintaining the benefits of verifiability.
 
 ### Key Features ✨
 
@@ -15,14 +20,20 @@ In traditional blockchain architectures and ZK rollups, while write access is ca
 
 ## Architecture 🏗️
 
-UNITS engine is built as a layer on top of Madara to leverage its robust infrastructure and high performant ZK architecture. The codebase is organized into several key components:
+UNITS engine is built as a layer on top of Madara to leverage its robust infrastructure and high performant ZK architecture. The codebase
+is organized into several key components:
 
 ### Design Philosophy 💡
 
 By building on top of Madara, UNITS Engine achieves two critical objectives:
 
-1. **Future-Proof Development**: We automatically benefit from the latest advancements in ZK technology and improvements in the Starknet (SN) Stack, as Madara stays in sync with these developments
-2. **Focused Innovation**: While Madara handles the core ZK infrastructure, UNITS Engine can focus exclusively on building robust privacy features and confidentiality mechanisms
+1. **Future-Proof Development**: We automatically benefit from the latest advancements in ZK technology and improvements in the
+   Starknet (SN) Stack, as Madara stays in sync with these developments
+2. **Focused Innovation**: While Madara handles the core ZK infrastructure, UNITS Engine can focus exclusively on building robust
+   privacy features and confidentiality mechanisms
+
+This separation of concerns allows us to maintain a cutting-edge ZK foundation while developing specialized privacy features that make
+UNITS unique.
 
 ### Core Components 🧩
 
@@ -61,6 +72,7 @@ By building on top of Madara, UNITS Engine achieves two critical objectives:
    ```
 
 2. Run the test suite:
+
    ```bash
    cargo test --workspace --all-features
    ```
@@ -78,11 +90,13 @@ UNITS engine implements a trusted operator model where:
 
 ### Starknet RPC
 
-UNITS supports the standard Starknet RPC interface for compatibility with existing tools. However, some calls might fail if users don't have the required access rights due to privacy constraints.
+UNITS supports the standard Starknet RPC interface for compatibility with existing tools. However, some calls might fail if users don't
+have the required access rights due to privacy constraints.
 
 ### UNITS RPC
 
-A custom RPC interface designed specifically for UNITS functionality. This is the recommended interface for new applications as it's built with privacy in mind from the ground up.
+A custom RPC interface designed specifically for UNITS functionality. This is the recommended interface for new applications as it's built
+with privacy in mind from the ground up.
 
 ## Performance Benchmarks 📊
 
@@ -91,8 +105,10 @@ UNITS is built on top of Madara, which has demonstrated impressive performance m
 - 7,000 TPS with merkleization
 - 15,000 TPS without merkleization
 
-Note: Benchmarking integration with CI is in progress to provide more reproducible results across different environments and configurations.
+Note: Benchmarking integration with CI is in progress to provide more reproducible results across different environments and
+configurations.
 
 ## Acknowledgments 🙏
 
-UNITS engine is heavily inspired by and built upon [Madara](https://github.com/madara-alliance/madara), which Karnot is a maintainer of along with Moongsong Labs and Kasar Labs. We're grateful for their foundational work that made this project possible.
+UNITS engine is heavily inspired by and built upon [Madara](https://github.com/madara-alliance/madara), which Karnot is a maintainer of
+along with Moongsong Labs and Kasar Labs. We're grateful for their foundational work that made this project possible.
