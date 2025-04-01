@@ -1,6 +1,7 @@
 # Event Read ACLs for UNITs on Starknet
 
-By default, all events emitted by Starknet contracts are public and can be read by any user. This aligns with the standard behavior of Starknet contracts.
+By default, events emitted by Starknet contracts are public and readable by any user.
+This follows standard Starknet behavior.
 
 ## Proposed Standard: Fine-grained Event Read ACLs
 
@@ -12,14 +13,15 @@ UNITs introduces a new standard where contracts can define granular access contr
 
 When a user attempts to read events from a contract, the RPC will:
 
-1. Call the `can_read_event` function on the target contract with an array of event selectors
-2. The function returns an array of booleans indicating which events can be read
+1. Call `can_read_event` with the event selectors to check
+2. Receive boolean array indicating read permissions
 3. Only return the requested events if their corresponding boolean is `true`
 4. If the function doesn't exist (for compatibility with existing contracts on Starknet), all events are public by default
 
 ### Example Implementation
 
-Here's an example of how to implement event read access control in Cairo (Note: This is a conceptual example for illustration purposes only and has not been tested on-chain):
+Here's an example of how to implement event read access control in Cairo (Note: This is a conceptual example for
+illustration purposes only and has not been tested on-chain):
 
 ```cairo
 #[starknet::interface]
@@ -76,4 +78,5 @@ mod MyContract {
 
 ### Backward Compatibility
 
-For contracts that don't implement the `can_read_event` function, the RPC will maintain the current behavior where reading events is allowed for all users. This ensures compatibility with existing contracts on Starknet while allowing new contracts to implement more granular access controls for their events.
+For contracts without the `can_read_event` function, events remain publicly readable.
+This preserves compatibility with existing contracts while enabling granular controls in new ones.

@@ -3,7 +3,8 @@
 ## Default Visibility
 
 - By default on Starknet, any declared class is public and accessible to all.
-- When declaring classes through Units, the default behavior maintains this public visibility since the Starknet RPC specification doesn't support additional visibility parameters.
+- When declaring classes through Units, the default behavior maintains this public visibility since the Starknet RPC
+  specification doesn't support additional visibility parameters.
 
 ## Units RPC Enhanced Visibility Control
 
@@ -29,4 +30,5 @@ When using the Units RPC, you gain additional control over class visibility:
 - Multiple users can declare the same class
 - The class will only be declared once on the chain
 - The Access Control List (ACL) for such classes will be the union of all individual ACLs
-- This means if multiple users declare the same class with different visibility settings, the resulting visibility will combine all access permissions
+- This means if multiple users declare the same class with different visibility settings,
+  the resulting visibility will combine all access permissions
