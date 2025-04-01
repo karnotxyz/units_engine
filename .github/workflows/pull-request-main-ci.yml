@@ -25,6 +25,10 @@ jobs:
   build-units-engine:
     uses: ./.github/workflows/task-build-units-engine.yml
 
+  # Build Madara binary
+  build-madara:
+    uses: ./.github/workflows/task-build-madara.yml
+
   # Run linters for code style and quality
   lint-code-style:
     uses: ./.github/workflows/task-lint-code-style.yml
