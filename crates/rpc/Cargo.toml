@@ -17,17 +17,17 @@ includes-code-from = [
 ]
 
 [dependencies]
+anyhow.workspace = true
 jsonrpsee = { workspace = true, default-features = true, features = [
   "macros",
   "server",
 ] }
-anyhow.workspace = true
+serde_json.workspace = true
 starknet.workspace = true
+thiserror.workspace = true
+units-handlers.workspace = true
 units-proc-macros.workspace = true
 units-utils.workspace = true
-units-handlers.workspace = true
-thiserror.workspace = true
-serde_json.workspace = true
 
 [features]
 testing = ["units-handlers/testing"]

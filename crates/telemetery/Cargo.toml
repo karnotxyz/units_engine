@@ -9,16 +9,16 @@ version.workspace = true
 homepage.workspace = true
 
 [dependencies]
-tracing.workspace = true
-opentelemetry.workspace = true
-opentelemetry_sdk.workspace = true
 anyhow.workspace = true
-tracing-subscriber.workspace = true
-opentelemetry-otlp.workspace = true
+console = "0.15"
+opentelemetry.workspace = true
 opentelemetry-appender-tracing.workspace = true
+opentelemetry-otlp.workspace = true
 opentelemetry-semantic-conventions.workspace = true
+opentelemetry_sdk.workspace = true
+time = { version = "0.3", features = ["formatting", "local-offset", "macros"] }
+tracing.workspace = true
 tracing-core.workspace = true
 tracing-opentelemetry.workspace = true
+tracing-subscriber.workspace = true
 url.workspace = true
-time = { version = "0.3", features = ["formatting", "local-offset", "macros"] }
-console = "0.15"
