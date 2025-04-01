@@ -116,7 +116,8 @@ pub async fn get_nonce(
     Ok(starknet_provider.get_nonce(block_id, address).await?)
 }
 
-#[cfg(test)]mod tests {
+#[cfg(test)]
+mod tests {
     use std::future;
 
     use super::*;
@@ -129,9 +130,9 @@ pub async fn get_nonce(
             FlattenedSierraClass, InvokeTransactionV1,
         },
     };
-    use units_primitives::read_data::{ ReadDataVersion, ReadValidity};
     #[cfg(feature = "testing")]
     use units_primitives::read_data::sign_read_data;
+    use units_primitives::read_data::{ReadDataVersion, ReadValidity};
     use units_tests_utils::{
         madara::{madara_node_with_accounts, MadaraRunner, StarknetWalletWithPrivateKey},
         scarb::{scarb_build, ArtifactsMap},

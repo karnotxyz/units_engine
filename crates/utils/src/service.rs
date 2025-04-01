@@ -45,10 +45,7 @@ impl ServiceManager {
     }
 
     /// Register a new service with the manager
-    pub async fn register_service<S>(
-        &self,
-        service: Arc<S>,
-    ) -> anyhow::Result<()>
+    pub async fn register_service<S>(&self, service: Arc<S>) -> anyhow::Result<()>
     where
         S: Service,
     {
