@@ -19,7 +19,7 @@ jobs:
   test-with-coverage:
     permissions:
       pull-requests: write
-    runs-on: ubuntu-24.04-arm
+    runs-on: macos-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
