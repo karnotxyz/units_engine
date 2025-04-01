@@ -15,7 +15,7 @@ jobs:
       - uses: ./.github/actions/load-env
 
       # Setup the rust environment
-      - uses: ./.github/actions/rust-setup
+      - uses: ./.github/actions/setup
         with:
           cache-key: ${{ env.BUILD_RUST_CACHE_KEY }}
           rust-version: ${{ env.BUILD_RUST_VERSION }}

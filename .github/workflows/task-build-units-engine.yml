@@ -23,7 +23,7 @@ jobs:
       # Setup the environment with all necessary dependencies
       - uses: ./.github/actions/load-env
 
-      - uses: ./.github/actions/rust-setup
+      - uses: ./.github/actions/setup
         with:
           cache-key: ${{ env.BUILD_RUST_CACHE_KEY }}
           rust-version: ${{ env.BUILD_RUST_VERSION }}
