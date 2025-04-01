@@ -52,7 +52,6 @@ jobs:
       - run: chmod +x test-utils/build/madara
 
       - name: Run tests with coverage
-        continue-on-error: true
         run: |
           export COVERAGE_BIN=$(realpath target/release/units_engine)
           rm -f target/units-engine-* lcov.info
