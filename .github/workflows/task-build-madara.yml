@@ -32,7 +32,7 @@ jobs:
 
       # Build madara
       # TODO: Remove this once we have a proper binary releases
-      # This binary is from commit 2267214bcb2142b6eddf990105008f9e467425e8
+      # This binary is from commit cc8d54185379b3ea7f8bbf4c64cb8fca835e5507
       - name: Download binary
         run: |
           mkdir -p target/release && wget https://units-engine-ci.s3.us-east-1.amazonaws.com/madara -O target/release/madara

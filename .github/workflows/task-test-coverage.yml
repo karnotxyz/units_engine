@@ -64,10 +64,8 @@ jobs:
               --output-path lcov.info \
               --no-fail-fast
 
-      # TODO: Uncomment this when we add it to Coveralls
-      # - name: Upload coverage to Coveralls
-      #   uses: coverallsapp/github-action@v2
-      #   with:
-      #     parallel-finished: true
-      #     files: lcov.info
-      #     debug: true
+      - name: Upload coverage to Coveralls
+        uses: coverallsapp/github-action@v2
+        with:
+          files: lcov.info
+          debug: true
