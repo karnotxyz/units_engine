@@ -67,6 +67,5 @@ jobs:
       - name: Upload coverage to Coveralls
         uses: coverallsapp/github-action@v2
         with:
-          parallel-finished: true
           files: lcov.info
           debug: true
