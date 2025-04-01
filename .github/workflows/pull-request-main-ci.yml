@@ -36,7 +36,7 @@ jobs:
   # Run Units Engine tests and generate coverage reports
   test-units-engine:
     needs: [build-units-engine, build-madara]
-    uses: ./.github/workflows/task-coverage.yml
+    uses: ./.github/workflows/task-test-coverage.yml
     with:
       units-engine-binary-hash: ${{ needs.build-units-engine.outputs.units-engine-binary-hash }}
       madara-binary-hash: ${{ needs.build-madara.outputs.madara-binary-hash }}
