@@ -20,5 +20,3 @@ units-utils.workspace = true
 rstest.workspace = true
 units-primitives.workspace = true
 
-[lints]
-workspace = true

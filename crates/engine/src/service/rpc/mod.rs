@@ -1,4 +1,5 @@
-use std::{collections::HashMap, sync::Arc};
+use core::fmt;
+use std::{collections::HashMap, fmt::Display, sync::Arc};
 use tokio::sync::{broadcast, Mutex};
 
 use jsonrpsee::server::ServerHandle;
@@ -46,14 +47,15 @@ impl RpcType {
     }
 }
 
-impl ToString for RpcAccess {
-    fn to_string(&self) -> String {
+impl Display for RpcAccess {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            RpcAccess::User => "user".to_string(),
-            RpcAccess::Admin => "admin".to_string(),
+            RpcAccess::User => write!(f, "user"),
+            RpcAccess::Admin => write!(f, "admin"),
         }
     }
 }
+
 pub struct RpcService {
     config: RpcParams,
     global_ctx: Arc<GlobalContext>,

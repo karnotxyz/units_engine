@@ -1,3 +1,5 @@
+#![allow(clippy::print_stdout, clippy::print_stderr)]
+
 use anyhow::{anyhow, Result};
 use reqwest::Client;
 use std::{
@@ -73,19 +75,15 @@ impl UnitsRunner {
         // Spawn threads to handle stdout and stderr
         thread::spawn(move || {
             let reader = BufReader::new(stdout);
-            for line in reader.lines() {
-                if let Ok(line) = line {
-                    println!("[UNITS] {}", line);
-                }
+            for line in reader.lines().map_while(Result::ok) {
+                println!("[UNITS] {}", line);
             }
         });
 
         thread::spawn(move || {
             let reader = BufReader::new(stderr);
-            for line in reader.lines() {
-                if let Ok(line) = line {
-                    eprintln!("[UNITS] {}", line);
-                }
+            for line in reader.lines().map_while(Result::ok) {
+                eprintln!("[UNITS] {}", line);
             }
         });
 
