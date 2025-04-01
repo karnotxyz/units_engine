@@ -3,4 +3,4 @@ pub mod port;
 pub mod scarb;
 pub mod starknet;
 pub mod units;
-mod workspace;
+pub mod workspace;

@@ -66,7 +66,7 @@ impl MadaraRunner {
             .arg("--strk-blob-gas-price")
             .arg("0")
             .arg("--chain-config-override")
-            .arg("pending_block_update_time=200ms")
+            .arg("pending_block_update_time=200ms,block_time=2s")
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()?;

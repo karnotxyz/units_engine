@@ -6,15 +6,16 @@ use std::{
 
 use starknet::{
     accounts::{
-        Account, AccountFactory, ConnectedAccount, ExecutionEncoding, OpenZeppelinAccountFactory,
-        SingleOwnerAccount,
+        Account, AccountFactory, ConnectedAccount, ExecutionEncoder, ExecutionEncoding,
+        OpenZeppelinAccountFactory, SingleOwnerAccount,
     },
     contract::ContractFactory,
     core::types::{
-        BlockId, BlockTag, ContractClass, DeclareTransactionResult, DeployAccountTransactionResult,
+        BlockId, BlockTag, BroadcastedInvokeTransactionV3, Call, ContractClass,
+        DataAvailabilityMode, DeclareTransactionResult, DeployAccountTransactionResult,
         ExecuteInvocation, ExecutionResult, FeeEstimate, Felt, FlattenedSierraClass,
-        InvokeTransactionResult, PriceUnit, SimulatedTransaction, TransactionReceiptWithBlockInfo,
-        TransactionTrace,
+        InvokeTransactionResult, PriceUnit, ResourceBounds, ResourceBoundsMapping,
+        SimulatedTransaction, TransactionReceiptWithBlockInfo, TransactionTrace,
     },
     providers::{jsonrpc::HttpTransport, JsonRpcClient, Provider, ProviderError},
     signers::{LocalWallet, SigningKey},
@@ -231,6 +232,78 @@ macro_rules! impl_wait_for_receipt {
 impl_wait_for_receipt!(DeclareTransactionResult);
 impl_wait_for_receipt!(InvokeTransactionResult);
 impl_wait_for_receipt!(DeployAccountTransactionResult);
+
+pub async fn build_invoke_simulate_transaction(
+    calls: Vec<Call>,
+    account_address: Felt,
+    provider: Arc<StarknetProvider>,
+) -> Result<BroadcastedInvokeTransactionV3, ProviderError> {
+    let nonce = provider
+        .get_nonce(BlockId::Tag(BlockTag::Pending), account_address)
+        .await?;
+
+    Ok(BroadcastedInvokeTransactionV3 {
+        sender_address: account_address,
+        calldata: encode_calls(&calls, ExecutionEncoding::New),
+        signature: vec![],
+        nonce: nonce,
+        resource_bounds: ResourceBoundsMapping {
+            l1_gas: ResourceBounds {
+                max_amount: 0,
+                max_price_per_unit: 0,
+            },
+            l2_gas: ResourceBounds {
+                max_amount: 0,
+                max_price_per_unit: 0,
+            },
+        },
+        // Fee market has not been been activated yet so it's hard-coded to be 0
+        tip: 0,
+        // Hard-coded empty `paymaster_data`
+        paymaster_data: vec![],
+        // Hard-coded empty `account_deployment_data`
+        account_deployment_data: vec![],
+        // Hard-coded L1 DA mode for nonce and fee
+        nonce_data_availability_mode: DataAvailabilityMode::L1,
+        fee_data_availability_mode: DataAvailabilityMode::L1,
+        is_query: true,
+    })
+}
+
+// Taken from https://github.com/xJonathanLEI/starknet-rs/blob/1af6c26d33f404e94e53a81d0fe875dfddfba939/starknet-accounts/src/single_owner.rs#L140
+fn encode_calls(calls: &[Call], encoding: ExecutionEncoding) -> Vec<Felt> {
+    let mut execute_calldata: Vec<Felt> = vec![calls.len().into()];
+
+    match encoding {
+        ExecutionEncoding::Legacy => {
+            let mut concated_calldata: Vec<Felt> = vec![];
+            for call in calls {
+                execute_calldata.push(call.to); // to
+                execute_calldata.push(call.selector); // selector
+                execute_calldata.push(concated_calldata.len().into()); // data_offset
+                execute_calldata.push(call.calldata.len().into()); // data_len
+
+                for item in &call.calldata {
+                    concated_calldata.push(*item);
+                }
+            }
+
+            execute_calldata.push(concated_calldata.len().into()); // calldata_len
+            execute_calldata.extend_from_slice(&concated_calldata);
+        }
+        ExecutionEncoding::New => {
+            for call in calls {
+                execute_calldata.push(call.to); // to
+                execute_calldata.push(call.selector); // selector
+
+                execute_calldata.push(call.calldata.len().into()); // calldata.len()
+                execute_calldata.extend_from_slice(&call.calldata);
+            }
+        }
+    }
+
+    execute_calldata
+}
 
 #[cfg(test)]
 mod tests {

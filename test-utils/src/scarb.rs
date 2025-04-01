@@ -4,9 +4,12 @@ use serde_json;
 use starknet::accounts::ConnectedAccount;
 use starknet::core::types::contract::CompiledClass;
 use starknet::core::types::contract::SierraClass;
+use starknet::core::types::BlockId;
+use starknet::core::types::BlockTag;
 use starknet::core::types::ContractClass;
 use starknet::core::types::Felt;
 use starknet::core::types::FlattenedSierraClass;
+use starknet::providers::Provider;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
@@ -138,6 +141,15 @@ impl Artifacts {
         let compiled_class_hash = self.compiled_class_hash;
         let sierra = self.contract_class.flatten().unwrap();
 
+        let class_hash = self.class_hash;
+        if account
+            .provider()
+            .get_class(BlockId::Tag(BlockTag::Pending), class_hash)
+            .await
+            .is_ok()
+        {
+            return class_hash;
+        }
         declare_contract(account.clone(), Arc::new(sierra), compiled_class_hash)
             .await
             .unwrap()

@@ -22,6 +22,7 @@ members = [
   "crates/telemetery",
   "crates/utils",
   "crates/proc-macros",
+  "crates/primitives",
   "e2e-tests",
   "test-utils"
 ]
@@ -33,7 +34,8 @@ default-members = [
   "crates/handlers",
   "crates/telemetery",
   "crates/utils",
-  "crates/proc-macros"
+  "crates/proc-macros",
+  "crates/primitives"
 ]
 
 [workspace.lints.rust]
@@ -67,9 +69,11 @@ tower = { version = "0.4", features = ["util"] }
 tower-http = { version = "0.4", features = ["cors"] }
 thiserror = "2.0"
 starknet = "0.13.0"
+starknet-crypto = "0.7.4"
 reqwest = "0.12"
 uuid = { version = "1.16", features = ["v4"] }
 once_cell = "1.21"
+hex = "0.4.3"
 
 # Members
 units-telemetery = { path = "crates/telemetery" }
@@ -78,6 +82,7 @@ units-handlers = { path = "crates/handlers" }
 units-rpc = { path = "crates/rpc" }
 units-db = { path = "crates/db" }
 units-proc-macros = { path = "crates/proc-macros" }
+units-primitives = { path = "crates/primitives" }
 units-tests-utils = { path = "test-utils" }
 
 # Macros

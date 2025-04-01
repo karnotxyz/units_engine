@@ -3697,6 +3697,23 @@ dependencies = [
  "starknet",
  "thiserror 2.0.12",
  "tokio",
+ "units-primitives",
+ "units-tests-utils",
+ "units-utils",
+]
+
+[[package]]
+name = "units-primitives"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "assert_matches",
+ "hex",
+ "rstest",
+ "starknet",
+ "starknet-crypto",
+ "thiserror 2.0.12",
+ "tokio",
  "units-tests-utils",
  "units-utils",
 ]
@@ -3756,6 +3773,7 @@ dependencies = [
  "serde_json",
  "starknet",
  "tokio",
+ "units-primitives",
  "units-utils",
  "url",
  "uuid 1.16.0",

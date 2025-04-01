@@ -4,12 +4,12 @@ use starknet::{
         OpenZeppelinAccountFactory, SingleOwnerAccount,
     },
     core::types::{
-        BlockId, BlockTag, BroadcastedInvokeTransactionV3, Call, CallType, ComputationResources,
-        DataAvailabilityMode, DataAvailabilityResources, DataResources, DeclareTransactionTrace,
-        DeployAccountTransactionTrace, EntryPointType, ExecuteInvocation, ExecutionResources,
-        ExecutionResult, Felt, FunctionInvocation, InvokeTransactionResult, InvokeTransactionTrace,
-        L1HandlerTransactionTrace, ResourceBounds, ResourceBoundsMapping,
-        TransactionReceiptWithBlockInfo,
+        BlockId, BlockTag, BlockWithTxHashes, BroadcastedInvokeTransactionV3, Call, CallType,
+        ComputationResources, DataAvailabilityMode, DataAvailabilityResources, DataResources,
+        DeclareTransactionTrace, DeployAccountTransactionTrace, EntryPointType, ExecuteInvocation,
+        ExecutionResources, ExecutionResult, Felt, FunctionInvocation, InvokeTransactionResult,
+        InvokeTransactionTrace, L1HandlerTransactionTrace, MaybePendingBlockWithTxHashes,
+        ResourceBounds, ResourceBoundsMapping, TransactionReceiptWithBlockInfo,
     },
     macros::selector,
     providers::{jsonrpc::HttpTransport, JsonRpcClient, Provider, ProviderError},
@@ -149,60 +149,5 @@ pub fn build_l1_handler_trace() -> L1HandlerTransactionTrace {
         function_invocation: build_function_invocation(),
         state_diff: None,
         execution_resources: build_execution_resources(),
-    }
-}
-
-impl StarknetWalletWithPrivateKey {
-    // The `get_invoke_request` method is note exposed inside starknet-rs (https://github.com/xJonathanLEI/starknet-rs/blob/1af6c26d33f404e94e53a81d0fe875dfddfba939/starknet-accounts/src/account/execution.rs#L576)
-    // So we, build the invoke transaction manually by referencing the source code
-    pub async fn build_invoke_simulate_transaction(
-        &self,
-        calls: Vec<Call>,
-        skip_signature: bool,
-        query_only: bool,
-    ) -> anyhow::Result<BroadcastedInvokeTransactionV3> {
-        let nonce = self.account.get_nonce().await?;
-        let txn_hash = self
-            .account
-            .execute_v3(calls.clone())
-            .gas(0)
-            .gas_price(0)
-            .nonce(nonce)
-            .prepared()?
-            .transaction_hash(true);
-        let signer = Arc::new(LocalWallet::from(SigningKey::from_secret_scalar(
-            self.private_key,
-        )));
-        Ok(BroadcastedInvokeTransactionV3 {
-            sender_address: self.account.address(),
-            calldata: self.account.encode_calls(&calls),
-            signature: if skip_signature {
-                vec![]
-            } else {
-                let signature = signer.sign_hash(&txn_hash).await?;
-                vec![signature.r, signature.s]
-            },
-            nonce: nonce,
-            resource_bounds: ResourceBoundsMapping {
-                l1_gas: ResourceBounds {
-                    max_amount: 0,
-                    max_price_per_unit: 0,
-                },
-                l2_gas: ResourceBounds {
-                    max_amount: 0,
-                    max_price_per_unit: 0,
-                },
-            },
-            // Fee market has not been been activated yet so it's hard-coded to be 0
-            tip: 0,
-            // Hard-coded empty `paymaster_data`
-            paymaster_data: vec![],
-            // Hard-coded empty `account_deployment_data`
-            account_deployment_data: vec![],
-            // Hard-coded L1 DA mode for nonce and fee
-            nonce_data_availability_mode: DataAvailabilityMode::L1,
-            fee_data_availability_mode: DataAvailabilityMode::L1,
-            is_query: query_only,
-        })
     }
 }
