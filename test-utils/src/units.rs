@@ -2,7 +2,6 @@ use anyhow::{anyhow, Result};
 use reqwest::Client;
 use std::{
     io::{BufRead, BufReader},
-    path::PathBuf,
     process::{Child, Command, Stdio},
     thread,
 };

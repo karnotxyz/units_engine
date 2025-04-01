@@ -1,20 +1,19 @@
 use std::{
-    any,
     sync::Arc,
     time::{Duration, Instant},
 };
 
 use starknet::{
     accounts::{
-        Account, AccountFactory, ConnectedAccount, ExecutionEncoder, ExecutionEncoding,
+        Account, AccountFactory, ConnectedAccount, ExecutionEncoding,
         OpenZeppelinAccountFactory, SingleOwnerAccount,
     },
     contract::ContractFactory,
     core::types::{
         BlockId, BlockTag, BroadcastedInvokeTransactionV3, Call, ContractClass,
         DataAvailabilityMode, DeclareTransactionResult, DeployAccountTransactionResult,
-        ExecuteInvocation, ExecutionResult, FeeEstimate, Felt, FlattenedSierraClass,
-        InvokeTransactionResult, PriceUnit, ResourceBounds, ResourceBoundsMapping,
+        ExecuteInvocation, Felt, FlattenedSierraClass,
+        InvokeTransactionResult, ResourceBounds, ResourceBoundsMapping,
         SimulatedTransaction, TransactionReceiptWithBlockInfo, TransactionTrace,
     },
     providers::{jsonrpc::HttpTransport, JsonRpcClient, Provider, ProviderError},
@@ -246,7 +245,7 @@ pub async fn build_invoke_simulate_transaction(
         sender_address: account_address,
         calldata: encode_calls(&calls, ExecutionEncoding::New),
         signature: vec![],
-        nonce: nonce,
+        nonce,
         resource_bounds: ResourceBoundsMapping {
             l1_gas: ResourceBounds {
                 max_amount: 0,

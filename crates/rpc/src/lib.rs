@@ -35,7 +35,7 @@ pub fn rpc_api_user(rpc_ctx: &RpcContext) -> anyhow::Result<RpcModule<()>> {
 }
 
 pub fn rpc_api_admin(rpc_ctx: &RpcContext) -> anyhow::Result<RpcModule<()>> {
-    let mut rpc_api = RpcModule::new(());
+    let rpc_api = RpcModule::new(());
 
     Ok(rpc_api)
 }

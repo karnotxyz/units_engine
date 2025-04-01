@@ -1,20 +1,6 @@
-use std::sync::Arc;
 
-use anyhow::Result;
 use rstest::*;
-use starknet::{
-    accounts::{Account, AccountFactory, OpenZeppelinAccountFactory},
-    core::types::{BlockId, BlockTag, ExecutionResult, Felt},
-    providers::{jsonrpc::HttpTransport, JsonRpcClient, Provider},
-    signers::{LocalWallet, SigningKey},
-};
-use units_utils::starknet::StarknetProvider;
-use url::Url;
 
-use units_tests_utils::{
-    madara::{madara_node, MadaraRunner},
-    starknet::deploy_dummy_account,
-};
 
 #[tokio::test]
 #[rstest]

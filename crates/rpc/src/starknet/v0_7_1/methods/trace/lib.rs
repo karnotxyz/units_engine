@@ -2,7 +2,7 @@ use crate::{starknet::v0_7_1::StarknetTraceRpcApiV0_7_1Server, RpcContext};
 use jsonrpsee::core::{async_trait, RpcResult};
 use starknet::core::types::{
     BlockId, BroadcastedTransaction, ComputationResources, DataAvailabilityResources,
-    DataResources, ExecuteInvocation, ExecutionResources, Felt, FunctionCall, FunctionInvocation,
+    DataResources, ExecuteInvocation, ExecutionResources, Felt, FunctionInvocation,
     InvokeTransactionTrace, SimulatedTransaction, SimulationFlag, TransactionTrace,
 };
 

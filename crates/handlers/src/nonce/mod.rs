@@ -1,10 +1,9 @@
 use std::sync::Arc;
 
 use starknet::{
-    contract::ContractFactory,
     core::types::{
         BlockId, BroadcastedInvokeTransaction, BroadcastedTransaction, Call, ExecuteInvocation,
-        Felt, FunctionCall, SimulationFlag, StarknetError,
+        Felt, SimulationFlag, StarknetError,
     },
     macros::selector,
     providers::{Provider, ProviderError},
@@ -16,7 +15,7 @@ use units_utils::{
     },
 };
 
-use units_primitives::read_data::{ReadData, ReadDataError, ReadType, SignedReadData};
+use units_primitives::read_data::{ReadDataError, SignedReadData};
 
 const CAN_READ_NONCE_SELECTOR: Felt = selector!("can_read_nonce");
 
@@ -118,28 +117,20 @@ pub async fn get_nonce(
 
 #[cfg(test)]
 mod tests {
-    use std::future;
+    
 
     use super::*;
     use assert_matches::assert_matches;
     use rstest::*;
-    use starknet::{
-        accounts::{Account, ConnectedAccount, ExecutionEncoder, RawExecutionV3},
-        core::types::{
-            contract::CompiledClass, BlockTag, BroadcastedInvokeTransactionV1, Call, ContractClass,
-            FlattenedSierraClass, InvokeTransactionV1,
-        },
-    };
+    use starknet::core::types::BlockTag;
     #[cfg(feature = "testing")]
     use units_primitives::read_data::sign_read_data;
-    use units_primitives::read_data::{ReadDataVersion, ReadValidity};
+    
     use units_tests_utils::{
         madara::{madara_node_with_accounts, MadaraRunner, StarknetWalletWithPrivateKey},
         scarb::{scarb_build, ArtifactsMap},
     };
-    use units_utils::starknet::{
-        declare_contract, StarknetProvider, StarknetWallet, WaitForReceipt,
-    };
+    use units_utils::starknet::StarknetProvider;
 
     #[rstest]
     #[tokio::test]
