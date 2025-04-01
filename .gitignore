@@ -2,3 +2,5 @@
 **/build
 .vscode
 lcov.info
+.DS_Store
+**/.DS_Store
