@@ -35,7 +35,7 @@ jobs:
       # This binary is from commit 2267214bcb2142b6eddf990105008f9e467425e8
       - name: Download binary
         run: |
-          wget https://units-engine-ci.s3.us-east-1.amazonaws.com/madara -O target/release/madara
+          mkdir -p target/release && wget https://units-engine-ci.s3.us-east-1.amazonaws.com/madara -O target/release/madara
 
       # Generate hash for the madara binary
       - name: Generate binary hashes
