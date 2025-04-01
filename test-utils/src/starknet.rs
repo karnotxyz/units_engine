@@ -1,10 +1,7 @@
 use starknet::{
-    accounts::{
-        Account, AccountFactory, ConnectedAccount, SingleOwnerAccount,
-    },
+    accounts::{Account, ConnectedAccount, SingleOwnerAccount},
     core::types::{
-        Call, CallType,
-        ComputationResources, DataAvailabilityResources, DataResources,
+        Call, CallType, ComputationResources, DataAvailabilityResources, DataResources,
         DeclareTransactionTrace, DeployAccountTransactionTrace, EntryPointType, ExecuteInvocation,
         ExecutionResources, Felt, FunctionInvocation, InvokeTransactionResult,
         InvokeTransactionTrace, L1HandlerTransactionTrace, TransactionReceiptWithBlockInfo,
@@ -16,7 +13,6 @@ use std::sync::Arc;
 use units_utils::starknet::{
     deploy_account, wait_for_receipt, BuildAccount, StarknetProvider, StarknetWallet,
 };
-
 
 pub const PREDEPLOYED_ACCOUNT_CLASS_HASH: &str =
     "0x00e2eb8f5672af4e6a4e8a8f1b44989685e668489b0a25437733756c5a34a1d6";

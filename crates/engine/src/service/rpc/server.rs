@@ -176,7 +176,7 @@ pub async fn start_server(
 
     server
         .with_graceful_shutdown(async {
-            shutdown_rx.recv().await;
+            let _ = shutdown_rx.recv().await;
         })
         .await
         .context("Running rpc server")

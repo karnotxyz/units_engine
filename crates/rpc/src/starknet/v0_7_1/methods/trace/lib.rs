@@ -10,14 +10,14 @@ use starknet::core::types::{
 impl StarknetTraceRpcApiV0_7_1Server for RpcContext {
     async fn simulate_transactions(
         &self,
-        block_id: BlockId,
-        transactions: Vec<BroadcastedTransaction>,
-        simulation_flags: Vec<SimulationFlag>,
+        _block_id: BlockId,
+        _transactions: Vec<BroadcastedTransaction>,
+        _simulation_flags: Vec<SimulationFlag>,
     ) -> RpcResult<Vec<SimulatedTransaction>> {
         Ok(vec![])
     }
 
-    async fn trace_transaction(&self, transaction_hash: Felt) -> RpcResult<TransactionTrace> {
+    async fn trace_transaction(&self, _transaction_hash: Felt) -> RpcResult<TransactionTrace> {
         Ok(TransactionTrace::Invoke(InvokeTransactionTrace {
             validate_invocation: None,
             execute_invocation: ExecuteInvocation::Success(FunctionInvocation {

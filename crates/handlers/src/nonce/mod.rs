@@ -117,15 +117,15 @@ pub async fn get_nonce(
 
 #[cfg(test)]
 mod tests {
-    
 
     use super::*;
     use assert_matches::assert_matches;
     use rstest::*;
-    use starknet::core::types::BlockTag;
+    use starknet::{accounts::Account, core::types::BlockTag};
     #[cfg(feature = "testing")]
     use units_primitives::read_data::sign_read_data;
-    
+
+    use units_primitives::read_data::{ReadData, ReadDataVersion, ReadType, ReadValidity};
     use units_tests_utils::{
         madara::{madara_node_with_accounts, MadaraRunner, StarknetWalletWithPrivateKey},
         scarb::{scarb_build, ArtifactsMap},

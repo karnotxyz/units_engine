@@ -246,7 +246,10 @@ mod tests {
         accounts::Account,
         core::types::{BlockWithTxHashes, MaybePendingBlockWithTxHashes},
     };
-    use std::{future, sync::Arc, time::Duration};
+    use std::{
+        sync::Arc,
+        time::{Duration, Instant},
+    };
     use units_tests_utils::madara::{
         madara_node_with_accounts, MadaraRunner, StarknetWalletWithPrivateKey,
     };
