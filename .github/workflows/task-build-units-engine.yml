@@ -55,7 +55,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: units-engine-binary-${{ steps.generate-binary-hash.outputs.units-engine-hash }}
-          path: target/release/units-engine
+          path: target/release/units_engine
           retention-days: 1
 
       # Keep the cache operations for runners of the same type
