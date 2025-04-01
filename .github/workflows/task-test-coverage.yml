@@ -54,7 +54,7 @@ jobs:
       - name: Run tests with coverage
         continue-on-error: true
         run: |
-          export COVERAGE_BIN=$(realpath target/release/units-engine)
+          export COVERAGE_BIN=$(realpath target/release/units_engine)
           rm -f target/units-engine-* lcov.info
 
           # run tests for units engine crates

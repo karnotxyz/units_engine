@@ -62,7 +62,7 @@ jobs:
       - name: Cache Units Engine binary
         uses: actions/cache/save@v4
         with:
-          path: target/release/units-engine
+          path: target/release/units_engine
           key: ${{ runner.os }}-${{ env.BUILD_ACTION_CACHE_PREFIX }}-bin-${{ steps.generate-binary-hash.outputs.units-engine-hash }}
 
       - name: Display hashes
