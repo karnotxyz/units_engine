@@ -8,8 +8,6 @@ use reqwest::Client;
 use rstest::*;
 use starknet::core::types::Felt;
 use starknet::providers::{jsonrpc::HttpTransport, JsonRpcClient};
-#[cfg(unix)]
-use std::os::unix::fs::PermissionsExt;
 use std::{
     fs,
     io::{BufRead, BufReader},
@@ -53,22 +51,6 @@ impl MadaraRunner {
         // Get binary path from workspace root
         let madara_path = WORKSPACE_ROOT.join(MADARA_BINARY_PATH);
         println!("madara_path: {}", madara_path.display());
-
-        // Check if binary exists and log its metadata
-        match fs::metadata(&madara_path) {
-            Ok(metadata) => {
-                println!("Madara binary exists. Metadata: {:?}", metadata);
-                #[cfg(unix)]
-                println!("Unix permissions: {:o}", metadata.permissions().mode());
-            }
-            Err(e) => {
-                return Err(anyhow!(
-                    "Failed to access madara binary at {}: {}",
-                    madara_path.display(),
-                    e
-                ));
-            }
-        }
 
         // Start the Madara process
         let mut process = Command::new(madara_path)
