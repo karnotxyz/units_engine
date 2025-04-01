@@ -19,10 +19,9 @@ pub async fn get_transaction_receipt(
 
 #[cfg(test)]
 mod tests {
-    
 
     use super::*;
-    
+
     use units_tests_utils::{
         madara::MadaraRunner,
         starknet::{deploy_dummy_account, dummy_transfer},

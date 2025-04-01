@@ -14,7 +14,7 @@ jobs:
   build-binaries:
     permissions:
       pull-requests: write
-    runs-on: karnot-arc-runner-set
+    runs-on: ubuntu-latest
     outputs:
       madara-binary-hash: ${{ steps.generate-binary-hash.outputs.madara-hash }}
 
