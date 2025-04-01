@@ -19,6 +19,7 @@ jobs:
   test-with-coverage:
     permissions:
       pull-requests: write
+    # TODO: shift to ubuntu eventually
     runs-on: macos-latest
     steps:
       - name: Checkout repository
