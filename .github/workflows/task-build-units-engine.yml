@@ -45,7 +45,7 @@ jobs:
           TIMESTAMP=$(date +%s)
 
           # Path to the compiled Units Engine binary
-          BINARY_PATH=./target/release/units-engine
+          BINARY_PATH=./target/release/units_engine
           HASH=$(echo "$TIMESTAMP" | cat - $BINARY_PATH | sha256sum | awk '{ print $1 }')
           echo "units-engine-hash=$HASH" >> $GITHUB_OUTPUT
           echo "Hash of the units engine is: $HASH (with timestamp: $TIMESTAMP)"
