@@ -10,7 +10,12 @@ homepage.workspace = true
 
 [dependencies]
 url.workspace = true
-tokio = { workspace = true, features = ["sync", "time", "rt-multi-thread", "macros"] }
+tokio = { workspace = true, features = [
+  "sync",
+  "time",
+  "rt-multi-thread",
+  "macros",
+] }
 tracing.workspace = true
 futures.workspace = true
 async-trait.workspace = true

@@ -13,14 +13,14 @@ targets = ["x86_64-unknown-linux-gnu"]
 
 [package.metadata.attribution]
 includes-code-from = [
-    "madara (Apache-2.0/MIT) - https://github.com/madara-alliance/madara"
+  "madara (Apache-2.0/MIT) - https://github.com/madara-alliance/madara",
 ]
 
 [dependencies]
 jsonrpsee = { workspace = true, default-features = true, features = [
   "macros",
   "server",
-]}
+] }
 anyhow.workspace = true
 starknet.workspace = true
 units-proc-macros.workspace = true

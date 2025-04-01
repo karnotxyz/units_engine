@@ -10,7 +10,7 @@ license = "Apache-2.0"
 
 [workspace.metadata.attribution]
 includes-code-from = [
-    "madara (Apache-2.0/MIT) - https://github.com/madara-alliance/madara"
+  "madara (Apache-2.0/MIT) - https://github.com/madara-alliance/madara",
 ]
 
 [workspace]
@@ -24,7 +24,7 @@ members = [
   "crates/proc-macros",
   "crates/primitives",
   "e2e-tests",
-  "test-utils"
+  "test-utils",
 ]
 resolver = "2"
 default-members = [
@@ -35,7 +35,7 @@ default-members = [
   "crates/telemetery",
   "crates/utils",
   "crates/proc-macros",
-  "crates/primitives"
+  "crates/primitives",
 ]
 
 [workspace.lints.rust]
@@ -50,7 +50,7 @@ print_stderr = "warn"
 
 
 [workspace.dependencies]
-tokio = { version = "1.34", features = ["rt-multi-thread", "macros", "signal"]}
+tokio = { version = "1.34", features = ["rt-multi-thread", "macros", "signal"] }
 clap = { version = "4.5.32", features = ["derive", "env"] }
 anyhow = "1.0"
 url = { version = "2.4", features = ["serde"] }
