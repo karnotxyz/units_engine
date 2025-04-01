@@ -1,9 +1,9 @@
 [workspace.package]
 name = "units_engine"
-homepage = "<https://finternetlab.io/>"
+homepage = "https://finternetlab.io/"
 edition = "2021"
 authors = ["Karnot <https://github.com/karnotxyz>"]
-repository = "<https://github.com/karnotxyz/units_engine>"
+repository = "https://github.com/karnotxyz/units_engine"
 version = "0.1.0"
 license = "Apache-2.0"
 
