@@ -218,7 +218,7 @@ impl SignedReadData {
 // Added this here instead of in test-utils because importing primitives in test-utils
 // causes a circular dependency with an error
 // the crate `units_primitives` is compiled multiple times, possibly with different configurations
-#[cfg(any(test, feature = "test-utils"))]
+#[cfg(any(test, feature = "testing"))]
 pub async fn sign_read_data(
     read_data: ReadData,
     private_key: Felt,

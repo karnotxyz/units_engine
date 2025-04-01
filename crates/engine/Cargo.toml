@@ -31,3 +31,6 @@ async-trait.workspace = true
 tower-http.workspace = true
 thiserror.workspace = true
 units-rpc.workspace = true
+
+[features]
+testing = ["units-rpc/testing"]

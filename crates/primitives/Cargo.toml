@@ -23,4 +23,4 @@ units-tests-utils.workspace = true
 assert_matches.workspace = true
 
 [features]
-test-utils = []
+testing = []

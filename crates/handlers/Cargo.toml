@@ -15,9 +15,12 @@ starknet.workspace = true
 tokio.workspace = true
 thiserror.workspace = true
 serde_json.workspace = true
-units-primitives = { workspace = true, features = ["test-utils"] }
+units-primitives = { workspace = true }
 
 [dev-dependencies]
 rstest.workspace = true
 units-tests-utils.workspace = true
 assert_matches.workspace = true
+
+[features]
+testing = ["units-primitives/testing"]

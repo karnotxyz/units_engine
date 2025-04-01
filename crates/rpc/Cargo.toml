@@ -28,3 +28,6 @@ units-utils.workspace = true
 units-handlers.workspace = true
 thiserror.workspace = true
 serde_json.workspace = true
+
+[features]
+testing = ["units-handlers/testing"]

@@ -116,8 +116,7 @@ pub async fn get_nonce(
     Ok(starknet_provider.get_nonce(block_id, address).await?)
 }
 
-#[cfg(test)]
-mod tests {
+#[cfg(test)]mod tests {
     use std::future;
 
     use super::*;
@@ -130,7 +129,9 @@ mod tests {
             FlattenedSierraClass, InvokeTransactionV1,
         },
     };
-    use units_primitives::read_data::{sign_read_data, ReadDataVersion, ReadValidity};
+    use units_primitives::read_data::{ ReadDataVersion, ReadValidity};
+    #[cfg(feature = "testing")]
+    use units_primitives::read_data::sign_read_data;
     use units_tests_utils::{
         madara::{madara_node_with_accounts, MadaraRunner, StarknetWalletWithPrivateKey},
         scarb::{scarb_build, ArtifactsMap},
@@ -197,6 +198,7 @@ mod tests {
 
     #[rstest]
     #[tokio::test]
+    #[cfg(feature = "testing")]
     async fn test_can_read_nonce_returns_invalid_read_data(
         #[future]
         #[with("src/nonce/test_contracts")]
@@ -240,6 +242,7 @@ mod tests {
 
     #[rstest]
     #[tokio::test]
+    #[cfg(feature = "testing")]
     async fn test_can_read_nonce_returns_false(
         #[future]
         #[with("src/nonce/test_contracts")]
@@ -289,6 +292,7 @@ mod tests {
 
     #[rstest]
     #[tokio::test]
+    #[cfg(feature = "testing")]
     async fn test_can_read_nonce_only_owner(
         #[future]
         #[with("src/nonce/test_contracts")]
