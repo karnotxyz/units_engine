@@ -10,6 +10,10 @@ on:
         description: "Hash used to retrieve the artifact"
         required: true
         type: string
+      madara-binary-hash:
+        description: "Hash used to retrieve the artifact"
+        required: true
+        type: string
 
 jobs:
   test-with-coverage:
