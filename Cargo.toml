@@ -1,12 +1,11 @@
 [workspace.package]
 name = "units_engine"
-homepage = "https://finternetlab.io/"
+homepage = "<https://finternetlab.io/>"
 edition = "2021"
 authors = ["Karnot <https://github.com/karnotxyz>"]
-repository = "https://github.com/karnotxyz/units_engine"
+repository = "<https://github.com/karnotxyz/units_engine>"
 version = "0.1.0"
 license = "Apache-2.0"
-
 
 [workspace.metadata.attribution]
 includes-code-from = [
@@ -44,10 +43,12 @@ unsafe_code = "forbid"
 [workspace.lints.clippy]
 print_stdout = "warn"
 print_stderr = "warn"
-# todo: uncomment these & fix them
-# unwrap_used = "warn"
-# missing_docs = "warn"
 
+# todo: uncomment these & fix them
+
+# unwrap_used = "warn"
+
+# missing_docs = "warn"
 
 [workspace.dependencies]
 tokio = { version = "1.34", features = ["rt-multi-thread", "macros", "signal"] }
@@ -76,6 +77,7 @@ once_cell = "1.21"
 hex = "0.4.3"
 
 # Members
+
 units-telemetery = { path = "crates/telemetery" }
 units-utils = { path = "crates/utils" }
 units-handlers = { path = "crates/handlers" }
@@ -86,12 +88,14 @@ units-primitives = { path = "crates/primitives" }
 units-tests-utils = { path = "test-utils" }
 
 # Macros
+
 indoc = "2"
 proc-macro2 = "1.0.86"
 quote = "1.0.26"
 syn = { version = "2.0.39", features = ["full"] }
 
 # Instrumentation
+
 opentelemetry = { version = "0.25.0", features = ["metrics", "logs"] }
 opentelemetry_sdk = { version = "0.25.0", features = ["rt-tokio", "logs"] }
 opentelemetry-stdout = { version = "0.25.0" }
@@ -113,5 +117,6 @@ tracing-test = "0.2.5"
 tracing-opentelemetry = "0.26.0"
 
 # Tests
+
 rstest = "0.25"
 assert_matches = "1.5"
