@@ -1,10 +1,8 @@
 use jsonrpsee::core::{async_trait, RpcResult};
 use starknet::core::types::{
-    BlockHashAndNumber, BlockId, BroadcastedTransaction, ComputationResources, ContractClass,
-    DataAvailabilityResources, DataResources, EntryPointsByType, EventFilterWithPage, EventsChunk,
-    EventsPage, ExecutionResources, ExecutionResult, FeeEstimate, FeePayment, Felt,
-    FlattenedSierraClass, FunctionCall, InvokeTransactionReceipt, InvokeTransactionV1, MsgFromL1,
-    PriceUnit, ReceiptBlock, SimulationFlagForEstimateFee, SyncStatusType, Transaction,
+    BlockHashAndNumber, BlockId, BroadcastedTransaction, ContractClass, EntryPointsByType,
+    EventFilterWithPage, EventsPage, FeeEstimate, Felt, FlattenedSierraClass, FunctionCall,
+    InvokeTransactionV1, MsgFromL1, SimulationFlagForEstimateFee, SyncStatusType, Transaction,
     TransactionReceiptWithBlockInfo, TransactionStatus,
 };
 use starknet::providers::ProviderError;

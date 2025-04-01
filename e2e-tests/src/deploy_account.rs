@@ -1,26 +1,22 @@
 use std::sync::Arc;
 
-use anyhow::Result;
 use rstest::*;
 use starknet::{
-    accounts::{Account, AccountFactory, OpenZeppelinAccountFactory},
-    core::types::{BlockId, BlockTag, ExecutionResult, Felt},
-    providers::{jsonrpc::HttpTransport, JsonRpcClient, Provider},
-    signers::{LocalWallet, SigningKey},
+    accounts::Account,
+    core::types::{BlockId, BlockTag, Felt},
+    providers::Provider,
 };
-use units_utils::starknet::StarknetProvider;
-use url::Url;
-
 use units_tests_utils::{
     madara::{madara_node, MadaraRunner},
-    starknet::{deploy_dummy_account},
+    starknet::deploy_dummy_account,
 };
+use units_utils::starknet::StarknetProvider;
 
 #[tokio::test]
 #[rstest]
 async fn test_deploy_account_works(
     #[future] madara_node: (MadaraRunner, Arc<StarknetProvider>),
-) -> Result<()> {
+) -> anyhow::Result<()> {
     let (_runner, provider) = madara_node.await;
 
     // Deploy a dummy account and asserts on receipt

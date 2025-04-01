@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use starknet::{
-    core::types::{Felt, TransactionReceipt, TransactionReceiptWithBlockInfo},
+    core::types::{Felt, TransactionReceiptWithBlockInfo},
     providers::{Provider, ProviderError},
 };
 use units_utils::context::GlobalContext;
@@ -19,10 +19,9 @@ pub async fn get_transaction_receipt(
 
 #[cfg(test)]
 mod tests {
-    use std::{thread::sleep, time::Duration};
 
     use super::*;
-    use starknet::core::types::ExecutionResult;
+
     use units_tests_utils::{
         madara::MadaraRunner,
         starknet::{deploy_dummy_account, dummy_transfer},

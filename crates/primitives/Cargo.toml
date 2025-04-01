@@ -9,12 +9,12 @@ version.workspace = true
 homepage.workspace = true
 
 [dependencies]
+anyhow.workspace = true
+hex.workspace = true
 starknet.workspace = true
 starknet-crypto.workspace = true
-units-utils.workspace = true
 thiserror.workspace = true
-hex.workspace = true
-anyhow.workspace = true
+units-utils.workspace = true
 
 [dev-dependencies]
 rstest.workspace = true
@@ -23,4 +23,4 @@ units-tests-utils.workspace = true
 assert_matches.workspace = true
 
 [features]
-test-utils = []
+testing = []

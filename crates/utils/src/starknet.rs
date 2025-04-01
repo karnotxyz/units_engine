@@ -1,21 +1,19 @@
 use std::{
-    any,
     sync::Arc,
     time::{Duration, Instant},
 };
 
 use starknet::{
     accounts::{
-        Account, AccountFactory, ConnectedAccount, ExecutionEncoder, ExecutionEncoding,
-        OpenZeppelinAccountFactory, SingleOwnerAccount,
+        Account, AccountFactory, ExecutionEncoding, OpenZeppelinAccountFactory, SingleOwnerAccount,
     },
     contract::ContractFactory,
     core::types::{
         BlockId, BlockTag, BroadcastedInvokeTransactionV3, Call, ContractClass,
         DataAvailabilityMode, DeclareTransactionResult, DeployAccountTransactionResult,
-        ExecuteInvocation, ExecutionResult, FeeEstimate, Felt, FlattenedSierraClass,
-        InvokeTransactionResult, PriceUnit, ResourceBounds, ResourceBoundsMapping,
-        SimulatedTransaction, TransactionReceiptWithBlockInfo, TransactionTrace,
+        ExecuteInvocation, Felt, FlattenedSierraClass, InvokeTransactionResult, ResourceBounds,
+        ResourceBoundsMapping, SimulatedTransaction, TransactionReceiptWithBlockInfo,
+        TransactionTrace,
     },
     providers::{jsonrpc::HttpTransport, JsonRpcClient, Provider, ProviderError},
     signers::{LocalWallet, SigningKey},
@@ -135,6 +133,7 @@ pub async fn deploy_account(
         .await?)
 }
 
+#[allow(async_fn_in_trait)]
 pub trait BuildAccount: WaitForReceipt {
     async fn build_account(
         &self,
@@ -147,7 +146,7 @@ pub trait BuildAccount: WaitForReceipt {
         provider: Arc<StarknetProvider>,
         private_key: Felt,
     ) -> anyhow::Result<Arc<StarknetWallet>> {
-        let receipt = self.wait_for_receipt(provider.clone(), None).await?;
+        self.wait_for_receipt(provider.clone(), None).await?;
         self.build_account(provider.clone(), private_key).await
     }
 }
@@ -207,6 +206,7 @@ pub async fn deploy_contract(
     Ok((invoke_result, deployed_address))
 }
 
+#[allow(async_fn_in_trait)]
 pub trait WaitForReceipt {
     async fn wait_for_receipt(
         &self,
@@ -246,7 +246,7 @@ pub async fn build_invoke_simulate_transaction(
         sender_address: account_address,
         calldata: encode_calls(&calls, ExecutionEncoding::New),
         signature: vec![],
-        nonce: nonce,
+        nonce,
         resource_bounds: ResourceBoundsMapping {
             l1_gas: ResourceBounds {
                 max_amount: 0,
@@ -312,7 +312,8 @@ mod tests {
     use starknet::{
         accounts::Account,
         core::types::{
-            BlockTag, CallType, EntryPointType, InvokeTransactionTrace, RevertedInvocation,
+            BlockTag, ExecutionResult, FeeEstimate, InvokeTransactionTrace, PriceUnit,
+            RevertedInvocation,
         },
         macros::selector,
     };

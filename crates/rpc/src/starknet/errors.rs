@@ -173,7 +173,7 @@ impl From<ProviderError> for StarknetRpcApiError {
                 StarknetError::TransactionExecutionError(err) => {
                     StarknetRpcApiError::TxnExecutionError {
                         tx_index: err.transaction_index as usize,
-                        error: err.execution_error.into(),
+                        error: err.execution_error,
                     }
                 }
                 StarknetError::DuplicateTx => StarknetRpcApiError::DuplicateTxn,

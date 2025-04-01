@@ -22,7 +22,8 @@ When a user attempts to read either the nonce or class hash of a contract, the R
 
 ### Example Implementation
 
-Here's an example of how to implement nonce read access control in Cairo (Note: This is a conceptual example for illustration purposes only and has not been tested on-chain):
+Here's an example of how to implement nonce read access control in Cairo
+(Note: This is a conceptual example for illustration purposes only and has not been tested on-chain):
 
 ```cairo
 #[starknet::interface]
@@ -47,4 +48,6 @@ mod MyContract {
 
 ### Backward Compatibility
 
-For contracts that don't implement these functions, the RPC will maintain the current behavior where reading nonce and class hash is allowed for all users. This ensures compatibility with existing contracts on Starknet while allowing new contracts to implement more granular access controls.
+For contracts that don't implement these functions, the RPC will maintain the current behavior where reading nonce and class hash
+is allowed for all users. This ensures compatibility with existing contracts on Starknet while allowing new contracts to implement
+more granular access controls.

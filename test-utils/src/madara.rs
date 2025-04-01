@@ -1,3 +1,5 @@
+#![allow(clippy::print_stdout, clippy::print_stderr)]
+
 use crate::port::{get_free_port, PortAllocation};
 use crate::starknet::PREDEPLOYED_ACCOUNT_CLASS_HASH;
 use crate::workspace::WORKSPACE_ROOT;
@@ -78,19 +80,15 @@ impl MadaraRunner {
         // Spawn threads to handle stdout and stderr
         thread::spawn(move || {
             let reader = BufReader::new(stdout);
-            for line in reader.lines() {
-                if let Ok(line) = line {
-                    println!("[MADARA] {}", line);
-                }
+            for line in reader.lines().map_while(Result::ok) {
+                println!("[MADARA] {}", line);
             }
         });
 
         thread::spawn(move || {
             let reader = BufReader::new(stderr);
-            for line in reader.lines() {
-                if let Ok(line) = line {
-                    eprintln!("[MADARA] {}", line);
-                }
+            for line in reader.lines().map_while(Result::ok) {
+                eprintln!("[MADARA] {}", line);
             }
         });
 

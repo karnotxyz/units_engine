@@ -22,7 +22,7 @@ impl StarknetWriteRpcApiV0_7_1Server for RpcContext {
     /// * `declare_transaction_result` - the result of the declare transaction
     async fn add_declare_transaction(
         &self,
-        declare_transaction: BroadcastedDeclareTransaction,
+        _declare_transaction: BroadcastedDeclareTransaction,
     ) -> RpcResult<DeclareTransactionResult> {
         Ok(DeclareTransactionResult {
             transaction_hash: Felt::from(0),
@@ -65,7 +65,7 @@ impl StarknetWriteRpcApiV0_7_1Server for RpcContext {
     /// * `transaction_hash` - transaction hash corresponding to the invocation
     async fn add_invoke_transaction(
         &self,
-        invoke_transaction: BroadcastedInvokeTransaction,
+        _invoke_transaction: BroadcastedInvokeTransaction,
     ) -> RpcResult<InvokeTransactionResult> {
         Ok(InvokeTransactionResult {
             transaction_hash: Felt::from(0),

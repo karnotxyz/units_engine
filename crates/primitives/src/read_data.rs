@@ -1,4 +1,4 @@
-use std::{sync::Arc, time::Instant};
+use std::sync::Arc;
 
 use starknet::{
     core::types::{BlockId, BlockTag, Felt, FunctionCall, MaybePendingBlockWithTxs},
@@ -124,14 +124,14 @@ impl ReadValidity {
 impl ReadData {
     pub fn hash(&self) -> Felt {
         let mut hasher = starknet_crypto::PoseidonHasher::new();
-        hasher.update(self.contract_address.into());
+        hasher.update(self.contract_address);
         // safe because we know the string is valid
         hasher.update(Felt::from_hex_unchecked(
             hex::encode("read_string").as_str(),
         ));
         hasher.update(self.read_type.hash());
         hasher.update(self.read_validity.hash());
-        hasher.update(self.chain_id.into());
+        hasher.update(self.chain_id);
         hasher.update(self.version.hash());
         hasher.finalize()
     }
@@ -218,7 +218,7 @@ impl SignedReadData {
 // Added this here instead of in test-utils because importing primitives in test-utils
 // causes a circular dependency with an error
 // the crate `units_primitives` is compiled multiple times, possibly with different configurations
-#[cfg(any(test, feature = "test-utils"))]
+#[cfg(any(test, feature = "testing"))]
 pub async fn sign_read_data(
     read_data: ReadData,
     private_key: Felt,
@@ -246,7 +246,10 @@ mod tests {
         accounts::Account,
         core::types::{BlockWithTxHashes, MaybePendingBlockWithTxHashes},
     };
-    use std::{future, sync::Arc, time::Duration};
+    use std::{
+        sync::Arc,
+        time::{Duration, Instant},
+    };
     use units_tests_utils::madara::{
         madara_node_with_accounts, MadaraRunner, StarknetWalletWithPrivateKey,
     };

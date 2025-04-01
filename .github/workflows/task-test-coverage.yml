@@ -1,0 +1,73 @@
+name: Task - Integration Tests and Coverage
+
+# This workflow runs integration tests and generates code coverage
+# reports for the Units Engine codebase
+on:
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      units-engine-binary-hash:
+        description: "Hash used to retrieve the artifact"
+        required: true
+        type: string
+      madara-binary-hash:
+        description: "Hash used to retrieve the artifact"
+        required: true
+        type: string
+
+jobs:
+  test-with-coverage:
+    permissions:
+      pull-requests: write
+    # TODO: shift to ubuntu eventually
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Setup the environment with all necessary dependencies
+      - uses: ./.github/actions/load-env
+
+      # Setup the rust environment
+      - uses: ./.github/actions/setup
+        with:
+          # Uses the dev cache key as we are using the --profile dev later
+          cache-key: COVERAGE
+          rust-version: ${{ env.BUILD_RUST_VERSION }}
+          scarb-version: ${{ env.BUILD_SCARB_VERSION }}
+          install-mold: true
+          install-scarb: true
+
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
+      - name: Download Units Engine binary
+        uses: actions/download-artifact@v4
+        with:
+          name: units-engine-binary-${{ inputs.units-engine-binary-hash }}
+          path: target/release/
+      - name: Download Madara binary
+        uses: actions/download-artifact@v4
+        with:
+          name: madara-binary-${{ inputs.madara-binary-hash }}
+          path: test-utils/build/
+      - run: chmod +x test-utils/build/madara
+
+      - name: Run tests with coverage
+        run: |
+          export COVERAGE_BIN=$(realpath target/release/units_engine)
+          rm -f target/units-engine-* lcov.info
+
+          # run tests for units engine crates
+          cargo llvm-cov --workspace --all-features \
+              --release \
+              --lcov \
+              --output-path lcov.info \
+              --no-fail-fast
+
+      # TODO: Uncomment this when we add it to Coveralls
+      # - name: Upload coverage to Coveralls
+      #   uses: coverallsapp/github-action@v2
+      #   with:
+      #     parallel-finished: true
+      #     files: lcov.info
+      #     debug: true

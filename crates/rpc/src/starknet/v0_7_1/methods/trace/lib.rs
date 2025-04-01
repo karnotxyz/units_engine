@@ -2,7 +2,7 @@ use crate::{starknet::v0_7_1::StarknetTraceRpcApiV0_7_1Server, RpcContext};
 use jsonrpsee::core::{async_trait, RpcResult};
 use starknet::core::types::{
     BlockId, BroadcastedTransaction, ComputationResources, DataAvailabilityResources,
-    DataResources, ExecuteInvocation, ExecutionResources, Felt, FunctionCall, FunctionInvocation,
+    DataResources, ExecuteInvocation, ExecutionResources, Felt, FunctionInvocation,
     InvokeTransactionTrace, SimulatedTransaction, SimulationFlag, TransactionTrace,
 };
 
@@ -10,14 +10,14 @@ use starknet::core::types::{
 impl StarknetTraceRpcApiV0_7_1Server for RpcContext {
     async fn simulate_transactions(
         &self,
-        block_id: BlockId,
-        transactions: Vec<BroadcastedTransaction>,
-        simulation_flags: Vec<SimulationFlag>,
+        _block_id: BlockId,
+        _transactions: Vec<BroadcastedTransaction>,
+        _simulation_flags: Vec<SimulationFlag>,
     ) -> RpcResult<Vec<SimulatedTransaction>> {
         Ok(vec![])
     }
 
-    async fn trace_transaction(&self, transaction_hash: Felt) -> RpcResult<TransactionTrace> {
+    async fn trace_transaction(&self, _transaction_hash: Felt) -> RpcResult<TransactionTrace> {
         Ok(TransactionTrace::Invoke(InvokeTransactionTrace {
             validate_invocation: None,
             execute_invocation: ExecuteInvocation::Success(FunctionInvocation {

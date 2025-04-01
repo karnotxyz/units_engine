@@ -1,0 +1,70 @@
+name: Task - Build all
+
+# This workflow builds the main madara binary so that it can be used during tests
+# It also caches the build artifacts for other workflows to use
+on:
+  workflow_dispatch:
+  workflow_call:
+    outputs:
+      madara-binary-hash:
+        description: "Hash of the built madara binary"
+        value: ${{ jobs.build-binaries.outputs.madara-binary-hash }}
+
+jobs:
+  build-binaries:
+    permissions:
+      pull-requests: write
+    runs-on: ubuntu-latest
+    outputs:
+      madara-binary-hash: ${{ steps.generate-binary-hash.outputs.madara-hash }}
+
+    steps:
+      - uses: actions/checkout@v4
+      # Setup the environment with all necessary dependencies
+      - uses: ./.github/actions/load-env
+
+      - uses: ./.github/actions/setup
+        with:
+          cache-key: ${{ env.BUILD_RUST_CACHE_KEY }}
+          rust-version: ${{ env.BUILD_RUST_VERSION }}
+          scarb-version: ${{ env.BUILD_SCARB_VERSION }}
+          install-mold: true
+
+      # Build madara
+      # TODO: Remove this once we have a proper binary releases
+      # This binary is from commit 2267214bcb2142b6eddf990105008f9e467425e8
+      - name: Download binary
+        run: |
+          mkdir -p target/release && wget https://units-engine-ci.s3.us-east-1.amazonaws.com/madara -O target/release/madara
+
+      # Generate hash for the madara binary
+      - name: Generate binary hashes
+        id: generate-binary-hash
+        run: |
+          # Get current Unix timestamp for uniqueness
+          TIMESTAMP=$(date +%s)
+
+          # Path to the compiled madara binary
+          BINARY_PATH=./target/release/madara
+          HASH=$(echo "$TIMESTAMP" | cat - $BINARY_PATH | sha256sum | awk '{ print $1 }')
+          echo "madara-hash=$HASH" >> $GITHUB_OUTPUT
+          echo "Hash of the madara is: $HASH (with timestamp: $TIMESTAMP)"
+
+      # Upload madara binary as artifact
+      - name: Upload madara binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: madara-binary-${{ steps.generate-binary-hash.outputs.madara-hash }}
+          path: target/release/madara
+          retention-days: 1
+
+      # Keep the cache operations for runners of the same type
+      - name: Cache madara binary
+        uses: actions/cache/save@v4
+        with:
+          path: target/release/madara
+          key: ${{ runner.os }}-${{ env.BUILD_ACTION_CACHE_PREFIX }}-bin-${{ steps.generate-binary-hash.outputs.madara-hash }}
+
+      - name: Display hashes
+        run: |
+          echo "madara-binary-hash: ${{ steps.generate-binary-hash.outputs.madara-hash }}"

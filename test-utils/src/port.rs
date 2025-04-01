@@ -38,7 +38,7 @@ pub fn get_free_port() -> Result<PortAllocation> {
         }
 
         // Try to bind to the port to check if it's available
-        if let Ok(_) = TcpListener::bind(SocketAddr::from(([127, 0, 0, 1], port))) {
+        if TcpListener::bind(SocketAddr::from(([127, 0, 0, 1], port))).is_ok() {
             ports.insert(port);
             return Ok(PortAllocation { port });
         }

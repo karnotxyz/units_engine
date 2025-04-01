@@ -1,0 +1,70 @@
+name: Task - Build all
+
+# This workflow builds the main Units Engine binary
+# It also caches the build artifacts for other workflows to use
+on:
+  workflow_dispatch:
+  workflow_call:
+    outputs:
+      units-engine-binary-hash:
+        description: "Hash of the built units engine binary"
+        value: ${{ jobs.build-binaries.outputs.units-engine-binary-hash }}
+
+jobs:
+  build-binaries:
+    permissions:
+      pull-requests: write
+    runs-on: ubuntu-latest
+    outputs:
+      units-engine-binary-hash: ${{ steps.generate-binary-hash.outputs.units-engine-hash }}
+
+    steps:
+      - uses: actions/checkout@v4
+      # Setup the environment with all necessary dependencies
+      - uses: ./.github/actions/load-env
+
+      - uses: ./.github/actions/setup
+        with:
+          cache-key: ${{ env.BUILD_RUST_CACHE_KEY }}
+          rust-version: ${{ env.BUILD_RUST_VERSION }}
+          scarb-version: ${{ env.BUILD_SCARB_VERSION }}
+          install-mold: true
+
+      # Build Units Engine
+      - name: Cargo build binaries
+        run: |
+          export GIT_COMMIT_HASH=$GITHUB_SHA
+          # We build the whole workspace to ensure nothing broke.
+          cargo build --release --workspace
+
+      # Generate hash for the Units Engine binary
+      - name: Generate binary hashes
+        id: generate-binary-hash
+        run: |
+          # Get current Unix timestamp for uniqueness
+          TIMESTAMP=$(date +%s)
+
+          # Path to the compiled Units Engine binary
+          BINARY_PATH=./target/release/units_engine
+          HASH=$(echo "$TIMESTAMP" | cat - $BINARY_PATH | sha256sum | awk '{ print $1 }')
+          echo "units-engine-hash=$HASH" >> $GITHUB_OUTPUT
+          echo "Hash of the units engine is: $HASH (with timestamp: $TIMESTAMP)"
+
+      # Upload Units Engine binary as artifact
+      - name: Upload Units Engine binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: units-engine-binary-${{ steps.generate-binary-hash.outputs.units-engine-hash }}
+          path: target/release/units_engine
+          retention-days: 1
+
+      # Keep the cache operations for runners of the same type
+      - name: Cache Units Engine binary
+        uses: actions/cache/save@v4
+        with:
+          path: target/release/units_engine
+          key: ${{ runner.os }}-${{ env.BUILD_ACTION_CACHE_PREFIX }}-bin-${{ steps.generate-binary-hash.outputs.units-engine-hash }}
+
+      - name: Display hashes
+        run: |
+          echo "units-engine-binary-hash: ${{ steps.generate-binary-hash.outputs.units-engine-hash }}"

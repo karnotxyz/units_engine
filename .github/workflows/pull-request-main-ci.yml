@@ -1,0 +1,47 @@
+name: Workflow - Pull Request Main
+
+# This workflow orchestrates all checks and tests for pull requests
+# It uses reusable workflows to keep the configuration DRY
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+# Use concurrency to prevent multiple workflows running on the same PR
+concurrency:
+  group: pr-checks-${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  # Build Units Engine binary
+  build-units-engine:
+    uses: ./.github/workflows/task-build-units-engine.yml
+
+  # Build Madara binary
+  build-madara:
+    uses: ./.github/workflows/task-build-madara.yml
+
+  # Run linters for code style and quality
+  lint-code-style:
+    uses: ./.github/workflows/task-lint-code-style.yml
+
+  # Run Rust-specific linters
+  lint-cargo:
+    uses: ./.github/workflows/task-lint-cargo.yml
+
+  # Run Units Engine tests and generate coverage reports
+  test-units-engine:
+    needs: [build-units-engine, build-madara]
+    uses: ./.github/workflows/task-test-coverage.yml
+    with:
+      units-engine-binary-hash: ${{ needs.build-units-engine.outputs.units-engine-binary-hash }}
+      madara-binary-hash: ${{ needs.build-madara.outputs.madara-binary-hash }}
+    secrets: inherit
