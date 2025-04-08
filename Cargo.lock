@@ -3693,6 +3693,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "assert_matches",
+ "futures",
  "rstest",
  "serde_json",
  "starknet",
@@ -3789,6 +3790,7 @@ dependencies = [
  "futures",
  "rstest",
  "starknet",
+ "thiserror 2.0.12",
  "tokio",
  "tracing",
  "units-tests-utils",

@@ -5,7 +5,7 @@ use starknet::core::types::{
     ContractClass, DeclareTransactionResult, DeployAccountTransactionResult, EventFilterWithPage,
     EventsPage, FeeEstimate, Felt, FunctionCall, InvokeTransactionResult, MsgFromL1,
     SimulatedTransaction, SimulationFlag, SimulationFlagForEstimateFee, SyncStatusType,
-    Transaction, TransactionReceiptWithBlockInfo, TransactionStatus, TransactionTrace,
+    Transaction, TransactionStatus, TransactionTrace,
 };
 use units_proc_macros::versioned_rpc;
 
@@ -110,13 +110,6 @@ pub trait StarknetReadRpcApi {
     /// Returns the information about a transaction by transaction hash.
     #[method(name = "getTransactionByHash", and_versions = ["V0_8_0"])]
     fn get_transaction_by_hash(&self, transaction_hash: Felt) -> RpcResult<Transaction>;
-
-    /// Returns the receipt of a transaction by transaction hash.
-    #[method(name = "getTransactionReceipt", and_versions = ["V0_8_0"])]
-    async fn get_transaction_receipt(
-        &self,
-        transaction_hash: Felt,
-    ) -> RpcResult<TransactionReceiptWithBlockInfo>;
 
     /// Gets the Transaction Status, Including Mempool Status and Execution Details
     #[method(name = "getTransactionStatus", and_versions = ["V0_8_0"])]

@@ -3,7 +3,7 @@ use starknet::core::types::{
     BlockHashAndNumber, BlockId, BroadcastedTransaction, ContractClass, EntryPointsByType,
     EventFilterWithPage, EventsPage, FeeEstimate, Felt, FlattenedSierraClass, FunctionCall,
     InvokeTransactionV1, MsgFromL1, SimulationFlagForEstimateFee, SyncStatusType, Transaction,
-    TransactionReceiptWithBlockInfo, TransactionStatus,
+    TransactionStatus,
 };
 use starknet::providers::ProviderError;
 
@@ -143,20 +143,6 @@ impl StarknetReadRpcApiV0_7_1Server for RpcContext {
                 nonce: Felt::from(0),
             }),
         ))
-    }
-
-    async fn get_transaction_receipt(
-        &self,
-        _transaction_hash: Felt,
-    ) -> RpcResult<TransactionReceiptWithBlockInfo> {
-        Ok(
-            units_handlers::transaction_receipt::get_transaction_receipt(
-                self.global_ctx.clone(),
-                _transaction_hash,
-            )
-            .await
-            .map_err(StarknetRpcApiError::from)?,
-        )
     }
 
     fn get_transaction_status(&self, _transaction_hash: Felt) -> RpcResult<TransactionStatus> {

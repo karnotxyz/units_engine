@@ -8,16 +8,22 @@ use starknet::{
         Account, AccountFactory, ExecutionEncoding, OpenZeppelinAccountFactory, SingleOwnerAccount,
     },
     contract::ContractFactory,
-    core::types::{
-        BlockId, BlockTag, BroadcastedInvokeTransactionV3, Call, ContractClass,
-        DataAvailabilityMode, DeclareTransactionResult, DeployAccountTransactionResult,
-        ExecuteInvocation, Felt, FlattenedSierraClass, InvokeTransactionResult, ResourceBounds,
-        ResourceBoundsMapping, SimulatedTransaction, TransactionReceiptWithBlockInfo,
-        TransactionTrace,
+    core::{
+        crypto::compute_hash_on_elements,
+        types::{
+            BlockId, BlockTag, BroadcastedInvokeTransaction, BroadcastedInvokeTransactionV3,
+            BroadcastedTransaction, Call, ContractClass, DataAvailabilityMode, DeclareTransaction,
+            DeclareTransactionResult, DeployAccountTransaction, DeployAccountTransactionResult,
+            ExecuteInvocation, Felt, FlattenedSierraClass, FunctionInvocation, InvokeTransaction,
+            InvokeTransactionResult, NonZeroFelt, OrderedEvent, ResourceBounds,
+            ResourceBoundsMapping, SimulatedTransaction, SimulationFlag, Transaction,
+            TransactionReceiptWithBlockInfo, TransactionTrace,
+        },
     },
     providers::{jsonrpc::HttpTransport, JsonRpcClient, Provider, ProviderError},
     signers::{LocalWallet, SigningKey},
 };
+use tracing::event;
 
 pub type StarknetProvider = JsonRpcClient<HttpTransport>;
 pub type StarknetWallet = SingleOwnerAccount<Arc<StarknetProvider>, Arc<LocalWallet>>;
@@ -270,6 +276,50 @@ pub async fn build_invoke_simulate_transaction(
     })
 }
 
+#[derive(Debug, thiserror::Error)]
+pub enum SimulationError {
+    #[error("Failed to read execution result")]
+    FailedExecutionResultRead(anyhow::Error),
+    #[error("Empty boolean read result")]
+    EmptyBooleanReadResult,
+    #[error("Starknet error: {0}")]
+    StarknetError(#[from] ProviderError),
+}
+
+pub async fn simulate_boolean_read(
+    calls: Vec<Call>,
+    account_address: Felt,
+    provider: Arc<StarknetProvider>,
+) -> Result<bool, SimulationError> {
+    let simulation =
+        build_invoke_simulate_transaction(calls, account_address, provider.clone()).await?;
+
+    let simulated_txn = provider
+        .simulate_transaction(
+            BlockId::Tag(BlockTag::Pending),
+            BroadcastedTransaction::Invoke(BroadcastedInvokeTransaction::V3(simulation)),
+            vec![SimulationFlag::SkipFeeCharge, SimulationFlag::SkipValidate],
+        )
+        .await?;
+
+    match simulated_txn
+        .get_execution_result()
+        .map_err(SimulationError::FailedExecutionResultRead)?
+    {
+        ExecuteInvocation::Success(function_invocation) => {
+            let can_read = function_invocation
+                .result
+                .get(2)
+                .ok_or(SimulationError::EmptyBooleanReadResult)?;
+            if can_read != &Felt::ONE {
+                return Ok(false);
+            }
+            Ok(true)
+        }
+        ExecuteInvocation::Reverted(_) => Ok(false),
+    }
+}
+
 // Taken from https://github.com/xJonathanLEI/starknet-rs/blob/1af6c26d33f404e94e53a81d0fe875dfddfba939/starknet-accounts/src/single_owner.rs#L140
 fn encode_calls(calls: &[Call], encoding: ExecutionEncoding) -> Vec<Felt> {
     let mut execute_calldata: Vec<Felt> = vec![calls.len().into()];
@@ -303,6 +353,108 @@ fn encode_calls(calls: &[Call], encoding: ExecutionEncoding) -> Vec<Felt> {
     }
 
     execute_calldata
+}
+
+#[derive(Debug, Clone)]
+pub struct OrderedEventWithContractAddress {
+    pub contract_address: Felt,
+    pub event: OrderedEvent,
+}
+
+pub fn get_events_from_function_invocation(
+    invocation: FunctionInvocation,
+    mut events: Vec<OrderedEventWithContractAddress>,
+    sorted: bool,
+) -> Vec<OrderedEventWithContractAddress> {
+    for call in invocation.calls {
+        events = get_events_from_function_invocation(call, events, false);
+    }
+    events.extend(
+        invocation
+            .events
+            .into_iter()
+            .map(|event| OrderedEventWithContractAddress {
+                contract_address: invocation.contract_address,
+                event,
+            }),
+    );
+    if sorted {
+        events.sort_by_key(|event| event.event.order);
+    }
+    events
+}
+
+// Taken from https://github.com/apoorvsadana/starknet-rs/blob/4a2eacc2f8139d9a8138e549c85df1a8b546098a/starknet-accounts/src/factory/mod.rs#L1088
+pub fn calculate_contract_address(
+    salt: Felt,
+    class_hash: Felt,
+    constructor_calldata: &[Felt],
+) -> Felt {
+    /// Cairo string for `STARKNET_CONTRACT_ADDRESS`
+    const PREFIX_CONTRACT_ADDRESS: Felt = Felt::from_raw([
+        533439743893157637,
+        8635008616843941496,
+        17289941567720117366,
+        3829237882463328880,
+    ]);
+    // 2 ** 251 - 256
+    const ADDR_BOUND: NonZeroFelt = NonZeroFelt::from_raw([
+        576459263475590224,
+        18446744073709255680,
+        160989183,
+        18446743986131443745,
+    ]);
+
+    compute_hash_on_elements(&[
+        PREFIX_CONTRACT_ADDRESS,
+        Felt::ZERO,
+        salt,
+        class_hash,
+        compute_hash_on_elements(constructor_calldata),
+    ])
+    .mod_floor(&ADDR_BOUND)
+}
+
+pub trait GetSenderAddress {
+    fn get_sender_address(&self) -> Option<Felt>;
+}
+
+impl GetSenderAddress for Transaction {
+    fn get_sender_address(&self) -> Option<Felt> {
+        match self {
+            Transaction::Invoke(invoke_txn) => match invoke_txn {
+                InvokeTransaction::V0(invoke_txn_v0) => Some(invoke_txn_v0.contract_address),
+                InvokeTransaction::V1(invoke_txn_v1) => Some(invoke_txn_v1.sender_address),
+                InvokeTransaction::V3(invoke_txn_v3) => Some(invoke_txn_v3.sender_address),
+            },
+            Transaction::Declare(declare_txn) => match declare_txn {
+                DeclareTransaction::V0(declare_txn_v0) => Some(declare_txn_v0.sender_address),
+                DeclareTransaction::V1(declare_txn_v1) => Some(declare_txn_v1.sender_address),
+                DeclareTransaction::V2(declare_txn_v2) => Some(declare_txn_v2.sender_address),
+                DeclareTransaction::V3(declare_txn_v3) => Some(declare_txn_v3.sender_address),
+            },
+            Transaction::DeployAccount(deploy_account_txn) => match deploy_account_txn {
+                DeployAccountTransaction::V1(deploy_account_txn_v1) => {
+                    Some(calculate_contract_address(
+                        deploy_account_txn_v1.contract_address_salt,
+                        deploy_account_txn_v1.class_hash,
+                        &deploy_account_txn_v1.constructor_calldata,
+                    ))
+                }
+                DeployAccountTransaction::V3(deploy_account_txn_v3) => {
+                    Some(calculate_contract_address(
+                        deploy_account_txn_v3.contract_address_salt,
+                        deploy_account_txn_v3.class_hash,
+                        &deploy_account_txn_v3.constructor_calldata,
+                    ))
+                }
+            },
+            // Deploy transactions are deprecated
+            Transaction::Deploy(_) => None,
+            // L1 handler transactions don't have a sender address (maybe we can handle showing L1 from address later)
+            Transaction::L1Handler(_) => None,
+        }
+    }
 }
 
 #[cfg(test)]
