@@ -179,7 +179,9 @@ mod tests {
         sign_read_data, ReadData, ReadDataVersion, ReadType, ReadValidity,
     };
     use units_tests_utils::{
-        madara::{madara_node_with_accounts, MadaraRunner, StarknetWalletWithPrivateKey},
+        madara::{
+            madara_node, madara_node_with_accounts, MadaraRunner, StarknetWalletWithPrivateKey,
+        },
         scarb::{scarb_build, ArtifactsMap},
     };
     use units_utils::starknet::WaitForReceipt;
@@ -285,6 +287,8 @@ mod tests {
             Vec<StarknetWalletWithPrivateKey>,
         ),
     ) {
+        use starknet::core::types::ExecutionResult;
+
         let (_runner, provider, accounts_with_private_key) = madara_node_with_accounts.await;
         let account_with_private_key = &accounts_with_private_key[0];
 
@@ -341,6 +345,9 @@ mod tests {
             TransactionReceipt::Invoke(invoke_receipt) => {
                 assert_eq!(invoke_receipt.events.len(), 1);
                 assert_eq!(invoke_receipt.events[0].data[0], Felt::from(1)); // TestEvent data
+                assert_eq!(invoke_receipt.events[0].keys[0], selector!("TestEvent"));
+                assert_matches!(invoke_receipt.execution_result, ExecutionResult::Succeeded { .. });
+                assert_eq!(invoke_receipt.transaction_hash, result.transaction_hash);
             }
         );
     }
@@ -454,6 +461,7 @@ mod tests {
             TransactionReceipt::Invoke(invoke_receipt) => {
                 assert_eq!(invoke_receipt.events.len(), 1);
                 assert_eq!(invoke_receipt.events[0].data[0], Felt::from(1)); // TestEventOne data
+                assert_eq!(invoke_receipt.events[0].keys[0], selector!("TestEventOne"));
             }
         );
 
@@ -489,6 +497,7 @@ mod tests {
             TransactionReceipt::Invoke(invoke_receipt) => {
                 assert_eq!(invoke_receipt.events.len(), 1);
                 assert_eq!(invoke_receipt.events[0].data[0], Felt::from(1)); // TestEventOne data
+                assert_eq!(invoke_receipt.events[0].keys[0], selector!("TestEventOne"));
             }
         );
 
@@ -527,7 +536,9 @@ mod tests {
             TransactionReceipt::Invoke(invoke_receipt) => {
                 assert_eq!(invoke_receipt.events.len(), 2);
                 assert_eq!(invoke_receipt.events[0].data[0], Felt::from(1)); // TestEventOne data
+                assert_eq!(invoke_receipt.events[0].keys[0], selector!("TestEventOne"));
                 assert_eq!(invoke_receipt.events[1].data[0], Felt::from(2)); // TestEventTwo data
+                assert_eq!(invoke_receipt.events[1].keys[0], selector!("TestEventTwo"));
             }
         );
     }
@@ -620,6 +631,8 @@ mod tests {
             Vec<StarknetWalletWithPrivateKey>,
         ),
     ) {
+        use starknet::core::types::ExecutionResult;
+
         let (_runner, provider, accounts_with_private_key) = madara_node_with_accounts.await;
         let account_with_private_key = &accounts_with_private_key[0];
 
@@ -659,6 +672,62 @@ mod tests {
         assert_matches!(receipt.receipt,
             TransactionReceipt::Declare(declare_receipt) => {
                 assert_eq!(declare_receipt.events.len(), 0);
+                assert_matches!(declare_receipt.execution_result, ExecutionResult::Succeeded { .. });
+                assert_eq!(declare_receipt.transaction_hash, declare_result.transaction_hash);
+            }
+        );
+    }
+
+    #[rstest]
+    #[tokio::test]
+    #[cfg(feature = "testing")]
+    async fn test_get_receipt_deploy_account_transaction(
+        #[future] madara_node: (MadaraRunner, Arc<StarknetProvider>),
+    ) {
+        use units_tests_utils::starknet::PREDEPLOYED_ACCOUNT_CLASS_HASH;
+        use units_utils::starknet::deploy_account;
+
+        let (_runner, provider) = madara_node.await;
+
+        let private_key = Felt::ONE;
+        let deploy_account_result = deploy_account(
+            provider.clone(),
+            private_key,
+            Felt::from_hex_unchecked(PREDEPLOYED_ACCOUNT_CLASS_HASH),
+        )
+        .await
+        .unwrap();
+
+        deploy_account_result
+            .wait_for_receipt(provider.clone(), None)
+            .await
+            .unwrap();
+
+        // Get receipt with proper signature
+        let global_ctx = Arc::new(GlobalContext::new_with_provider(provider.clone()));
+        let read_data = ReadData::new(
+            deploy_account_result.contract_address,
+            ReadType::TransactionReceipt(deploy_account_result.transaction_hash),
+            ReadValidity::Block(1000000),
+            provider.chain_id().await.unwrap(),
+            ReadDataVersion::ONE,
+        );
+        let signed_read_data = sign_read_data(read_data, private_key).await.unwrap();
+
+        let receipt = get_transaction_receipt(
+            global_ctx,
+            deploy_account_result.transaction_hash,
+            Some(signed_read_data),
+        )
+        .await
+        .unwrap();
+
+        // Declare transaction should have no events
+        assert_matches!(receipt.receipt,
+            TransactionReceipt::DeployAccount(deploy_account_receipt) => {
+                assert_eq!(deploy_account_receipt.events.len(), 1);
+                // OwnerAdded event
+                assert_eq!(deploy_account_receipt.events[0].keys[0], selector!("OwnerAdded"));
             }
         );
     }
