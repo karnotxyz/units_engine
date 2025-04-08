@@ -23,7 +23,6 @@ use starknet::{
     providers::{jsonrpc::HttpTransport, JsonRpcClient, Provider, ProviderError},
     signers::{LocalWallet, SigningKey},
 };
-use tracing::event;
 
 pub type StarknetProvider = JsonRpcClient<HttpTransport>;
 pub type StarknetWallet = SingleOwnerAccount<Arc<StarknetProvider>, Arc<LocalWallet>>;

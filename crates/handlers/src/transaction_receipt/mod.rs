@@ -1,13 +1,8 @@
-use std::{
-    collections::HashMap,
-    sync::{Arc, Mutex},
-};
+use std::sync::Arc;
 
 use starknet::{
     core::types::{
-        BlockId, BlockTag, BroadcastedInvokeTransaction, BroadcastedTransaction, Call,
-        DeclareTransaction, DeployAccountTransaction, ExecuteInvocation, Felt, FunctionCall,
-        InvokeTransaction, SimulationFlag, StarknetError, Transaction, TransactionReceipt,
+        BlockId, BlockTag, Call, ExecuteInvocation, Felt, StarknetError, TransactionReceipt,
         TransactionReceiptWithBlockInfo, TransactionTrace,
     },
     macros::selector,
@@ -17,10 +12,8 @@ use units_primitives::read_data::{ReadDataError, SignedReadData};
 use units_utils::{
     context::GlobalContext,
     starknet::{
-        build_invoke_simulate_transaction, calculate_contract_address,
-        contract_address_has_selector, contract_class_has_selector,
-        get_events_from_function_invocation, simulate_boolean_read, GetSenderAddress,
-        SimulationError,
+        contract_address_has_selector, get_events_from_function_invocation, simulate_boolean_read,
+        GetSenderAddress, SimulationError,
     },
 };
 
@@ -116,7 +109,7 @@ pub async fn get_transaction_receipt(
             return Err(TransactionReceiptError::InvalidTransactionType);
         }
     };
-    let mut traced_events = match function_invocation {
+    let traced_events = match function_invocation {
         Some(invocation) => get_events_from_function_invocation(invocation, vec![], true),
         None => vec![],
     };
@@ -130,7 +123,7 @@ pub async fn get_transaction_receipt(
             CAN_READ_EVENT_SELECTOR,
         )
         .await
-        .map_err(|e| SimulationError::StarknetError(e.into()))?;
+        .map_err(SimulationError::StarknetError)?;
         let can_read = if has_selector {
             simulate_boolean_read(
                 vec![Call {
@@ -179,12 +172,8 @@ mod tests {
     use super::*;
     use assert_matches::assert_matches;
     use rstest::*;
-    use starknet::{
-        accounts::Account,
-        core::types::{BlockTag, ExecutionResult},
-        providers::jsonrpc::HttpTransport,
-    };
-    use std::result;
+    use starknet::{accounts::Account, providers::jsonrpc::HttpTransport};
+
     #[cfg(feature = "testing")]
     use units_primitives::read_data::{
         sign_read_data, ReadData, ReadDataVersion, ReadType, ReadValidity,
@@ -447,7 +436,7 @@ mod tests {
             .await
             .unwrap();
         // Wait for the transaction to be executed
-        let receipt = result
+        result
             .wait_for_receipt(provider.clone(), None)
             .await
             .unwrap();

@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use starknet::{
     core::types::{
-        BlockId, BroadcastedInvokeTransaction, BroadcastedTransaction, Call, ExecuteInvocation,
-        Felt, SimulationFlag, StarknetError,
+        BlockId, Call,
+        Felt, StarknetError,
     },
     macros::selector,
     providers::{Provider, ProviderError},
@@ -11,8 +11,7 @@ use starknet::{
 use units_utils::{
     context::GlobalContext,
     starknet::{
-        build_invoke_simulate_transaction, contract_address_has_selector, simulate_boolean_read,
-        GetExecutionResult, SimulationError,
+        contract_address_has_selector, simulate_boolean_read, SimulationError,
     },
 };
 
