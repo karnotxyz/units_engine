@@ -1,18 +1,13 @@
 use std::sync::Arc;
 
 use starknet::{
-    core::types::{
-        BlockId, Call,
-        Felt, StarknetError,
-    },
+    core::types::{BlockId, Call, Felt, StarknetError},
     macros::selector,
     providers::{Provider, ProviderError},
 };
 use units_utils::{
     context::GlobalContext,
-    starknet::{
-        contract_address_has_selector, simulate_boolean_read, SimulationError,
-    },
+    starknet::{contract_address_has_selector, simulate_boolean_read, SimulationError},
 };
 
 use units_primitives::read_data::{ReadDataError, SignedReadData};

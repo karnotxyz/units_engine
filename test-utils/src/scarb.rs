@@ -136,7 +136,10 @@ fn parse_starknet_artifacts(path: impl AsRef<Path>) -> anyhow::Result<ArtifactsM
 }
 
 impl Artifacts {
-    pub async fn declare_and_wait_for_receipt(self, account: Arc<StarknetWallet>) -> (Felt, Option<DeclareTransactionResult>) {
+    pub async fn declare_and_wait_for_receipt(
+        self,
+        account: Arc<StarknetWallet>,
+    ) -> (Felt, Option<DeclareTransactionResult>) {
         let compiled_class_hash = self.compiled_class_hash;
         let sierra = self.contract_class.flatten().unwrap();
 
@@ -149,9 +152,10 @@ impl Artifacts {
         {
             return (class_hash, None);
         }
-        let declare_result = declare_contract(account.clone(), Arc::new(sierra), compiled_class_hash)
-            .await
-            .unwrap();
+        let declare_result =
+            declare_contract(account.clone(), Arc::new(sierra), compiled_class_hash)
+                .await
+                .unwrap();
         declare_result
             .wait_for_receipt(account.provider().clone(), None)
             .await
