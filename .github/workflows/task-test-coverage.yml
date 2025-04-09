@@ -58,7 +58,7 @@ jobs:
           rm -f target/units-engine-* lcov.info
 
           # run tests for units engine crates
-          cargo llvm-cov --workspace --all-features \
+          RUST_LOG=trace cargo llvm-cov --workspace --all-features \
               --release \
               --lcov \
               --output-path lcov.info \
