@@ -1,18 +1,13 @@
 use std::sync::Arc;
 
 use starknet::{
-    core::types::{
-        BlockId, BroadcastedInvokeTransaction, BroadcastedTransaction, Call, ExecuteInvocation,
-        Felt, SimulationFlag, StarknetError,
-    },
+    core::types::{BlockId, Call, Felt, StarknetError},
     macros::selector,
     providers::{Provider, ProviderError},
 };
 use units_utils::{
     context::GlobalContext,
-    starknet::{
-        build_invoke_simulate_transaction, contract_address_has_selector, GetExecutionResult,
-    },
+    starknet::{contract_address_has_selector, simulate_boolean_read, SimulationError},
 };
 
 use units_primitives::read_data::{ReadDataError, SignedReadData};
@@ -21,7 +16,7 @@ const CAN_READ_NONCE_SELECTOR: Felt = selector!("can_read_nonce");
 
 #[derive(Debug, thiserror::Error)]
 pub enum NonceError {
-    #[error("No can read nonce simulation provided")]
+    #[error("Read signature not provided")]
     ReadSignatureNotProvided,
     #[error("Failed to read execution result")]
     FailedExecutionResultRead(anyhow::Error),
@@ -35,6 +30,8 @@ pub enum NonceError {
     ReadSignatureError(#[from] ReadDataError),
     #[error("Invalid read signature")]
     InvalidReadSignature,
+    #[error("Simulation error: {0}")]
+    SimulationError(#[from] SimulationError),
 }
 
 impl From<NonceError> for ProviderError {
@@ -75,7 +72,7 @@ pub async fn get_nonce(
         // So we build a simulated transaction that tries to call `can_read_nonce` on the smart contract
         // and the "sender_address" is the address of the account that is trying to read the nonce
         // If the account has access, the simulation will succeed and the result will be 0x1 (true)
-        let simulation = build_invoke_simulate_transaction(
+        let can_read_nonce = simulate_boolean_read(
             vec![Call {
                 to: address,
                 selector: CAN_READ_NONCE_SELECTOR,
@@ -84,31 +81,10 @@ pub async fn get_nonce(
             *signed_read_data.read_data().contract_address(),
             starknet_provider.clone(),
         )
-        .await
-        .map_err(NonceError::StarknetError)?;
+        .await?;
 
-        let can_read_nonce = starknet_provider
-            .simulate_transaction(
-                block_id,
-                BroadcastedTransaction::Invoke(BroadcastedInvokeTransaction::V3(simulation)),
-                vec![SimulationFlag::SkipFeeCharge, SimulationFlag::SkipValidate],
-            )
-            .await?;
-
-        match can_read_nonce
-            .get_execution_result()
-            .map_err(NonceError::FailedExecutionResultRead)?
-        {
-            ExecuteInvocation::Success(function_invocation) => {
-                let can_read = function_invocation
-                    .result
-                    .get(2)
-                    .ok_or(NonceError::EmptyCanGetNonceReadResult)?;
-                if can_read != &Felt::ONE {
-                    Err(NonceError::NonceReadNotAllowed)?
-                }
-            }
-            ExecuteInvocation::Reverted(_) => Err(NonceError::NonceReadNotAllowed)?,
+        if !can_read_nonce {
+            return Err(NonceError::NonceReadNotAllowed);
         }
     }
 

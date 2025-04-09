@@ -26,4 +26,9 @@ mod ContractWithoutCanReadEvent {
         };
         self.emit(event);
     }
+
+    #[external(v0)]
+    fn panic(ref self: ContractState) {
+        panic!("This function always reverts");
+    }
 }

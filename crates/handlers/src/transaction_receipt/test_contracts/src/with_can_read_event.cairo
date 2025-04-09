@@ -17,6 +17,7 @@ mod ContractWithCanReadEvent {
     pub enum Event {
         TestEventOne: TestEventOne,
         TestEventTwo: TestEventTwo,
+        AclUpdate: AclUpdate,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -27,6 +28,12 @@ mod ContractWithCanReadEvent {
     #[derive(Drop, starknet::Event)]
     struct TestEventTwo {
         data: u64,
+    }
+
+    #[derive(Drop, starknet::Event)]
+    struct AclUpdate {
+        event_selector: felt252,
+        account_contract_address: ContractAddress,
     }
 
     const TEST_EVENT_ONE_SELECTOR: felt252 = selector!("TestEventOne");
@@ -46,6 +53,11 @@ mod ContractWithCanReadEvent {
             "Only owner can update ACL"
         );
         self.event_acl_map.entry(account_contract_address).entry(event_selector).write(true);
+        let acl_update = AclUpdate {
+            event_selector,
+            account_contract_address,
+        };
+        self.emit(acl_update);
     }
 
     #[external(v0)]
@@ -77,12 +89,9 @@ mod ContractWithCanReadEvent {
     }
 
     #[external(v0)]
-    fn can_read_event(ref self: ContractState) -> bool {
+    fn can_read_event(ref self: ContractState, event_selector: felt252) -> bool {
         let tx_info = starknet::get_tx_info().unbox();
-        assert!(
-            tx_info.account_contract_address == self.owner.read(),
-            "Only owner can read nonce"
-        );
-        true
+        let event_acl = self.event_acl_map.entry(tx_info.account_contract_address).entry(event_selector).read();
+        event_acl
     }
 }

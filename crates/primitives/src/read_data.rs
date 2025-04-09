@@ -65,7 +65,7 @@ pub enum ReadType {
     // stores contract address
     Nonce(Felt),
     // stores transaction hash
-    TransactionReceiptEvents(Felt),
+    TransactionReceipt(Felt),
 }
 
 impl ReadType {
@@ -75,8 +75,8 @@ impl ReadType {
                 &Felt::from_hex_unchecked(hex::encode("nonce").as_str()),
                 &address,
             ]),
-            ReadType::TransactionReceiptEvents(hash) => poseidon_hash_many(vec![
-                &Felt::from_hex_unchecked(hex::encode("transaction_receipt_events").as_str()),
+            ReadType::TransactionReceipt(hash) => poseidon_hash_many(vec![
+                &Felt::from_hex_unchecked(hex::encode("transaction_receipt").as_str()),
                 &hash,
             ]),
         }
@@ -137,6 +137,7 @@ impl ReadData {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct SignedReadData {
     read_data: ReadData,
     signature: Vec<Felt>,
@@ -332,7 +333,7 @@ mod tests {
     fn test_hash_transaction_receipt_events() {
         let read_signature = ReadData::new(
             Felt::from_hex_unchecked("0x5"),
-            ReadType::TransactionReceiptEvents(Felt::from_hex_unchecked("0x123")),
+            ReadType::TransactionReceipt(Felt::from_hex_unchecked("0x123")),
             ReadValidity::Block(100),
             Felt::from_hex_unchecked("0x356"),
             ReadDataVersion::ONE,
@@ -346,9 +347,7 @@ mod tests {
                 &Felt::from_hex_unchecked("0x726561645f737472696e67"),
                 // transaction_receipt_events
                 &poseidon_hash_many(vec![
-                    &Felt::from_hex_unchecked(
-                        "0x7472616e73616374696f6e5f726563656970745f6576656e7473"
-                    ),
+                    &Felt::from_hex_unchecked("0x7472616e73616374696f6e5f72656365697074"),
                     &Felt::from_hex_unchecked("0x123"),
                 ]),
                 // valid_until_block

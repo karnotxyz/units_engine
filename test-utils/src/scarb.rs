@@ -6,6 +6,7 @@ use starknet::core::types::contract::CompiledClass;
 use starknet::core::types::contract::SierraClass;
 use starknet::core::types::BlockId;
 use starknet::core::types::BlockTag;
+use starknet::core::types::DeclareTransactionResult;
 use starknet::core::types::Felt;
 use starknet::providers::Provider;
 use std::collections::HashMap;
@@ -135,7 +136,10 @@ fn parse_starknet_artifacts(path: impl AsRef<Path>) -> anyhow::Result<ArtifactsM
 }
 
 impl Artifacts {
-    pub async fn declare_and_wait_for_receipt(self, account: Arc<StarknetWallet>) -> Felt {
+    pub async fn declare_and_wait_for_receipt(
+        self,
+        account: Arc<StarknetWallet>,
+    ) -> (Felt, Option<DeclareTransactionResult>) {
         let compiled_class_hash = self.compiled_class_hash;
         let sierra = self.contract_class.flatten().unwrap();
 
@@ -146,16 +150,18 @@ impl Artifacts {
             .await
             .is_ok()
         {
-            return class_hash;
+            return (class_hash, None);
         }
-        declare_contract(account.clone(), Arc::new(sierra), compiled_class_hash)
-            .await
-            .unwrap()
+        let declare_result =
+            declare_contract(account.clone(), Arc::new(sierra), compiled_class_hash)
+                .await
+                .unwrap();
+        declare_result
             .wait_for_receipt(account.provider().clone(), None)
             .await
             .unwrap();
 
-        self.class_hash
+        (self.class_hash, Some(declare_result))
     }
 
     pub async fn declare_and_deploy_and_wait_for_receipt(
