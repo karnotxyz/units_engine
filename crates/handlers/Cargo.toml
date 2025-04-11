@@ -17,6 +17,7 @@ thiserror.workspace = true
 tokio.workspace = true
 units-primitives = { workspace = true }
 units-utils.workspace = true
+hex.workspace = true
 
 [dev-dependencies]
 rstest.workspace = true

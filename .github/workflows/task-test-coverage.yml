@@ -57,8 +57,15 @@ jobs:
           export COVERAGE_BIN=$(realpath target/release/units_engine)
           rm -f target/units-engine-* lcov.info
 
+          # Set log level based on debug mode
+          if [ "${{ runner.debug }}" == "1" ]; then
+            export RUST_LOG=trace
+          else
+            export RUST_LOG=info
+          fi
+
           # run tests for units engine crates
-          RUST_LOG=trace cargo llvm-cov --workspace --all-features \
+          cargo llvm-cov --workspace --all-features \
               --release \
               --lcov \
               --output-path lcov.info \
