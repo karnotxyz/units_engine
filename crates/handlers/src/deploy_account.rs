@@ -19,11 +19,10 @@ mod tests {
     use super::*;
     use rstest::*;
     use starknet::{
-        accounts::{AccountFactory, OpenZeppelinAccountFactory, RawAccountDeploymentV3},
+        accounts::{AccountFactory, OpenZeppelinAccountFactory},
         core::types::{
-            BlockId, BlockTag, BroadcastedDeclareTransactionV3,
-            BroadcastedDeployAccountTransactionV3, DataAvailabilityMode, Felt, ResourceBounds,
-            ResourceBoundsMapping,
+            BlockId, BlockTag, BroadcastedDeployAccountTransactionV3, DataAvailabilityMode, Felt,
+            ResourceBounds, ResourceBoundsMapping,
         },
         signers::{LocalWallet, Signer, SigningKey},
     };
@@ -97,7 +96,7 @@ mod tests {
             .await
             .unwrap();
         let class_hash_at = starknet_provider
-            .get_class_hash_at(BlockId::Tag(BlockTag::Pending), &account_address)
+            .get_class_hash_at(BlockId::Tag(BlockTag::Pending), account_address)
             .await
             .unwrap();
         assert_eq!(
