@@ -11,13 +11,13 @@ homepage.workspace = true
 [dependencies]
 anyhow.workspace = true
 futures.workspace = true
+hex.workspace = true
 serde_json.workspace = true
 starknet.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
 units-primitives = { workspace = true }
 units-utils.workspace = true
-hex.workspace = true
 
 [dev-dependencies]
 rstest.workspace = true
