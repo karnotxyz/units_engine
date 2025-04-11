@@ -22,12 +22,24 @@ impl StarknetWriteRpcApiV0_7_1Server for RpcContext {
     /// * `declare_transaction_result` - the result of the declare transaction
     async fn add_declare_transaction(
         &self,
-        _declare_transaction: BroadcastedDeclareTransaction,
+        declare_transaction: BroadcastedDeclareTransaction,
     ) -> RpcResult<DeclareTransactionResult> {
-        Ok(DeclareTransactionResult {
-            transaction_hash: Felt::from(0),
-            class_hash: Felt::from(0),
-        })
+        let declare_transaction = match declare_transaction {
+            BroadcastedDeclareTransaction::V3(declare_transaction) => {
+                declare_transaction
+            }
+            _ => {
+                return Err(StarknetRpcApiError::UnsupportedTxnVersion.into());
+            }
+        };
+        Ok(
+            units_handlers::declare_class::add_declare_class_transaction(
+                self.global_ctx.clone(),
+                declare_transaction,
+            )
+            .await
+            .map_err(StarknetRpcApiError::from)?,
+        )
     }
 
     /// Add an Deploy Account Transaction
@@ -44,6 +56,14 @@ impl StarknetWriteRpcApiV0_7_1Server for RpcContext {
         &self,
         deploy_account_transaction: BroadcastedDeployAccountTransaction,
     ) -> RpcResult<DeployAccountTransactionResult> {
+        let deploy_account_transaction = match deploy_account_transaction {
+            BroadcastedDeployAccountTransaction::V3(deploy_account_transaction) => {
+                deploy_account_transaction
+            }
+            _ => {
+                return Err(StarknetRpcApiError::UnsupportedTxnVersion.into());
+            }
+        };
         Ok(
             units_handlers::deploy_account::add_deploy_account_transaction(
                 self.global_ctx.clone(),

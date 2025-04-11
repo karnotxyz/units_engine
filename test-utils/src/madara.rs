@@ -6,8 +6,10 @@ use crate::workspace::WORKSPACE_ROOT;
 use anyhow::{anyhow, Result};
 use reqwest::Client;
 use rstest::*;
+use starknet::core::crypto::Signature;
 use starknet::core::types::Felt;
 use starknet::providers::{jsonrpc::HttpTransport, JsonRpcClient};
+use starknet::signers::SigningKey;
 use std::{
     fs,
     io::{BufRead, BufReader},
@@ -164,6 +166,13 @@ pub async fn madara_node() -> (MadaraRunner, Arc<StarknetProvider>) {
 pub struct StarknetWalletWithPrivateKey {
     pub account: Arc<StarknetWallet>,
     pub private_key: Felt,
+}
+
+impl StarknetWalletWithPrivateKey {
+    pub fn sign_message(&self, message: &Felt) -> Signature {
+        let signer = SigningKey::from_secret_scalar(self.private_key);
+        signer.sign(message).unwrap()
+    }
 }
 
 /// Returns a running Madara node, configured Starknet provider, and a vector of deployed accounts
