@@ -3694,6 +3694,7 @@ dependencies = [
  "anyhow",
  "assert_matches",
  "futures",
+ "hex",
  "rstest",
  "serde_json",
  "starknet",
