@@ -24,10 +24,9 @@ mod tests {
         accounts::Account,
         core::types::{
             BlockId, BlockTag, BroadcastedDeclareTransactionV3, ContractClass,
-            DataAvailabilityMode, Felt, ResourceBounds, ResourceBoundsMapping,
+            DataAvailabilityMode, ResourceBounds, ResourceBoundsMapping,
         },
         providers::Provider,
-        signers::SigningKey,
     };
     use units_tests_utils::{
         madara::{madara_node_with_accounts, MadaraRunner, StarknetWalletWithPrivateKey},

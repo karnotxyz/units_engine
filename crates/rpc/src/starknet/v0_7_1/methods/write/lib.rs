@@ -25,9 +25,7 @@ impl StarknetWriteRpcApiV0_7_1Server for RpcContext {
         declare_transaction: BroadcastedDeclareTransaction,
     ) -> RpcResult<DeclareTransactionResult> {
         let declare_transaction = match declare_transaction {
-            BroadcastedDeclareTransaction::V3(declare_transaction) => {
-                declare_transaction
-            }
+            BroadcastedDeclareTransaction::V3(declare_transaction) => declare_transaction,
             _ => {
                 return Err(StarknetRpcApiError::UnsupportedTxnVersion.into());
             }
