@@ -320,7 +320,7 @@ pub async fn simulate_boolean_read(
 }
 
 // Taken from https://github.com/xJonathanLEI/starknet-rs/blob/1af6c26d33f404e94e53a81d0fe875dfddfba939/starknet-accounts/src/single_owner.rs#L140
-fn encode_calls(calls: &[Call], encoding: ExecutionEncoding) -> Vec<Felt> {
+pub fn encode_calls(calls: &[Call], encoding: ExecutionEncoding) -> Vec<Felt> {
     let mut execute_calldata: Vec<Felt> = vec![calls.len().into()];
 
     match encoding {
