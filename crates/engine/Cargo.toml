@@ -31,6 +31,7 @@ units-rpc.workspace = true
 units-telemetery.workspace = true
 units-utils.workspace = true
 url.workspace = true
+starknet.workspace = true
 
 [features]
 testing = ["units-rpc/testing"]

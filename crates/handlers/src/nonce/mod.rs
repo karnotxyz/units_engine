@@ -102,11 +102,13 @@ mod tests {
     use units_primitives::read_data::sign_read_data;
 
     use units_primitives::read_data::{ReadData, ReadDataVersion, ReadType, ReadValidity};
+    use units_tests_utils::starknet::TestDefault;
     use units_tests_utils::{
         madara::{madara_node_with_accounts, MadaraRunner, StarknetWalletWithPrivateKey},
         scarb::{scarb_build, ArtifactsMap},
     };
     use units_utils::starknet::StarknetProvider;
+    use units_utils::starknet::StarknetWallet;
 
     #[rstest]
     #[tokio::test]
@@ -130,7 +132,11 @@ mod tests {
             .declare_and_deploy_and_wait_for_receipt(account, vec![], Felt::ZERO, false)
             .await;
 
-        let global_ctx = Arc::new(GlobalContext::new_with_provider(provider));
+        let global_ctx = Arc::new(GlobalContext::new_with_provider(
+            provider,
+            Felt::ONE,
+            Arc::new(StarknetWallet::test_default()),
+        ));
         let nonce = get_nonce(global_ctx, BlockId::Tag(BlockTag::Pending), address, None)
             .await
             .unwrap();
@@ -159,7 +165,11 @@ mod tests {
             .declare_and_deploy_and_wait_for_receipt(account, vec![], Felt::ZERO, false)
             .await;
 
-        let global_ctx = Arc::new(GlobalContext::new_with_provider(provider));
+        let global_ctx = Arc::new(GlobalContext::new_with_provider(
+            provider,
+            Felt::ONE,
+            Arc::new(StarknetWallet::test_default()),
+        ));
         let nonce = get_nonce(global_ctx, BlockId::Tag(BlockTag::Pending), address, None).await;
         assert_matches!(nonce, Err(NonceError::ReadSignatureNotProvided));
     }
@@ -197,7 +207,11 @@ mod tests {
         // Using an invalid private key to sign the read data
         let signed_read_data = sign_read_data(read_data, Felt::THREE).await.unwrap();
 
-        let global_ctx = Arc::new(GlobalContext::new_with_provider(provider));
+        let global_ctx = Arc::new(GlobalContext::new_with_provider(
+            provider,
+            Felt::ONE,
+            Arc::new(StarknetWallet::test_default()),
+        ));
         let nonce = get_nonce(
             global_ctx,
             BlockId::Tag(BlockTag::Pending),
@@ -236,7 +250,11 @@ mod tests {
             )
             .await;
 
-        let global_ctx = Arc::new(GlobalContext::new_with_provider(provider.clone()));
+        let global_ctx = Arc::new(GlobalContext::new_with_provider(
+            provider.clone(),
+            Felt::ONE,
+            Arc::new(StarknetWallet::test_default()),
+        ));
         let read_data = ReadData::new(
             account_with_private_key.account.address(),
             ReadType::Nonce(address),
@@ -289,7 +307,11 @@ mod tests {
             )
             .await;
 
-        let global_ctx = Arc::new(GlobalContext::new_with_provider(provider.clone()));
+        let global_ctx = Arc::new(GlobalContext::new_with_provider(
+            provider.clone(),
+            Felt::ONE,
+            Arc::new(StarknetWallet::test_default()),
+        ));
         let read_data = ReadData::new(
             owner_account_with_private_key.account.address(),
             ReadType::Nonce(contract_address),

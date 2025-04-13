@@ -15,14 +15,18 @@ pub async fn chain_id(global_ctx: Arc<GlobalContext>) -> Result<Felt, ProviderEr
 mod tests {
     use super::*;
     use rstest::*;
-    use units_tests_utils::madara::{madara_node, MadaraRunner};
-    use units_utils::starknet::StarknetProvider;
+    use units_tests_utils::{madara::{madara_node, MadaraRunner}, starknet::TestDefault};
+    use units_utils::starknet::{StarknetProvider, StarknetWallet};
 
     #[rstest]
     #[tokio::test]
     async fn test_chain_id(#[future] madara_node: (MadaraRunner, Arc<StarknetProvider>)) {
         let (_madara_runner, starknet_provider) = madara_node.await;
-        let global_ctx = Arc::new(GlobalContext::new_with_provider(starknet_provider));
+        let global_ctx = Arc::new(GlobalContext::new_with_provider(
+            starknet_provider,
+            Felt::ONE,
+            Arc::new(StarknetWallet::test_default()),
+        ));
         let chain_id = chain_id(global_ctx).await.unwrap();
         assert_eq!(
             chain_id,

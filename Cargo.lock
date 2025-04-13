@@ -3676,6 +3676,7 @@ dependencies = [
  "opentelemetry",
  "serde",
  "serde_json",
+ "starknet",
  "thiserror 2.0.12",
  "tokio",
  "tower 0.4.13",

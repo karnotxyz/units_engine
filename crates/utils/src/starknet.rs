@@ -241,12 +241,9 @@ impl_wait_for_receipt!(DeployAccountTransactionResult);
 pub async fn build_invoke_simulate_transaction(
     calls: Vec<Call>,
     account_address: Felt,
+    nonce: Felt,
     provider: Arc<StarknetProvider>,
 ) -> Result<BroadcastedInvokeTransactionV3, ProviderError> {
-    let nonce = provider
-        .get_nonce(BlockId::Tag(BlockTag::Pending), account_address)
-        .await?;
-
     Ok(BroadcastedInvokeTransactionV3 {
         sender_address: account_address,
         calldata: encode_calls(&calls, ExecutionEncoding::New),
@@ -285,13 +282,14 @@ pub enum SimulationError {
     StarknetError(#[from] ProviderError),
 }
 
-pub async fn simulate_boolean_read(
+pub async fn simulate_boolean_read_with_nonce(
     calls: Vec<Call>,
     account_address: Felt,
+    nonce: Felt,
     provider: Arc<StarknetProvider>,
 ) -> Result<bool, SimulationError> {
     let simulation =
-        build_invoke_simulate_transaction(calls, account_address, provider.clone()).await?;
+        build_invoke_simulate_transaction(calls, account_address, nonce, provider.clone()).await?;
 
     let simulated_txn = provider
         .simulate_transaction(
@@ -300,6 +298,7 @@ pub async fn simulate_boolean_read(
             vec![SimulationFlag::SkipFeeCharge, SimulationFlag::SkipValidate],
         )
         .await?;
+    println!("Simulated txn: {:?}", simulated_txn);
 
     match simulated_txn
         .get_execution_result()
@@ -317,6 +316,18 @@ pub async fn simulate_boolean_read(
         }
         ExecuteInvocation::Reverted(_) => Ok(false),
     }
+}
+
+pub async fn simulate_boolean_read(
+    calls: Vec<Call>,
+    account_address: Felt,
+    provider: Arc<StarknetProvider>,
+) -> Result<bool, SimulationError> {
+    let nonce = provider
+        .get_nonce(BlockId::Tag(BlockTag::Pending), account_address)
+        .await?;
+
+    simulate_boolean_read_with_nonce(calls, account_address, nonce, provider).await
 }
 
 // Taken from https://github.com/xJonathanLEI/starknet-rs/blob/1af6c26d33f404e94e53a81d0fe875dfddfba939/starknet-accounts/src/single_owner.rs#L140

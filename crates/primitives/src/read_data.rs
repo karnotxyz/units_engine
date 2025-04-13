@@ -66,6 +66,8 @@ pub enum ReadType {
     Nonce(Felt),
     // stores transaction hash
     TransactionReceipt(Felt),
+    // stores class hash
+    Class(Felt),
 }
 
 impl ReadType {
@@ -78,6 +80,10 @@ impl ReadType {
             ReadType::TransactionReceipt(hash) => poseidon_hash_many(vec![
                 &Felt::from_hex_unchecked(hex::encode("transaction_receipt").as_str()),
                 &hash,
+            ]),
+            ReadType::Class(class_hash) => poseidon_hash_many(vec![
+                &Felt::from_hex_unchecked(hex::encode("class").as_str()),
+                &class_hash,
             ]),
         }
     }
@@ -357,6 +363,43 @@ mod tests {
                 ]),
                 // chain_id
                 &Felt::from_hex_unchecked("0x356"),
+                // version
+                &poseidon_hash_many(vec![
+                    &Felt::from_hex_unchecked("0x76657273696f6e"),
+                    &Felt::from(1),
+                ]),
+            ])
+        );
+    }
+
+    #[test]
+    fn test_hash_class() {
+        let read_signature = ReadData::new(
+            Felt::from_hex_unchecked("0x5"),
+            ReadType::Class(Felt::from_hex_unchecked("0x123")),
+            ReadValidity::Block(100),
+            Felt::from_hex_unchecked("0x3"),
+            ReadDataVersion::ONE,
+        );
+        assert_eq!(
+            read_signature.hash(),
+            poseidon_hash_many(vec![
+                // contract_address
+                &Felt::from_hex_unchecked("0x5"),
+                // read_string
+                &Felt::from_hex_unchecked("0x726561645f737472696e67"),
+                // class
+                &poseidon_hash_many(vec![
+                    &Felt::from_hex_unchecked("0x636c617373"),
+                    &Felt::from_hex_unchecked("0x123"),
+                ]),
+                // valid_until_block
+                &poseidon_hash_many(vec![
+                    &Felt::from_hex_unchecked("0x626c6f636b"),
+                    &Felt::from(100),
+                ]),
+                // chain_id
+                &Felt::from_hex_unchecked("0x3"),
                 // version
                 &poseidon_hash_many(vec![
                     &Felt::from_hex_unchecked("0x76657273696f6e"),

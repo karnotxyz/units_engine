@@ -23,16 +23,15 @@ mod tests {
     use starknet::{
         accounts::Account,
         core::types::{
-            BlockId, BlockTag, BroadcastedDeclareTransactionV3, ContractClass,
-            DataAvailabilityMode, ResourceBounds, ResourceBoundsMapping,
+            BlockId, BlockTag, BroadcastedDeclareTransactionV3, ContractClass, DataAvailabilityMode, Felt, ResourceBounds, ResourceBoundsMapping
         },
         providers::Provider,
     };
     use units_tests_utils::{
         madara::{madara_node_with_accounts, MadaraRunner, StarknetWalletWithPrivateKey},
-        scarb::{scarb_build, ArtifactsMap},
+        scarb::{scarb_build, ArtifactsMap}, starknet::TestDefault,
     };
-    use units_utils::starknet::{StarknetProvider, WaitForReceipt};
+    use units_utils::starknet::{StarknetProvider, StarknetWallet, WaitForReceipt};
 
     #[rstest]
     #[tokio::test]
@@ -47,7 +46,11 @@ mod tests {
         scarb_build: ArtifactsMap,
     ) {
         let (_runner, provider, accounts) = madara_node_with_accounts.await;
-        let global_ctx = Arc::new(GlobalContext::new_with_provider(provider.clone()));
+        let global_ctx = Arc::new(GlobalContext::new_with_provider(
+            provider.clone(),
+            Felt::ONE,
+            Arc::new(StarknetWallet::test_default()),
+        ));
 
         // Get the contract artifacts
         let artifacts = scarb_build.await;

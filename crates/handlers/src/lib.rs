@@ -4,3 +4,4 @@ pub mod deploy_account;
 pub mod invoke_transaction;
 pub mod nonce;
 pub mod transaction_receipt;
+pub mod get_class;

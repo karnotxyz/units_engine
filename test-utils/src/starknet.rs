@@ -1,5 +1,5 @@
 use starknet::{
-    accounts::{Account, ConnectedAccount, SingleOwnerAccount},
+    accounts::{Account, ConnectedAccount, ExecutionEncoding, SingleOwnerAccount},
     core::types::{
         Call, CallType, ComputationResources, DataAvailabilityResources, DataResources,
         DeclareTransactionTrace, DeployAccountTransactionTrace, EntryPointType, ExecuteInvocation,
@@ -7,12 +7,14 @@ use starknet::{
         InvokeTransactionTrace, L1HandlerTransactionTrace, TransactionReceiptWithBlockInfo,
     },
     macros::selector,
-    signers::LocalWallet,
+    providers::jsonrpc::HttpTransport,
+    signers::{LocalWallet, SigningKey},
 };
 use std::sync::Arc;
 use units_utils::starknet::{
     deploy_account, wait_for_receipt, BuildAccount, StarknetProvider, StarknetWallet,
 };
+use url::Url;
 
 pub const PREDEPLOYED_ACCOUNT_CLASS_HASH: &str =
     "0x00e2eb8f5672af4e6a4e8a8f1b44989685e668489b0a25437733756c5a34a1d6";
@@ -139,5 +141,27 @@ pub fn build_l1_handler_trace() -> L1HandlerTransactionTrace {
         function_invocation: build_function_invocation(),
         state_diff: None,
         execution_resources: build_execution_resources(),
+    }
+}
+
+pub trait TestDefault {
+    fn test_default() -> Self;
+}
+
+impl TestDefault for StarknetWallet {
+    fn test_default() -> Self {
+        let provider = Arc::new(StarknetProvider::new(HttpTransport::new(
+            Url::parse("http://localhost:5050").unwrap(),
+        )));
+        let signer = Arc::new(LocalWallet::from(SigningKey::from_secret_scalar(
+            Felt::ZERO,
+        )));
+        SingleOwnerAccount::new(
+            provider,
+            signer,
+            Felt::ZERO,
+            Felt::ZERO,
+            ExecutionEncoding::New,
+        )
     }
 }
