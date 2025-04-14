@@ -1,4 +1,3 @@
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DeclareTransactionResult {
     pub class_hash: String,

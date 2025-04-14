@@ -15,7 +15,10 @@ pub async fn chain_id(global_ctx: Arc<GlobalContext>) -> Result<Felt, ProviderEr
 mod tests {
     use super::*;
     use rstest::*;
-    use units_tests_utils::{madara::{madara_node, MadaraRunner}, starknet::TestDefault};
+    use units_tests_utils::{
+        madara::{madara_node, MadaraRunner},
+        starknet::TestDefault,
+    };
     use units_utils::starknet::{StarknetProvider, StarknetWallet};
 
     #[rstest]

@@ -109,7 +109,7 @@ mod tests {
     };
     use units_tests_utils::{
         madara::{madara_node_with_accounts, MadaraRunner, StarknetWalletWithPrivateKey},
-        scarb::{scarb_build, scarb_builds, Artifacts},
+        scarb::{scarb_builds, Artifacts},
         starknet::assert_contract_class_eq,
     };
     use units_utils::starknet::{StarknetProvider, WaitForReceipt};

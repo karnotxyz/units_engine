@@ -52,8 +52,16 @@ impl StarknetWriteRpcApiV0_7_1Server for RpcContext {
         };
 
         // Convert Strings to Felts
-        let class_hash = Felt::from_hex(result.class_hash.as_str()).map_err(|e| StarknetRpcApiError::ErrUnexpectedError { data: format!("Failed to convert class hash to felt: {}", e) })?;
-        let transaction_hash = Felt::from_hex(transaction_hash.as_str()).map_err(|e| StarknetRpcApiError::ErrUnexpectedError { data: format!("Failed to convert transaction hash to felt: {}", e) })?;
+        let class_hash = Felt::from_hex(result.class_hash.as_str()).map_err(|e| {
+            StarknetRpcApiError::ErrUnexpectedError {
+                data: format!("Failed to convert class hash to felt: {}", e),
+            }
+        })?;
+        let transaction_hash = Felt::from_hex(transaction_hash.as_str()).map_err(|e| {
+            StarknetRpcApiError::ErrUnexpectedError {
+                data: format!("Failed to convert transaction hash to felt: {}", e),
+            }
+        })?;
 
         Ok(DeclareTransactionResult {
             class_hash,

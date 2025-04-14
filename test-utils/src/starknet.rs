@@ -1,7 +1,11 @@
 use starknet::{
     accounts::{Account, ConnectedAccount, ExecutionEncoding, SingleOwnerAccount},
     core::types::{
-        Call, CallType, ComputationResources, ContractClass, DataAvailabilityResources, DataResources, DeclareTransactionTrace, DeployAccountTransactionTrace, EntryPointType, ExecuteInvocation, ExecutionResources, Felt, FlattenedSierraClass, FunctionInvocation, InvokeTransactionResult, InvokeTransactionTrace, L1HandlerTransactionTrace, TransactionReceiptWithBlockInfo
+        Call, CallType, ComputationResources, ContractClass, DataAvailabilityResources,
+        DataResources, DeclareTransactionTrace, DeployAccountTransactionTrace, EntryPointType,
+        ExecuteInvocation, ExecutionResources, Felt, FlattenedSierraClass, FunctionInvocation,
+        InvokeTransactionResult, InvokeTransactionTrace, L1HandlerTransactionTrace,
+        TransactionReceiptWithBlockInfo,
     },
     macros::selector,
     providers::jsonrpc::HttpTransport,
