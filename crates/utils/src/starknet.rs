@@ -88,11 +88,19 @@ impl GetExecutionResult for SimulatedTransaction {
     }
 }
 
+#[derive(Debug, thiserror::Error)]
+pub enum WaitForReceiptError {
+    #[error("Transaction not found after {0} timeout")]
+    TransactionNotFound(u64),
+    #[error("Starknet error: {0}")]
+    StarknetError(#[from] ProviderError),
+}
+
 pub async fn wait_for_receipt(
     provider: Arc<StarknetProvider>,
     txn_hash: Felt,
     timeout: Option<Duration>,
-) -> anyhow::Result<TransactionReceiptWithBlockInfo> {
+) -> Result<TransactionReceiptWithBlockInfo, WaitForReceiptError> {
     let start_time = Instant::now();
     let timeout = timeout.unwrap_or(Duration::from_secs(10));
     let retry_delay = Duration::from_millis(200);
@@ -105,12 +113,12 @@ pub async fn wait_for_receipt(
                     starknet::core::types::StarknetError::TransactionHashNotFound,
                 ) => {
                     if start_time.elapsed() >= timeout {
-                        anyhow::bail!("Transaction not found after {:?} timeout", timeout);
+                        return Err(WaitForReceiptError::TransactionNotFound(timeout.as_secs()));
                     }
                     tokio::time::sleep(retry_delay).await;
                     continue;
                 }
-                err => return Err(err.into()),
+                err => return Err(WaitForReceiptError::StarknetError(err)),
             },
         }
     }
@@ -217,7 +225,7 @@ pub trait WaitForReceipt {
         &self,
         provider: Arc<StarknetProvider>,
         timeout: Option<Duration>,
-    ) -> anyhow::Result<TransactionReceiptWithBlockInfo>;
+    ) -> Result<TransactionReceiptWithBlockInfo, WaitForReceiptError>;
 }
 
 macro_rules! impl_wait_for_receipt {
@@ -227,7 +235,7 @@ macro_rules! impl_wait_for_receipt {
                 &self,
                 provider: Arc<StarknetProvider>,
                 timeout: Option<Duration>,
-            ) -> anyhow::Result<TransactionReceiptWithBlockInfo> {
+            ) -> Result<TransactionReceiptWithBlockInfo, WaitForReceiptError> {
                 wait_for_receipt(provider, self.transaction_hash, timeout).await
             }
         }
@@ -300,6 +308,7 @@ pub async fn simulate_boolean_read(
             vec![SimulationFlag::SkipFeeCharge, SimulationFlag::SkipValidate],
         )
         .await?;
+    println!("Simulated txn: {:?}", simulated_txn);
 
     match simulated_txn
         .get_execution_result()
@@ -459,6 +468,7 @@ impl GetSenderAddress for Transaction {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use assert_matches::assert_matches;
     use rstest::*;
     use starknet::{
         accounts::Account,
@@ -700,10 +710,10 @@ mod tests {
 
         assert!(result.is_err());
         assert!(start.elapsed() >= timeout);
-        assert!(result
-            .unwrap_err()
-            .to_string()
-            .contains("Transaction not found after 2s timeout"));
+        assert_matches!(
+            result.unwrap_err(),
+            WaitForReceiptError::TransactionNotFound(_)
+        );
     }
 
     #[rstest]

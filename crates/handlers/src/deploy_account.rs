@@ -33,9 +33,9 @@ mod tests {
     };
     use units_tests_utils::{
         madara::{madara_node, MadaraRunner},
-        starknet::PREDEPLOYED_ACCOUNT_CLASS_HASH,
+        starknet::{TestDefault, PREDEPLOYED_ACCOUNT_CLASS_HASH},
     };
-    use units_utils::starknet::{wait_for_receipt, StarknetProvider};
+    use units_utils::starknet::{wait_for_receipt, StarknetProvider, StarknetWallet};
 
     #[rstest]
     #[tokio::test]
@@ -43,7 +43,11 @@ mod tests {
         #[future] madara_node: (MadaraRunner, Arc<StarknetProvider>),
     ) {
         let (_madara_runner, starknet_provider) = madara_node.await;
-        let global_ctx = Arc::new(GlobalContext::new_with_provider(starknet_provider.clone()));
+        let global_ctx = Arc::new(GlobalContext::new_with_provider(
+            starknet_provider.clone(),
+            Felt::ONE,
+            Arc::new(StarknetWallet::test_default()),
+        ));
         let chain_id = starknet_provider.chain_id().await.unwrap();
         let signer = SigningKey::from_secret_scalar(Felt::ONE);
         let verifying_key = signer.verifying_key();

@@ -174,16 +174,19 @@ mod tests {
     use rstest::*;
     use starknet::{accounts::Account, providers::jsonrpc::HttpTransport};
 
+    use starknet::core::types::ExecutionResult;
     #[cfg(feature = "testing")]
     use units_primitives::read_data::{
         sign_read_data, ReadData, ReadDataVersion, ReadType, ReadValidity,
     };
+    use units_tests_utils::starknet::TestDefault;
     use units_tests_utils::{
         madara::{
             madara_node, madara_node_with_accounts, MadaraRunner, StarknetWalletWithPrivateKey,
         },
         scarb::{scarb_build, ArtifactsMap},
     };
+    use units_utils::starknet::StarknetWallet;
     use units_utils::starknet::WaitForReceipt;
     use units_utils::{starknet::StarknetProvider, url::parse_url};
 
@@ -193,7 +196,11 @@ mod tests {
         let provider = Arc::new(StarknetProvider::new(HttpTransport::new(
             parse_url("http://localhost:5050").unwrap(),
         )));
-        let global_ctx = Arc::new(GlobalContext::new_with_provider(provider));
+        let global_ctx = Arc::new(GlobalContext::new_with_provider(
+            provider,
+            Felt::ONE,
+            Arc::new(StarknetWallet::test_default()),
+        ));
         let random_txn_hash = Felt::ONE;
 
         let receipt = get_transaction_receipt(global_ctx, random_txn_hash, None).await;
@@ -247,7 +254,11 @@ mod tests {
             .unwrap();
 
         // Try to get receipt using account2's signature
-        let global_ctx = Arc::new(GlobalContext::new_with_provider(provider.clone()));
+        let global_ctx = Arc::new(GlobalContext::new_with_provider(
+            provider.clone(),
+            Felt::ONE,
+            Arc::new(StarknetWallet::test_default()),
+        ));
         let read_data = ReadData::new(
             account2_with_private_key.account.address(),
             ReadType::TransactionReceipt(result.transaction_hash),
@@ -323,7 +334,11 @@ mod tests {
             .unwrap();
 
         // Get receipt with proper signature
-        let global_ctx = Arc::new(GlobalContext::new_with_provider(provider.clone()));
+        let global_ctx = Arc::new(GlobalContext::new_with_provider(
+            provider.clone(),
+            Felt::ONE,
+            Arc::new(StarknetWallet::test_default()),
+        ));
         let read_data = ReadData::new(
             account_with_private_key.account.address(),
             ReadType::TransactionReceipt(result.transaction_hash),
@@ -399,7 +414,11 @@ mod tests {
             .unwrap();
 
         // Get receipt - should have no events since we haven't given permission
-        let global_ctx = Arc::new(GlobalContext::new_with_provider(provider.clone()));
+        let global_ctx = Arc::new(GlobalContext::new_with_provider(
+            provider.clone(),
+            Felt::ONE,
+            Arc::new(StarknetWallet::test_default()),
+        ));
         let read_data = ReadData::new(
             account_with_private_key.account.address(),
             ReadType::TransactionReceipt(emit_one_result.transaction_hash),
@@ -592,7 +611,11 @@ mod tests {
             .unwrap();
 
         // Get receipt with proper signature
-        let global_ctx = Arc::new(GlobalContext::new_with_provider(provider.clone()));
+        let global_ctx = Arc::new(GlobalContext::new_with_provider(
+            provider.clone(),
+            Felt::ONE,
+            Arc::new(StarknetWallet::test_default()),
+        ));
         let read_data = ReadData::new(
             account_with_private_key.account.address(),
             ReadType::TransactionReceipt(result.transaction_hash),
@@ -631,8 +654,6 @@ mod tests {
             Vec<StarknetWalletWithPrivateKey>,
         ),
     ) {
-        use starknet::core::types::ExecutionResult;
-
         let (_runner, provider, accounts_with_private_key) = madara_node_with_accounts.await;
         let account_with_private_key = &accounts_with_private_key[0];
 
@@ -648,7 +669,11 @@ mod tests {
             declare_result.expect("Should not be None as it's contract isn't already declared");
 
         // Get receipt with proper signature
-        let global_ctx = Arc::new(GlobalContext::new_with_provider(provider.clone()));
+        let global_ctx = Arc::new(GlobalContext::new_with_provider(
+            provider.clone(),
+            Felt::ONE,
+            Arc::new(StarknetWallet::test_default()),
+        ));
         let read_data = ReadData::new(
             account_with_private_key.account.address(),
             ReadType::TransactionReceipt(declare_result.transaction_hash),
@@ -704,7 +729,11 @@ mod tests {
             .unwrap();
 
         // Get receipt with proper signature
-        let global_ctx = Arc::new(GlobalContext::new_with_provider(provider.clone()));
+        let global_ctx = Arc::new(GlobalContext::new_with_provider(
+            provider.clone(),
+            Felt::ONE,
+            Arc::new(StarknetWallet::test_default()),
+        ));
         let read_data = ReadData::new(
             deploy_account_result.contract_address,
             ReadType::TransactionReceipt(deploy_account_result.transaction_hash),

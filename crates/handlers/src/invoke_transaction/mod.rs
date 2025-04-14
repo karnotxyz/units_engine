@@ -31,8 +31,9 @@ mod tests {
     use units_tests_utils::{
         madara::{madara_node_with_accounts, MadaraRunner, StarknetWalletWithPrivateKey},
         scarb::{scarb_build, ArtifactsMap},
+        starknet::TestDefault,
     };
-    use units_utils::starknet::{encode_calls, StarknetProvider, WaitForReceipt};
+    use units_utils::starknet::{encode_calls, StarknetProvider, StarknetWallet, WaitForReceipt};
 
     #[rstest]
     #[tokio::test]
@@ -47,7 +48,11 @@ mod tests {
         scarb_build: ArtifactsMap,
     ) {
         let (_runner, provider, accounts) = madara_node_with_accounts.await;
-        let global_ctx = Arc::new(GlobalContext::new_with_provider(provider.clone()));
+        let global_ctx = Arc::new(GlobalContext::new_with_provider(
+            provider.clone(),
+            Felt::ONE,
+            Arc::new(StarknetWallet::test_default()),
+        ));
 
         // Get the contract artifacts
         let mut artifacts = scarb_build.await;

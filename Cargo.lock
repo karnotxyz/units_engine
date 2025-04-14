@@ -3676,6 +3676,7 @@ dependencies = [
  "opentelemetry",
  "serde",
  "serde_json",
+ "starknet",
  "thiserror 2.0.12",
  "tokio",
  "tower 0.4.13",
@@ -3742,6 +3743,7 @@ dependencies = [
  "starknet",
  "thiserror 2.0.12",
  "units-handlers",
+ "units-primitives",
  "units-proc-macros",
  "units-utils",
 ]
@@ -3787,6 +3789,7 @@ name = "units-utils"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "assert_matches",
  "async-trait",
  "futures",
  "rstest",

@@ -10,6 +10,7 @@ homepage.workspace = true
 
 [dependencies]
 anyhow.workspace = true
+assert_matches.workspace = true
 async-trait.workspace = true
 futures.workspace = true
 starknet.workspace = true

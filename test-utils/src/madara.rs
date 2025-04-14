@@ -163,6 +163,7 @@ pub async fn madara_node() -> (MadaraRunner, Arc<StarknetProvider>) {
     (runner, provider)
 }
 
+#[derive(Debug, Clone)]
 pub struct StarknetWalletWithPrivateKey {
     pub account: Arc<StarknetWallet>,
     pub private_key: Felt,
