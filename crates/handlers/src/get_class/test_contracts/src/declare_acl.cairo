@@ -9,9 +9,8 @@ mod DeclareAclContract {
     #[derive(Drop, Serde, Copy, PartialEq, starknet::Store, Default)]
     enum ClassVisibility {
         #[default]
-        Public, // 0
-        Acl, // 1
-        // TODO: Add PublicPermanent in future
+        Acl, // 0
+        Public, // 1
     }
 
     #[storage]
@@ -20,8 +19,16 @@ mod DeclareAclContract {
         // The u8 represents the count of access grants
         // If count > 0, access is granted
         class_acl_map: Map<felt252, Map<ContractAddress, u8>>,
-        // Maps class_hash -> visibility
-        class_visibility: Map<felt252, ClassVisibility>,
+        // Maps class_hash -> visibility -> u8
+        // The u8 represents the count of visibility settings
+        // If count > 0, it's public, otherwise it's ACL
+        class_visibility: Map<felt252, u8>,
+        // Maps class_hash -> grantee -> granter -> bool
+        // Tracks who gave access to whom
+        access_granters: Map<felt252, Map<ContractAddress, Map<ContractAddress, bool>>>,
+        // Maps class_hash -> granter -> bool
+        // Tracks who made the class public
+        visibility_granters: Map<felt252, Map<ContractAddress, bool>>,
         owner: ContractAddress,
     }
 
@@ -51,7 +58,8 @@ mod DeclareAclContract {
         ref self: ContractState, 
         class_hash: felt252, 
         account_contract_address: ContractAddress,
-        has_access: bool
+        has_access: bool,
+        granter: ContractAddress
     ) {
         // Only owner can update ACL
         let tx_info = starknet::get_tx_info().unbox();
@@ -64,37 +72,67 @@ mod DeclareAclContract {
         let current_count = self.class_acl_map.entry(class_hash).entry(account_contract_address).read();
         
         // Update the count based on has_access
-        let new_count = if has_access {
+        if has_access {
+            // Check if this granter has already given access
+            let has_granted = self.access_granters.entry(class_hash).entry(account_contract_address).entry(granter).read();
+            if has_granted {
+                // Silently return if already granted
+                return;
+            }
+
+            // Record that this granter gave access
+            self.access_granters.entry(class_hash).entry(account_contract_address).entry(granter).write(true);
+
             // Increment count, but don't overflow
-            if current_count == 255_u8 {
+            let new_count = if current_count == 255_u8 {
                 current_count
             } else {
                 current_count + 1_u8
-            }
+            };
+            self.class_acl_map.entry(class_hash).entry(account_contract_address).write(new_count);
+
+            // Emit event for the update
+            let acl_update = AclUpdate {
+                class_hash,
+                account_contract_address,
+                has_access,
+                count: new_count,
+            };
+            self.emit(acl_update);
         } else {
+            // Check if this granter previously gave access
+            let has_granted = self.access_granters.entry(class_hash).entry(account_contract_address).entry(granter).read();
+            assert!(has_granted, "Cannot revoke access that you didn't grant");
+
+            // Remove granter's record
+            self.access_granters.entry(class_hash).entry(account_contract_address).entry(granter).write(false);
+
             // Decrement count, but don't underflow
-            if current_count == 0_u8 {
+            let new_count = if current_count == 0_u8 {
                 current_count
             } else {
                 current_count - 1_u8
-            }
-        };
+            };
+            self.class_acl_map.entry(class_hash).entry(account_contract_address).write(new_count);
 
-        // Update the ACL mapping with new count
-        self.class_acl_map.entry(class_hash).entry(account_contract_address).write(new_count);
-
-        // Emit event for the update
-        let acl_update = AclUpdate {
-            class_hash,
-            account_contract_address,
-            has_access,
-            count: new_count,
-        };
-        self.emit(acl_update);
+            // Emit event for the update
+            let acl_update = AclUpdate {
+                class_hash,
+                account_contract_address,
+                has_access,
+                count: new_count,
+            };
+            self.emit(acl_update);
+        }
     }
 
     #[external(v0)]
-    fn set_visibility(ref self: ContractState, class_hash: felt252, visibility: ClassVisibility) {
+    fn set_visibility(
+        ref self: ContractState, 
+        class_hash: felt252, 
+        visibility: ClassVisibility,
+        granter: ContractAddress
+    ) {
         // Only owner can set visibility
         let tx_info = starknet::get_tx_info().unbox();
         assert!(
@@ -102,8 +140,46 @@ mod DeclareAclContract {
             "Only owner can set visibility"
         );
 
-        // Update the visibility mapping
-        self.class_visibility.entry(class_hash).write(visibility);
+        // Get current count
+        let current_count = self.class_visibility.entry(class_hash).read();
+        
+        match visibility {
+            ClassVisibility::Public => {
+                // Check if this granter has already made it public
+                let has_granted = self.visibility_granters.entry(class_hash).entry(granter).read();
+                if has_granted {
+                    // Silently return if already granted
+                    return;
+                }
+
+                // Record that this granter made it public
+                self.visibility_granters.entry(class_hash).entry(granter).write(true);
+
+                // Increment count, but don't overflow
+                let new_count = if current_count == 255_u8 {
+                    current_count
+                } else {
+                    current_count + 1_u8
+                };
+                self.class_visibility.entry(class_hash).write(new_count);
+            },
+            ClassVisibility::Acl => {
+                // Check if this granter previously made it public
+                let has_granted = self.visibility_granters.entry(class_hash).entry(granter).read();
+                assert!(has_granted, "Cannot revoke public visibility that you didn't grant");
+
+                // Remove granter's record
+                self.visibility_granters.entry(class_hash).entry(granter).write(false);
+
+                // Decrement count, but don't underflow
+                let new_count = if current_count == 0_u8 {
+                    current_count
+                } else {
+                    current_count - 1_u8
+                };
+                self.class_visibility.entry(class_hash).write(new_count);
+            }
+        }
     }
     
 
@@ -128,8 +204,13 @@ mod DeclareAclContract {
 
     #[external(v0)]
     fn get_visibility(self: @ContractState, class_hash: felt252) -> ClassVisibility {
-        // If no visibility is set, return Public by default
-        self.class_visibility.entry(class_hash).read()
+        // If count > 0, return Public, otherwise return Acl
+        let count = self.class_visibility.entry(class_hash).read();
+        if count > 0_u8 {
+            ClassVisibility::Public
+        } else {
+            ClassVisibility::Acl
+        }
     }
 }
 

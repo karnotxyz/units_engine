@@ -3,11 +3,15 @@ use crate::{
     RpcContext,
 };
 use jsonrpsee::core::{async_trait, RpcResult};
-use starknet::core::types::{
-    BroadcastedDeclareTransaction, BroadcastedDeployAccountTransaction,
-    BroadcastedInvokeTransaction, DeclareTransactionResult, DeployAccountTransactionResult, Felt,
-    InvokeTransactionResult,
+use starknet::{
+    core::types::{
+        BroadcastedDeclareTransaction, BroadcastedDeployAccountTransaction,
+        BroadcastedInvokeTransaction, DeclareTransactionResult, DeployAccountTransactionResult,
+        Felt, InvokeTransactionResult,
+    },
+    providers::ProviderError,
 };
+use units_primitives::types::ClassVisibility;
 
 #[async_trait]
 impl StarknetWriteRpcApiV0_7_1Server for RpcContext {
@@ -30,14 +34,31 @@ impl StarknetWriteRpcApiV0_7_1Server for RpcContext {
                 return Err(StarknetRpcApiError::UnsupportedTxnVersion.into());
             }
         };
-        Ok(
-            units_handlers::declare_class::add_declare_class_transaction(
-                self.global_ctx.clone(),
-                declare_transaction,
-            )
-            .await
-            .map_err(StarknetRpcApiError::from)?,
+        let result = units_handlers::declare_class::add_declare_class_transaction(
+            self.global_ctx.clone(),
+            declare_transaction,
+            ClassVisibility::Public,
         )
+        .await
+        .map_err(ProviderError::from)
+        .map_err(StarknetRpcApiError::from)?;
+
+        // It's possible that the transaction hash is not available as the class
+        // was already declared.
+        let transaction_hash = if let Some(transaction_hash) = result.transaction_hash {
+            transaction_hash
+        } else {
+            return Err(StarknetRpcApiError::ClassAlreadyDeclared.into());
+        };
+
+        // Convert Strings to Felts
+        let class_hash = Felt::from_hex(result.class_hash.as_str()).map_err(|e| StarknetRpcApiError::ErrUnexpectedError { data: format!("Failed to convert class hash to felt: {}", e) })?;
+        let transaction_hash = Felt::from_hex(transaction_hash.as_str()).map_err(|e| StarknetRpcApiError::ErrUnexpectedError { data: format!("Failed to convert transaction hash to felt: {}", e) })?;
+
+        Ok(DeclareTransactionResult {
+            class_hash,
+            transaction_hash,
+        })
     }
 
     /// Add an Deploy Account Transaction

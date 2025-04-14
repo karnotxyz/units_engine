@@ -1,10 +1,8 @@
 use std::sync::Arc;
 
 use starknet::{
-    accounts::{ExecutionEncoding, SingleOwnerAccount},
     core::types::Felt,
     providers::{jsonrpc::HttpTransport, JsonRpcClient},
-    signers::{LocalWallet, SigningKey},
 };
 use url::Url;
 

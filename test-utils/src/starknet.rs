@@ -1,10 +1,7 @@
 use starknet::{
     accounts::{Account, ConnectedAccount, ExecutionEncoding, SingleOwnerAccount},
     core::types::{
-        Call, CallType, ComputationResources, DataAvailabilityResources, DataResources,
-        DeclareTransactionTrace, DeployAccountTransactionTrace, EntryPointType, ExecuteInvocation,
-        ExecutionResources, Felt, FunctionInvocation, InvokeTransactionResult,
-        InvokeTransactionTrace, L1HandlerTransactionTrace, TransactionReceiptWithBlockInfo,
+        Call, CallType, ComputationResources, ContractClass, DataAvailabilityResources, DataResources, DeclareTransactionTrace, DeployAccountTransactionTrace, EntryPointType, ExecuteInvocation, ExecutionResources, Felt, FlattenedSierraClass, FunctionInvocation, InvokeTransactionResult, InvokeTransactionTrace, L1HandlerTransactionTrace, TransactionReceiptWithBlockInfo
     },
     macros::selector,
     providers::jsonrpc::HttpTransport,
@@ -141,6 +138,15 @@ pub fn build_l1_handler_trace() -> L1HandlerTransactionTrace {
         function_invocation: build_function_invocation(),
         state_diff: None,
         execution_resources: build_execution_resources(),
+    }
+}
+
+pub fn assert_contract_class_eq(expected: FlattenedSierraClass, actual: ContractClass) {
+    match actual {
+        ContractClass::Sierra(actual) => {
+            assert_eq!(expected, actual);
+        }
+        _ => panic!("Contract class is not a Sierra class"),
     }
 }
 

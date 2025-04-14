@@ -28,6 +28,7 @@ thiserror.workspace = true
 units-handlers.workspace = true
 units-proc-macros.workspace = true
 units-utils.workspace = true
+units-primitives.workspace = true
 
 [features]
 testing = ["units-handlers/testing"]

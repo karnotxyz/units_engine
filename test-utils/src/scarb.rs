@@ -61,6 +61,19 @@ pub async fn scarb_build(#[default(".")] path: impl AsRef<Path>) -> ArtifactsMap
     parse_starknet_artifacts(&canonical_path).unwrap()
 }
 
+/// Runs scarb build in multiple directories and merges their artifacts
+/// Couldn't figure out fixtures + vector arguments, so made a function for now
+pub async fn scarb_builds(paths: Vec<impl AsRef<Path>>) -> ArtifactsMap {
+    let mut merged_artifacts = ArtifactsMap::new();
+
+    for path in paths {
+        let artifacts = scarb_build(path).await;
+        merged_artifacts.extend(artifacts);
+    }
+
+    merged_artifacts
+}
+
 #[derive(Debug, Clone)]
 pub struct Artifacts {
     pub class_hash: Felt,
