@@ -202,7 +202,7 @@ mod tests {
             ReadVerifier::Account(VerifierAccount {
                 singer_address: account.address(),
             }),
-            ReadType::Nonce(Felt::ZERO),
+            vec![ReadType::Nonce(Felt::ZERO)],
             ReadValidity::Block(1000000),
             provider.chain_id().await.unwrap(),
             ReadDataVersion::ONE,
@@ -262,7 +262,7 @@ mod tests {
             ReadVerifier::Account(VerifierAccount {
                 singer_address: account_with_private_key.account.address(),
             }),
-            ReadType::Nonce(address),
+            vec![ReadType::Nonce(address)],
             ReadValidity::Block(1000000),
             provider.chain_id().await.unwrap(),
             ReadDataVersion::ONE,
@@ -321,7 +321,7 @@ mod tests {
             ReadVerifier::Account(VerifierAccount {
                 singer_address: owner_account_with_private_key.account.address(),
             }),
-            ReadType::Nonce(contract_address),
+            vec![ReadType::Nonce(contract_address)],
             ReadValidity::Block(1000000),
             provider.chain_id().await.unwrap(),
             ReadDataVersion::ONE,
@@ -350,7 +350,7 @@ mod tests {
             ReadVerifier::Account(VerifierAccount {
                 singer_address: other_account_with_private_key.account.address(),
             }),
-            ReadType::Nonce(contract_address),
+            vec![ReadType::Nonce(contract_address)],
             ReadValidity::Block(1000000),
             provider.chain_id().await.unwrap(),
             ReadDataVersion::ONE,

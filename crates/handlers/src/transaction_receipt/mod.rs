@@ -264,7 +264,7 @@ mod tests {
             ReadVerifier::Account(VerifierAccount {
                 singer_address: account2_with_private_key.account.address(),
             }),
-            ReadType::TransactionReceipt(result.transaction_hash),
+            vec![ReadType::TransactionReceipt(result.transaction_hash)],
             ReadValidity::Block(1000000),
             provider.chain_id().await.unwrap(),
             ReadDataVersion::ONE,
@@ -346,7 +346,7 @@ mod tests {
             ReadVerifier::Account(VerifierAccount {
                 singer_address: account_with_private_key.account.address(),
             }),
-            ReadType::TransactionReceipt(result.transaction_hash),
+            vec![ReadType::TransactionReceipt(result.transaction_hash)],
             ReadValidity::Block(1000000),
             provider.chain_id().await.unwrap(),
             ReadDataVersion::ONE,
@@ -428,7 +428,7 @@ mod tests {
             ReadVerifier::Account(VerifierAccount {
                 singer_address: account_with_private_key.account.address(),
             }),
-            ReadType::TransactionReceipt(emit_one_result.transaction_hash),
+            vec![ReadType::TransactionReceipt(emit_one_result.transaction_hash)],
             ReadValidity::Block(1000000),
             provider.chain_id().await.unwrap(),
             ReadDataVersion::ONE,
@@ -627,7 +627,7 @@ mod tests {
             ReadVerifier::Account(VerifierAccount {
                 singer_address: account_with_private_key.account.address(),
             }),
-            ReadType::TransactionReceipt(result.transaction_hash),
+            vec![ReadType::TransactionReceipt(result.transaction_hash)],
             ReadValidity::Block(1000000),
             provider.chain_id().await.unwrap(),
             ReadDataVersion::ONE,
@@ -687,7 +687,7 @@ mod tests {
             ReadVerifier::Account(VerifierAccount {
                 singer_address: account_with_private_key.account.address(),
             }),
-            ReadType::TransactionReceipt(declare_result.transaction_hash),
+            vec![ReadType::TransactionReceipt(declare_result.transaction_hash)],
             ReadValidity::Block(1000000),
             provider.chain_id().await.unwrap(),
             ReadDataVersion::ONE,
@@ -749,7 +749,7 @@ mod tests {
             ReadVerifier::Account(VerifierAccount {
                 singer_address: deploy_account_result.contract_address,
             }),
-            ReadType::TransactionReceipt(deploy_account_result.transaction_hash),
+            vec![ReadType::TransactionReceipt(deploy_account_result.transaction_hash)],
             ReadValidity::Block(1000000),
             provider.chain_id().await.unwrap(),
             ReadDataVersion::ONE,

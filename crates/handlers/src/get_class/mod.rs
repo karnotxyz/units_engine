@@ -198,7 +198,7 @@ mod tests {
             ReadVerifier::Account(VerifierAccount {
                 singer_address: accounts_with_private_key[1].account.address(),
             }),
-            ReadType::Class(dummy_contract_class_hash),
+            vec![ReadType::Class(dummy_contract_class_hash)],
             ReadValidity::Block(100),
             chain_id,
             ReadDataVersion::ONE,
