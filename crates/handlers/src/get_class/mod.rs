@@ -58,7 +58,7 @@ pub async fn get_class(
                 selector: HAS_READ_ACCESS_SELECTOR,
                 calldata: vec![class_hash],
             }],
-            *signed_read_data.read_data().contract_address(),
+            *signed_read_data.read_data().read_address(),
             starknet_provider.clone(),
         )
         .await
@@ -85,6 +85,7 @@ mod tests {
     #[cfg(feature = "testing")]
     use units_primitives::read_data::sign_read_data;
     use units_primitives::read_data::{ReadData, ReadDataVersion, ReadType, ReadValidity};
+    use units_primitives::read_data::{ReadVerifier, VerifierAccount};
     use units_tests_utils::{
         madara::{madara_node_with_accounts, MadaraRunner, StarknetWalletWithPrivateKey},
         scarb::{scarb_build, ArtifactsMap},
@@ -194,7 +195,9 @@ mod tests {
         // Attempt access from 2nd account with read signature but no access
         let chain_id = provider.chain_id().await.unwrap();
         let read_data = ReadData::new(
-            accounts_with_private_key[1].account.address(),
+            ReadVerifier::Account(VerifierAccount {
+                singer_address: accounts_with_private_key[1].account.address(),
+            }),
             ReadType::Class(dummy_contract_class_hash),
             ReadValidity::Block(100),
             chain_id,

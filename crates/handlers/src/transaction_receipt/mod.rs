@@ -68,7 +68,7 @@ pub async fn get_transaction_receipt(
     let sender_address = raw_txn
         .get_sender_address()
         .ok_or(TransactionReceiptError::InvalidTransactionType)?;
-    if sender_address != *signed_read_data.read_data().contract_address() {
+    if sender_address != *signed_read_data.read_data().read_address() {
         return Err(TransactionReceiptError::InvalidSenderAddress);
     }
 
@@ -131,7 +131,7 @@ pub async fn get_transaction_receipt(
                     selector: CAN_READ_EVENT_SELECTOR,
                     calldata: vec![event.event.keys[0]], // first key is the event selector
                 }],
-                *signed_read_data.read_data().contract_address(),
+                *signed_read_data.read_data().read_address(),
                 starknet_provider.clone(),
             )
             .await
@@ -179,6 +179,7 @@ mod tests {
     use units_primitives::read_data::{
         sign_read_data, ReadData, ReadDataVersion, ReadType, ReadValidity,
     };
+    use units_primitives::read_data::{ReadVerifier, VerifierAccount};
     use units_tests_utils::starknet::TestDefault;
     use units_tests_utils::{
         madara::{
@@ -260,7 +261,9 @@ mod tests {
             Arc::new(StarknetWallet::test_default()),
         ));
         let read_data = ReadData::new(
-            account2_with_private_key.account.address(),
+            ReadVerifier::Account(VerifierAccount {
+                singer_address: account2_with_private_key.account.address(),
+            }),
             ReadType::TransactionReceipt(result.transaction_hash),
             ReadValidity::Block(1000000),
             provider.chain_id().await.unwrap(),
@@ -340,7 +343,9 @@ mod tests {
             Arc::new(StarknetWallet::test_default()),
         ));
         let read_data = ReadData::new(
-            account_with_private_key.account.address(),
+            ReadVerifier::Account(VerifierAccount {
+                singer_address: account_with_private_key.account.address(),
+            }),
             ReadType::TransactionReceipt(result.transaction_hash),
             ReadValidity::Block(1000000),
             provider.chain_id().await.unwrap(),
@@ -420,7 +425,9 @@ mod tests {
             Arc::new(StarknetWallet::test_default()),
         ));
         let read_data = ReadData::new(
-            account_with_private_key.account.address(),
+            ReadVerifier::Account(VerifierAccount {
+                singer_address: account_with_private_key.account.address(),
+            }),
             ReadType::TransactionReceipt(emit_one_result.transaction_hash),
             ReadValidity::Block(1000000),
             provider.chain_id().await.unwrap(),
@@ -617,7 +624,9 @@ mod tests {
             Arc::new(StarknetWallet::test_default()),
         ));
         let read_data = ReadData::new(
-            account_with_private_key.account.address(),
+            ReadVerifier::Account(VerifierAccount {
+                singer_address: account_with_private_key.account.address(),
+            }),
             ReadType::TransactionReceipt(result.transaction_hash),
             ReadValidity::Block(1000000),
             provider.chain_id().await.unwrap(),
@@ -675,7 +684,9 @@ mod tests {
             Arc::new(StarknetWallet::test_default()),
         ));
         let read_data = ReadData::new(
-            account_with_private_key.account.address(),
+            ReadVerifier::Account(VerifierAccount {
+                singer_address: account_with_private_key.account.address(),
+            }),
             ReadType::TransactionReceipt(declare_result.transaction_hash),
             ReadValidity::Block(1000000),
             provider.chain_id().await.unwrap(),
@@ -735,7 +746,9 @@ mod tests {
             Arc::new(StarknetWallet::test_default()),
         ));
         let read_data = ReadData::new(
-            deploy_account_result.contract_address,
+            ReadVerifier::Account(VerifierAccount {
+                singer_address: deploy_account_result.contract_address,
+            }),
             ReadType::TransactionReceipt(deploy_account_result.transaction_hash),
             ReadValidity::Block(1000000),
             provider.chain_id().await.unwrap(),
