@@ -78,7 +78,7 @@ pub async fn get_nonce(
                 selector: CAN_READ_NONCE_SELECTOR,
                 calldata: vec![],
             }],
-            *signed_read_data.read_data().contract_address(),
+            *signed_read_data.read_data().read_address(),
             starknet_provider.clone(),
         )
         .await?;
@@ -102,6 +102,7 @@ mod tests {
     use units_primitives::read_data::sign_read_data;
 
     use units_primitives::read_data::{ReadData, ReadDataVersion, ReadType, ReadValidity};
+    use units_primitives::read_data::{ReadVerifier, VerifierAccount};
     use units_tests_utils::starknet::TestDefault;
     use units_tests_utils::{
         madara::{madara_node_with_accounts, MadaraRunner, StarknetWalletWithPrivateKey},
@@ -198,7 +199,9 @@ mod tests {
             .await;
 
         let read_data = ReadData::new(
-            account.address(),
+            ReadVerifier::Account(VerifierAccount {
+                singer_address: account.address(),
+            }),
             ReadType::Nonce(Felt::ZERO),
             ReadValidity::Block(1000000),
             provider.chain_id().await.unwrap(),
@@ -256,7 +259,9 @@ mod tests {
             Arc::new(StarknetWallet::test_default()),
         ));
         let read_data = ReadData::new(
-            account_with_private_key.account.address(),
+            ReadVerifier::Account(VerifierAccount {
+                singer_address: account_with_private_key.account.address(),
+            }),
             ReadType::Nonce(address),
             ReadValidity::Block(1000000),
             provider.chain_id().await.unwrap(),
@@ -313,7 +318,9 @@ mod tests {
             Arc::new(StarknetWallet::test_default()),
         ));
         let read_data = ReadData::new(
-            owner_account_with_private_key.account.address(),
+            ReadVerifier::Account(VerifierAccount {
+                singer_address: owner_account_with_private_key.account.address(),
+            }),
             ReadType::Nonce(contract_address),
             ReadValidity::Block(1000000),
             provider.chain_id().await.unwrap(),
@@ -340,7 +347,9 @@ mod tests {
         // Nonce with other account should not work
         let other_account_with_private_key = &accounts_with_private_key[1];
         let read_data = ReadData::new(
-            other_account_with_private_key.account.address(),
+            ReadVerifier::Account(VerifierAccount {
+                singer_address: other_account_with_private_key.account.address(),
+            }),
             ReadType::Nonce(contract_address),
             ReadValidity::Block(1000000),
             provider.chain_id().await.unwrap(),
