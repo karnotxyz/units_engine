@@ -3,7 +3,7 @@ use std::sync::Arc;
 use starknet::core::types::{BlockId, BlockTag, Call, ContractClass, Felt, FunctionCall};
 use starknet::macros::selector;
 use starknet::providers::{Provider, ProviderError};
-use units_primitives::read_data::SignedReadData;
+use units_primitives::read_data::{ReadDataError, SignedReadData};
 use units_primitives::types::{ClassVisibility, ClassVisibilityError};
 use units_utils::context::GlobalContext;
 use units_utils::starknet::{simulate_boolean_read, SimulationError};
@@ -25,6 +25,8 @@ pub enum GetClassError {
     ClassReadNotAllowed,
     #[error("Invalid class visibility")]
     InvalidClassVisibility(#[from] ClassVisibilityError),
+    #[error("Read data error: {0}")]
+    ReadDataError(#[from] ReadDataError),
 }
 
 pub async fn get_class(
@@ -52,6 +54,19 @@ pub async fn get_class(
     if visibility != ClassVisibility::Public {
         // Check if user has access to the contract
         let signed_read_data = signed_read_data.ok_or(GetClassError::ReadSignatureNotProvided)?;
+
+        // Verify the signature and check that it has the required read type
+        if !signed_read_data
+            .verify(
+                starknet_provider.clone(),
+                vec![units_primitives::read_data::ReadType::Class(class_hash)],
+            )
+            .await
+            .map_err(GetClassError::ReadDataError)?
+        {
+            return Err(GetClassError::ClassReadNotAllowed);
+        }
+
         let has_read_access = simulate_boolean_read(
             vec![Call {
                 to: declare_acl_address,
@@ -249,5 +264,30 @@ mod tests {
                 .unwrap(),
             class.unwrap(),
         );
+
+        // Try to access with a signed read data for a different class hash
+        let different_class_hash = Felt::from_hex_unchecked("0x123");
+        let read_data_with_different_class = ReadData::new(
+            ReadVerifier::Account(VerifierAccount {
+                singer_address: accounts_with_private_key[1].account.address(),
+            }),
+            vec![ReadType::Class(different_class_hash)],
+            ReadValidity::Block(100),
+            chain_id,
+            ReadDataVersion::ONE,
+        );
+        let signed_read_data_with_different_class = sign_read_data(
+            read_data_with_different_class,
+            accounts_with_private_key[1].private_key,
+        )
+        .await
+        .unwrap();
+        let class = get_class(
+            global_ctx,
+            dummy_contract_class_hash,
+            Some(signed_read_data_with_different_class),
+        )
+        .await;
+        assert_matches!(class, Err(GetClassError::ReadDataError(ReadDataError::MissingRequiredReadTypes)));
     }
 }
