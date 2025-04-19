@@ -78,7 +78,7 @@ pub async fn add_declare_class_transaction(
             .await?;
 
         return Ok(DeclareTransactionResult {
-            class_hash: class_hash.to_hex_string(),
+            class_hash: class_hash.into(),
             transaction_hash: None,
             acl_updated: true,
         });
@@ -89,8 +89,8 @@ pub async fn add_declare_class_transaction(
         .await?;
 
     Ok(DeclareTransactionResult {
-        class_hash: declare_result.class_hash.to_hex_string(),
-        transaction_hash: Some(declare_result.transaction_hash.to_hex_string()),
+        class_hash: declare_result.class_hash.into(),
+        transaction_hash: Some(declare_result.transaction_hash.into()),
         acl_updated: true,
     })
 }
@@ -162,8 +162,8 @@ mod tests {
         .unwrap();
         println!("result: {:?}", result);
         let starknet_declare_txn = starknet::core::types::DeclareTransactionResult {
-            class_hash: Felt::from_hex_unchecked(result.class_hash.as_str()),
-            transaction_hash: Felt::from_hex_unchecked(result.transaction_hash.unwrap().as_str()),
+            class_hash: result.class_hash.try_into().unwrap(),
+            transaction_hash: result.transaction_hash.unwrap().try_into().unwrap(),
         };
         starknet_declare_txn
             .wait_for_receipt(provider.clone(), None)
@@ -207,7 +207,7 @@ mod tests {
         assert_eq!(
             result,
             DeclareTransactionResult {
-                class_hash: starknet_declare_txn.class_hash.to_hex_string(),
+                class_hash: starknet_declare_txn.class_hash.into(),
                 transaction_hash: None,
                 acl_updated: true,
             }

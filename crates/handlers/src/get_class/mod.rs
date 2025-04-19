@@ -3,7 +3,7 @@ use std::sync::Arc;
 use starknet::core::types::{BlockId, BlockTag, Call, ContractClass, Felt, FunctionCall};
 use starknet::macros::selector;
 use starknet::providers::{Provider, ProviderError};
-use units_primitives::read_data::{ReadDataError, SignedReadData};
+use units_primitives::read_data::{ReadDataError, ReadType, SignedReadData};
 use units_primitives::types::{ClassVisibility, ClassVisibilityError};
 use units_utils::context::GlobalContext;
 use units_utils::starknet::{simulate_boolean_read, SimulationError};
@@ -59,7 +59,9 @@ pub async fn get_class(
         if !signed_read_data
             .verify(
                 starknet_provider.clone(),
-                vec![units_primitives::read_data::ReadType::Class(class_hash)],
+                vec![ReadType::Class {
+                    class_hash: class_hash.into(),
+                }],
             )
             .await
             .map_err(GetClassError::ReadDataError)?
@@ -213,10 +215,14 @@ mod tests {
             ReadVerifier::Account(VerifierAccount {
                 singer_address: accounts_with_private_key[1].account.address(),
             }),
-            vec![ReadType::Class(dummy_contract_class_hash)],
-            ReadValidity::Block(100),
+            vec![ReadType::Class {
+                class_hash: dummy_contract_class_hash.into(),
+            }],
+            ReadValidity::Block {
+                block: 100,
+            },
             chain_id,
-            ReadDataVersion::ONE,
+            ReadDataVersion::One,
         );
         let signed_read_data = sign_read_data(read_data, accounts_with_private_key[1].private_key)
             .await
@@ -271,10 +277,14 @@ mod tests {
             ReadVerifier::Account(VerifierAccount {
                 singer_address: accounts_with_private_key[1].account.address(),
             }),
-            vec![ReadType::Class(different_class_hash)],
-            ReadValidity::Block(100),
+            vec![ReadType::Class {
+                class_hash: different_class_hash.into(),
+            }],
+            ReadValidity::Block {
+                block: 100,
+            },
             chain_id,
-            ReadDataVersion::ONE,
+            ReadDataVersion::One,
         );
         let signed_read_data_with_different_class = sign_read_data(
             read_data_with_different_class,

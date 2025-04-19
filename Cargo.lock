@@ -3714,6 +3714,8 @@ dependencies = [
  "assert_matches",
  "hex",
  "rstest",
+ "serde",
+ "serde_json",
  "starknet",
  "starknet-crypto",
  "thiserror 2.0.12",

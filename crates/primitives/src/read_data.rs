@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use crate::rpc::HexBytes32;
+use serde::{Deserialize, Serialize};
 use starknet::{
     core::types::{BlockId, BlockTag, Felt, FunctionCall, MaybePendingBlockWithTxs},
     macros::selector,
@@ -34,18 +36,19 @@ pub enum ReadDataError {
     MissingRequiredReadTypes,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct VerifierAccount {
     pub singer_address: Felt,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct VerifierIdentity {
     pub signer_address: Felt,
     pub identity_address: Felt,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "UPPERCASE")]
 pub enum ReadVerifier {
     Account(VerifierAccount),
     Identity(VerifierIdentity),
@@ -90,7 +93,7 @@ impl ReadVerifier {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ReadData {
     verifier: ReadVerifier,
     read_type: Vec<ReadType>,
@@ -133,44 +136,48 @@ impl ReadData {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "UPPERCASE")]
 pub enum ReadType {
     // stores contract address
-    Nonce(Felt),
+    Nonce { nonce: HexBytes32 },
     // stores transaction hash
-    TransactionReceipt(Felt),
+    TransactionReceipt { transaction_hash: HexBytes32 },
     // stores class hash
-    Class(Felt),
+    Class { class_hash: HexBytes32 },
 }
 
 impl ReadType {
     fn hash(&self) -> Felt {
         match self {
-            ReadType::Nonce(address) => poseidon_hash_many(vec![
+            ReadType::Nonce { nonce } => poseidon_hash_many(vec![
                 &Felt::from_hex_unchecked(hex::encode("nonce").as_str()),
-                &address,
+                &Felt::from_bytes_be(&nonce.to_bytes_be()),
             ]),
-            ReadType::TransactionReceipt(hash) => poseidon_hash_many(vec![
+            ReadType::TransactionReceipt {
+                transaction_hash: transaction_receipt,
+            } => poseidon_hash_many(vec![
                 &Felt::from_hex_unchecked(hex::encode("transaction_receipt").as_str()),
-                &hash,
+                &Felt::from_bytes_be(&transaction_receipt.to_bytes_be()),
             ]),
-            ReadType::Class(class_hash) => poseidon_hash_many(vec![
+            ReadType::Class { class_hash: class } => poseidon_hash_many(vec![
                 &Felt::from_hex_unchecked(hex::encode("class").as_str()),
-                &class_hash,
+                &Felt::from_bytes_be(&class.to_bytes_be()),
             ]),
         }
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "UPPERCASE")]
 pub enum ReadDataVersion {
-    ONE,
+    One,
 }
 
 impl ReadDataVersion {
     fn hash(&self) -> Felt {
         let version_felt = match self {
-            ReadDataVersion::ONE => Felt::from(1),
+            ReadDataVersion::One => Felt::from(1),
         };
         poseidon_hash_many(vec![
             &Felt::from_hex_unchecked(hex::encode("version").as_str()),
@@ -179,20 +186,21 @@ impl ReadDataVersion {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "UPPERCASE")]
 pub enum ReadValidity {
-    Block(u64),
-    Timestamp(u64),
+    Block { block: u64 },
+    Timestamp { timestamp: u64 },
 }
 
 impl ReadValidity {
     fn hash(&self) -> Felt {
         match self {
-            ReadValidity::Block(block) => poseidon_hash_many(vec![
+            ReadValidity::Block { block } => poseidon_hash_many(vec![
                 &Felt::from_hex_unchecked(hex::encode("block").as_str()),
                 &Felt::from(*block),
             ]),
-            ReadValidity::Timestamp(timestamp) => poseidon_hash_many(vec![
+            ReadValidity::Timestamp { timestamp } => poseidon_hash_many(vec![
                 &Felt::from_hex_unchecked(hex::encode("timestamp").as_str()),
                 &Felt::from(*timestamp),
             ]),
@@ -221,7 +229,7 @@ impl ReadData {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SignedReadData {
     read_data: ReadData,
     signature: Vec<Felt>,
@@ -260,7 +268,9 @@ impl SignedReadData {
 
         // Check for expiry
         match &self.read_data.read_validity {
-            ReadValidity::Block(expiry_block) => {
+            ReadValidity::Block {
+                block: expiry_block,
+            } => {
                 // TODO: there could be an optimisation here to do a multicall that calls
                 // is_valid_signature and then calls a function to check signature block_number
                 // is less than equal to expiry_block
@@ -279,7 +289,9 @@ impl SignedReadData {
                     }
                 }
             }
-            ReadValidity::Timestamp(expiry_timestamp) => {
+            ReadValidity::Timestamp {
+                timestamp: expiry_timestamp,
+            } => {
                 let current_timestamp = std::time::SystemTime::now()
                     .duration_since(std::time::UNIX_EPOCH)
                     .unwrap()
@@ -397,10 +409,12 @@ mod tests {
             ReadVerifier::Account(VerifierAccount {
                 singer_address: address,
             }),
-            vec![ReadType::Nonce(Felt::from_hex_unchecked("0x1"))],
-            ReadValidity::Block(100),
+            vec![ReadType::Nonce {
+                nonce: HexBytes32::from_hex("0x1").unwrap(),
+            }],
+            ReadValidity::Block { block: 100 },
             Felt::from_hex_unchecked("0x3"),
-            ReadDataVersion::ONE,
+            ReadDataVersion::One,
         );
         assert_eq!(
             read_signature.hash(),
@@ -441,10 +455,12 @@ mod tests {
             ReadVerifier::Account(VerifierAccount {
                 singer_address: address,
             }),
-            vec![ReadType::Nonce(Felt::from_hex_unchecked("0x1"))],
-            ReadValidity::Timestamp(100),
+            vec![ReadType::Nonce {
+                nonce: HexBytes32::from_hex("0x1").unwrap(),
+            }],
+            ReadValidity::Timestamp { timestamp: 100 },
             Felt::from_hex_unchecked("0x3"),
-            ReadDataVersion::ONE,
+            ReadDataVersion::One,
         );
         assert_eq!(
             read_signature.hash(),
@@ -485,12 +501,12 @@ mod tests {
             ReadVerifier::Account(VerifierAccount {
                 singer_address: address,
             }),
-            vec![ReadType::TransactionReceipt(Felt::from_hex_unchecked(
-                "0x123",
-            ))],
-            ReadValidity::Block(100),
+            vec![ReadType::TransactionReceipt {
+                transaction_hash: HexBytes32::from_hex("0x123").unwrap(),
+            }],
+            ReadValidity::Block { block: 100 },
             Felt::from_hex_unchecked("0x356"),
-            ReadDataVersion::ONE,
+            ReadDataVersion::One,
         );
         assert_eq!(
             read_signature.hash(),
@@ -531,10 +547,12 @@ mod tests {
             ReadVerifier::Account(VerifierAccount {
                 singer_address: address,
             }),
-            vec![ReadType::Class(Felt::from_hex_unchecked("0x123"))],
-            ReadValidity::Block(100),
+            vec![ReadType::Class {
+                class_hash: HexBytes32::from_hex("0x123").unwrap(),
+            }],
+            ReadValidity::Block { block: 100 },
             Felt::from_hex_unchecked("0x3"),
-            ReadDataVersion::ONE,
+            ReadDataVersion::One,
         );
         assert_eq!(
             read_signature.hash(),
@@ -577,10 +595,12 @@ mod tests {
                 signer_address: account_address,
                 identity_address,
             }),
-            vec![ReadType::Nonce(Felt::from_hex_unchecked("0x1"))],
-            ReadValidity::Block(100),
+            vec![ReadType::Nonce {
+                nonce: HexBytes32::from_hex("0x1").unwrap(),
+            }],
+            ReadValidity::Block { block: 100 },
             Felt::from_hex_unchecked("0x3"),
-            ReadDataVersion::ONE,
+            ReadDataVersion::One,
         );
 
         assert_eq!(
@@ -631,10 +651,12 @@ mod tests {
             ReadVerifier::Account(VerifierAccount {
                 singer_address: account_with_private_key.account.address(),
             }),
-            vec![ReadType::Nonce(Felt::ZERO)],
-            ReadValidity::Block(1000000), // Set a high block number to avoid expiry
+            vec![ReadType::Nonce {
+                nonce: HexBytes32::from_hex("0x0").unwrap(),
+            }],
+            ReadValidity::Block { block: 1000000 }, // Set a high block number to avoid expiry
             provider.chain_id().await.unwrap(),
-            ReadDataVersion::ONE,
+            ReadDataVersion::One,
         );
 
         let signed_read_data = sign_read_data(read_data, account_with_private_key.private_key)
@@ -661,10 +683,12 @@ mod tests {
             ReadVerifier::Account(VerifierAccount {
                 singer_address: account_with_private_key.account.address(),
             }),
-            vec![ReadType::Nonce(Felt::ZERO)],
-            ReadValidity::Block(1000000),
+            vec![ReadType::Nonce {
+                nonce: HexBytes32::from_hex("0x0").unwrap(),
+            }],
+            ReadValidity::Block { block: 1000000 },
             provider.chain_id().await.unwrap(),
-            ReadDataVersion::ONE,
+            ReadDataVersion::One,
         );
 
         // Sign with an invalid private key (Felt::THREE)
@@ -697,10 +721,14 @@ mod tests {
             ReadVerifier::Account(VerifierAccount {
                 singer_address: account_with_private_key.account.address(),
             }),
-            vec![ReadType::Nonce(Felt::ZERO)],
-            ReadValidity::Timestamp(expired_timestamp),
+            vec![ReadType::Nonce {
+                nonce: HexBytes32::from_hex("0x0").unwrap(),
+            }],
+            ReadValidity::Timestamp {
+                timestamp: expired_timestamp,
+            },
             provider.chain_id().await.unwrap(),
-            ReadDataVersion::ONE,
+            ReadDataVersion::One,
         );
 
         let signed_read_data = sign_read_data(read_data, account_with_private_key.private_key)
@@ -727,10 +755,12 @@ mod tests {
             ReadVerifier::Account(VerifierAccount {
                 singer_address: account_with_private_key.account.address(),
             }),
-            vec![ReadType::Nonce(Felt::ZERO)],
-            ReadValidity::Block(1),
+            vec![ReadType::Nonce {
+                nonce: HexBytes32::from_hex("0x0").unwrap(),
+            }],
+            ReadValidity::Block { block: 1 },
             provider.chain_id().await.unwrap(),
-            ReadDataVersion::ONE,
+            ReadDataVersion::One,
         );
 
         wait_for_block(provider.clone(), 2, None).await.unwrap();
@@ -812,10 +842,12 @@ mod tests {
                 signer_address: account_with_private_key.account.address(),
                 identity_address,
             }),
-            vec![ReadType::Nonce(Felt::ZERO)],
-            ReadValidity::Block(1000000), // Set a high block number to avoid expiry
+            vec![ReadType::Nonce {
+                nonce: HexBytes32::from_hex("0x0").unwrap(),
+            }],
+            ReadValidity::Block { block: 1000000 }, // Set a high block number to avoid expiry
             provider.chain_id().await.unwrap(),
-            ReadDataVersion::ONE,
+            ReadDataVersion::One,
         );
 
         // 2. Sign the read data
@@ -882,12 +914,16 @@ mod tests {
                 singer_address: account_with_private_key.account.address(),
             }),
             vec![
-                ReadType::Nonce(Felt::ZERO),
-                ReadType::TransactionReceipt(Felt::ONE),
+                ReadType::Nonce {
+                    nonce: HexBytes32::from_hex("0x0").unwrap(),
+                },
+                ReadType::TransactionReceipt {
+                    transaction_hash: HexBytes32::from_hex("0x1").unwrap(),
+                },
             ],
-            ReadValidity::Block(1000000), // Set a high block number to avoid expiry
+            ReadValidity::Block { block: 1000000 }, // Set a high block number to avoid expiry
             provider.chain_id().await.unwrap(),
-            ReadDataVersion::ONE,
+            ReadDataVersion::One,
         );
 
         let signed_read_data = sign_read_data(read_data, account_with_private_key.private_key)
@@ -896,7 +932,12 @@ mod tests {
 
         // Verify with one required read type
         let result = signed_read_data
-            .verify(provider.clone(), vec![ReadType::Nonce(Felt::ZERO)])
+            .verify(
+                provider.clone(),
+                vec![ReadType::Nonce {
+                    nonce: HexBytes32::from_hex("0x0").unwrap(),
+                }],
+            )
             .await;
         assert_matches!(result, Ok(true));
 
@@ -905,8 +946,12 @@ mod tests {
             .verify(
                 provider.clone(),
                 vec![
-                    ReadType::Nonce(Felt::ZERO),
-                    ReadType::TransactionReceipt(Felt::ONE),
+                    ReadType::Nonce {
+                        nonce: HexBytes32::from_hex("0x0").unwrap(),
+                    },
+                    ReadType::TransactionReceipt {
+                        transaction_hash: HexBytes32::from_hex("0x1").unwrap(),
+                    },
                 ],
             )
             .await;
@@ -931,10 +976,12 @@ mod tests {
             ReadVerifier::Account(VerifierAccount {
                 singer_address: account_with_private_key.account.address(),
             }),
-            vec![ReadType::Nonce(Felt::ZERO)],
-            ReadValidity::Block(1000000), // Set a high block number to avoid expiry
+            vec![ReadType::Nonce {
+                nonce: HexBytes32::from_hex("0x0").unwrap(),
+            }],
+            ReadValidity::Block { block: 1000000 }, // Set a high block number to avoid expiry
             provider.chain_id().await.unwrap(),
-            ReadDataVersion::ONE,
+            ReadDataVersion::One,
         );
 
         let signed_read_data = sign_read_data(read_data, account_with_private_key.private_key)
@@ -945,7 +992,9 @@ mod tests {
         let result = signed_read_data
             .verify(
                 provider.clone(),
-                vec![ReadType::TransactionReceipt(Felt::ONE)],
+                vec![ReadType::TransactionReceipt {
+                    transaction_hash: HexBytes32::from_hex("0x1").unwrap(),
+                }],
             )
             .await;
         assert_matches!(result, Err(ReadDataError::MissingRequiredReadTypes));
@@ -969,10 +1018,12 @@ mod tests {
             ReadVerifier::Account(VerifierAccount {
                 singer_address: account_with_private_key.account.address(),
             }),
-            vec![ReadType::Nonce(Felt::ZERO)],
-            ReadValidity::Block(1000000), // Set a high block number to avoid expiry
+            vec![ReadType::Nonce {
+                nonce: HexBytes32::from_hex("0x0").unwrap(),
+            }],
+            ReadValidity::Block { block: 1000000 }, // Set a high block number to avoid expiry
             provider.chain_id().await.unwrap(),
-            ReadDataVersion::ONE,
+            ReadDataVersion::One,
         );
 
         let signed_read_data = sign_read_data(read_data, account_with_private_key.private_key)
@@ -981,7 +1032,12 @@ mod tests {
 
         // Verify with a nonce read type but for a different address
         let result = signed_read_data
-            .verify(provider.clone(), vec![ReadType::Nonce(Felt::ONE)])
+            .verify(
+                provider.clone(),
+                vec![ReadType::Nonce {
+                    nonce: HexBytes32::from_hex("0x1").unwrap(),
+                }],
+            )
             .await;
         assert_matches!(result, Err(ReadDataError::MissingRequiredReadTypes));
     }

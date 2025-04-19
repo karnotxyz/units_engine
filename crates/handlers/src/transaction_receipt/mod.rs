@@ -49,7 +49,7 @@ const CAN_READ_EVENT_SELECTOR: Felt = selector!("can_read_event");
 pub async fn get_transaction_receipt(
     global_ctx: Arc<GlobalContext>,
     transaction_hash: Felt,
-    signed_read_data: SignedReadData
+    signed_read_data: SignedReadData,
 ) -> Result<TransactionReceiptWithBlockInfo, TransactionReceiptError> {
     let starknet_provider = global_ctx.starknet_provider();
 
@@ -57,9 +57,9 @@ pub async fn get_transaction_receipt(
     if !signed_read_data
         .verify(
             starknet_provider.clone(),
-            vec![units_primitives::read_data::ReadType::TransactionReceipt(
-                transaction_hash,
-            )],
+            vec![units_primitives::read_data::ReadType::TransactionReceipt {
+                transaction_hash: transaction_hash.into(),
+            }],
         )
         .await?
     {
@@ -177,7 +177,7 @@ mod tests {
     use super::*;
     use assert_matches::assert_matches;
     use rstest::*;
-    use starknet::{accounts::Account, providers::jsonrpc::HttpTransport};
+    use starknet::accounts::Account;
 
     use starknet::core::types::ExecutionResult;
     #[cfg(feature = "testing")]
@@ -192,9 +192,9 @@ mod tests {
         },
         scarb::{scarb_build, ArtifactsMap},
     };
+    use units_utils::starknet::StarknetProvider;
     use units_utils::starknet::StarknetWallet;
     use units_utils::starknet::WaitForReceipt;
-    use units_utils::{starknet::StarknetProvider, url::parse_url};
 
     #[rstest]
     #[tokio::test]
@@ -249,18 +249,19 @@ mod tests {
             ReadVerifier::Account(VerifierAccount {
                 singer_address: account2_with_private_key.account.address(),
             }),
-            vec![ReadType::TransactionReceipt(result.transaction_hash)],
-            ReadValidity::Block(1000000),
+            vec![ReadType::TransactionReceipt {
+                transaction_hash: result.transaction_hash.into(),
+            }],
+            ReadValidity::Block { block: 1000000 },
             provider.chain_id().await.unwrap(),
-            ReadDataVersion::ONE,
+            ReadDataVersion::One,
         );
         let signed_read_data = sign_read_data(read_data, account2_with_private_key.private_key)
             .await
             .unwrap();
 
         let receipt =
-            get_transaction_receipt(global_ctx, result.transaction_hash, signed_read_data)
-                .await;
+            get_transaction_receipt(global_ctx, result.transaction_hash, signed_read_data).await;
         assert_matches!(receipt, Err(TransactionReceiptError::InvalidSenderAddress));
     }
 
@@ -317,18 +318,19 @@ mod tests {
             ReadVerifier::Account(VerifierAccount {
                 singer_address: account1.address(),
             }),
-            vec![ReadType::TransactionReceipt(result.transaction_hash)],
-            ReadValidity::Block(1000000),
+            vec![ReadType::TransactionReceipt {
+                transaction_hash: result.transaction_hash.into(),
+            }],
+            ReadValidity::Block { block: 1000000 },
             provider.chain_id().await.unwrap(),
-            ReadDataVersion::ONE,
+            ReadDataVersion::One,
         );
         let signed_read_data = sign_read_data(read_data, account2_with_private_key.private_key)
             .await
             .unwrap();
 
         let receipt =
-            get_transaction_receipt(global_ctx, result.transaction_hash, signed_read_data)
-                .await;
+            get_transaction_receipt(global_ctx, result.transaction_hash, signed_read_data).await;
         assert_matches!(receipt, Err(TransactionReceiptError::InvalidReadSignature));
     }
 
@@ -400,10 +402,12 @@ mod tests {
             ReadVerifier::Account(VerifierAccount {
                 singer_address: account_with_private_key.account.address(),
             }),
-            vec![ReadType::TransactionReceipt(result.transaction_hash)],
-            ReadValidity::Block(1000000),
+            vec![ReadType::TransactionReceipt {
+                transaction_hash: result.transaction_hash.into(),
+            }],
+            ReadValidity::Block { block: 1000000 },
             provider.chain_id().await.unwrap(),
-            ReadDataVersion::ONE,
+            ReadDataVersion::One,
         );
         let signed_read_data = sign_read_data(read_data, account_with_private_key.private_key)
             .await
@@ -482,12 +486,12 @@ mod tests {
             ReadVerifier::Account(VerifierAccount {
                 singer_address: account_with_private_key.account.address(),
             }),
-            vec![ReadType::TransactionReceipt(
-                emit_one_result.transaction_hash,
-            )],
-            ReadValidity::Block(1000000),
+            vec![ReadType::TransactionReceipt {
+                transaction_hash: emit_one_result.transaction_hash.into(),
+            }],
+            ReadValidity::Block { block: 1000000 },
             provider.chain_id().await.unwrap(),
-            ReadDataVersion::ONE,
+            ReadDataVersion::One,
         );
         let signed_read_data =
             sign_read_data(read_data.clone(), account_with_private_key.private_key)
@@ -571,12 +575,12 @@ mod tests {
             ReadVerifier::Account(VerifierAccount {
                 singer_address: account_with_private_key.account.address(),
             }),
-            vec![ReadType::TransactionReceipt(
-                emit_one_and_two_result.transaction_hash,
-            )],
-            ReadValidity::Block(1000000),
+            vec![ReadType::TransactionReceipt {
+                transaction_hash: emit_one_and_two_result.transaction_hash.into(),
+            }],
+            ReadValidity::Block { block: 1000000 },
             provider.chain_id().await.unwrap(),
-            ReadDataVersion::ONE,
+            ReadDataVersion::One,
         );
         let signed_read_data =
             sign_read_data(read_data.clone(), account_with_private_key.private_key)
@@ -700,10 +704,12 @@ mod tests {
             ReadVerifier::Account(VerifierAccount {
                 singer_address: account_with_private_key.account.address(),
             }),
-            vec![ReadType::TransactionReceipt(result.transaction_hash)],
-            ReadValidity::Block(1000000),
+            vec![ReadType::TransactionReceipt {
+                transaction_hash: result.transaction_hash.into(),
+            }],
+            ReadValidity::Block { block: 1000000 },
             provider.chain_id().await.unwrap(),
-            ReadDataVersion::ONE,
+            ReadDataVersion::One,
         );
         let signed_read_data = sign_read_data(read_data, account_with_private_key.private_key)
             .await
@@ -760,12 +766,12 @@ mod tests {
             ReadVerifier::Account(VerifierAccount {
                 singer_address: account_with_private_key.account.address(),
             }),
-            vec![ReadType::TransactionReceipt(
-                declare_result.transaction_hash,
-            )],
-            ReadValidity::Block(1000000),
+            vec![ReadType::TransactionReceipt {
+                transaction_hash: declare_result.transaction_hash.into(),
+            }],
+            ReadValidity::Block { block: 1000000 },
             provider.chain_id().await.unwrap(),
-            ReadDataVersion::ONE,
+            ReadDataVersion::One,
         );
         let signed_read_data = sign_read_data(read_data, account_with_private_key.private_key)
             .await
@@ -824,12 +830,12 @@ mod tests {
             ReadVerifier::Account(VerifierAccount {
                 singer_address: deploy_account_result.contract_address,
             }),
-            vec![ReadType::TransactionReceipt(
-                deploy_account_result.transaction_hash,
-            )],
-            ReadValidity::Block(1000000),
+            vec![ReadType::TransactionReceipt {
+                transaction_hash: deploy_account_result.transaction_hash.into(),
+            }],
+            ReadValidity::Block { block: 1000000 },
             provider.chain_id().await.unwrap(),
-            ReadDataVersion::ONE,
+            ReadDataVersion::One,
         );
         let signed_read_data = sign_read_data(read_data, private_key).await.unwrap();
 
@@ -903,10 +909,12 @@ mod tests {
             ReadVerifier::Account(VerifierAccount {
                 singer_address: account_with_private_key.account.address(),
             }),
-            vec![ReadType::Nonce(Felt::ZERO)], // Wrong read type
-            ReadValidity::Block(1000000),
+            vec![ReadType::Nonce {
+                nonce: Felt::ZERO.into(),
+            }], // Wrong read type
+            ReadValidity::Block { block: 1000000 },
             provider.chain_id().await.unwrap(),
-            ReadDataVersion::ONE,
+            ReadDataVersion::One,
         );
 
         let signed_read_data = sign_read_data(read_data, account_with_private_key.private_key)

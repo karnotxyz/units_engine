@@ -10,7 +10,7 @@ use units_utils::{
     starknet::{contract_address_has_selector, simulate_boolean_read, SimulationError},
 };
 
-use units_primitives::read_data::{ReadDataError, SignedReadData};
+use units_primitives::read_data::{ReadDataError, ReadType, SignedReadData};
 
 const CAN_READ_NONCE_SELECTOR: Felt = selector!("can_read_nonce");
 
@@ -69,7 +69,9 @@ pub async fn get_nonce(
         if !signed_read_data
             .verify(
                 starknet_provider.clone(),
-                vec![units_primitives::read_data::ReadType::Nonce(address)],
+                vec![ReadType::Nonce {
+                    nonce: address.into(),
+                }],
             )
             .await?
         {
@@ -210,10 +212,14 @@ mod tests {
             ReadVerifier::Account(VerifierAccount {
                 singer_address: account.address(),
             }),
-            vec![ReadType::Nonce(contract_address)],
-            ReadValidity::Block(1000000),
+            vec![ReadType::Nonce {
+                nonce: contract_address.into(),
+            }],
+            ReadValidity::Block {
+                block: 1000000,
+            },
             provider.chain_id().await.unwrap(),
-            ReadDataVersion::ONE,
+            ReadDataVersion::One,
         );
         // Using an invalid private key to sign the read data
         let signed_read_data = sign_read_data(read_data, Felt::THREE).await.unwrap();
@@ -270,10 +276,14 @@ mod tests {
             ReadVerifier::Account(VerifierAccount {
                 singer_address: account_with_private_key.account.address(),
             }),
-            vec![ReadType::Nonce(address)],
-            ReadValidity::Block(1000000),
+            vec![ReadType::Nonce {
+                nonce: address.into(),
+            }],
+            ReadValidity::Block {
+                block: 1000000,
+            },
             provider.chain_id().await.unwrap(),
-            ReadDataVersion::ONE,
+            ReadDataVersion::One,
         );
         let signed_read_data = sign_read_data(read_data, account_with_private_key.private_key)
             .await
@@ -329,10 +339,14 @@ mod tests {
             ReadVerifier::Account(VerifierAccount {
                 singer_address: owner_account_with_private_key.account.address(),
             }),
-            vec![ReadType::Nonce(contract_address)],
-            ReadValidity::Block(1000000),
+            vec![ReadType::Nonce {
+                nonce: contract_address.into(),
+            }],
+            ReadValidity::Block {
+                block: 1000000,
+            },
             provider.chain_id().await.unwrap(),
-            ReadDataVersion::ONE,
+            ReadDataVersion::One,
         );
 
         // Nonce with owner account should work
@@ -358,10 +372,14 @@ mod tests {
             ReadVerifier::Account(VerifierAccount {
                 singer_address: other_account_with_private_key.account.address(),
             }),
-            vec![ReadType::Nonce(contract_address)],
-            ReadValidity::Block(1000000),
+            vec![ReadType::Nonce {
+                nonce: contract_address.into(),
+            }],
+            ReadValidity::Block {
+                block: 1000000,
+            },
             provider.chain_id().await.unwrap(),
-            ReadDataVersion::ONE,
+            ReadDataVersion::One,
         );
         let signed_read_data =
             sign_read_data(read_data, other_account_with_private_key.private_key)
@@ -411,10 +429,14 @@ mod tests {
             ReadVerifier::Account(VerifierAccount {
                 singer_address: account_with_private_key.account.address(),
             }),
-            vec![ReadType::TransactionReceipt(Felt::ONE)], // Different type than what's needed
-            ReadValidity::Block(1000000),
+            vec![ReadType::TransactionReceipt {
+                transaction_hash: Felt::ONE.into(),
+            }], // Different type than what's needed
+            ReadValidity::Block {
+                block: 1000000,
+            },
             provider.chain_id().await.unwrap(),
-            ReadDataVersion::ONE,
+            ReadDataVersion::One,
         );
 
         let signed_read_data = sign_read_data(read_data, account_with_private_key.private_key)
