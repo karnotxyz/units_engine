@@ -252,7 +252,7 @@
         "description": "The chain ID",
         "required": true,
         "schema": {
-          "type": "string"
+          "$ref": "#/components/schemas/HEX_BYTES32"
         }
       }
     },

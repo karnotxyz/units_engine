@@ -157,7 +157,7 @@ pub struct SendTransactionParams {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct TransactionResult {
+pub struct SendTransactionResult {
     pub transaction_hash: HexBytes32,
 }
 
@@ -181,7 +181,7 @@ pub struct GetTransactionReceiptParams {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct TransactionReceipt {
+pub struct GetTransactionReceiptResult {
     pub transaction_hash: HexBytes32,
     pub events: Vec<Event>,
     pub finality_status: FinalityStatus,
