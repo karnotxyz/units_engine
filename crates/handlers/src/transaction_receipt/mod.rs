@@ -23,8 +23,6 @@ pub enum TransactionReceiptError {
     MoreEventsThanExpected,
     #[error("Starknet error: {0}")]
     StarknetError(#[from] ProviderError),
-    #[error("Read signature not provided")]
-    ReadSignatureNotProvided,
     #[error("Invalid read signature")]
     InvalidReadSignature,
     #[error("Read Data Error: {0}")]
@@ -51,12 +49,9 @@ const CAN_READ_EVENT_SELECTOR: Felt = selector!("can_read_event");
 pub async fn get_transaction_receipt(
     global_ctx: Arc<GlobalContext>,
     transaction_hash: Felt,
-    signed_read_data: Option<SignedReadData>,
+    signed_read_data: SignedReadData
 ) -> Result<TransactionReceiptWithBlockInfo, TransactionReceiptError> {
     let starknet_provider = global_ctx.starknet_provider();
-
-    let signed_read_data =
-        signed_read_data.ok_or(TransactionReceiptError::ReadSignatureNotProvided)?;
 
     // Verify signature and ensure it has the required read type
     if !signed_read_data
@@ -201,26 +196,6 @@ mod tests {
     use units_utils::starknet::WaitForReceipt;
     use units_utils::{starknet::StarknetProvider, url::parse_url};
 
-    #[tokio::test]
-    async fn test_get_receipt_fails_without_read_signature() {
-        // dummy provider as it won't be used
-        let provider = Arc::new(StarknetProvider::new(HttpTransport::new(
-            parse_url("http://localhost:5050").unwrap(),
-        )));
-        let global_ctx = Arc::new(GlobalContext::new_with_provider(
-            provider,
-            Felt::ONE,
-            Arc::new(StarknetWallet::test_default()),
-        ));
-        let random_txn_hash = Felt::ONE;
-
-        let receipt = get_transaction_receipt(global_ctx, random_txn_hash, None).await;
-        assert_matches!(
-            receipt,
-            Err(TransactionReceiptError::ReadSignatureNotProvided)
-        );
-    }
-
     #[rstest]
     #[tokio::test]
     #[cfg(feature = "testing")]
@@ -284,7 +259,7 @@ mod tests {
             .unwrap();
 
         let receipt =
-            get_transaction_receipt(global_ctx, result.transaction_hash, Some(signed_read_data))
+            get_transaction_receipt(global_ctx, result.transaction_hash, signed_read_data)
                 .await;
         assert_matches!(receipt, Err(TransactionReceiptError::InvalidSenderAddress));
     }
@@ -352,7 +327,7 @@ mod tests {
             .unwrap();
 
         let receipt =
-            get_transaction_receipt(global_ctx, result.transaction_hash, Some(signed_read_data))
+            get_transaction_receipt(global_ctx, result.transaction_hash, signed_read_data)
                 .await;
         assert_matches!(receipt, Err(TransactionReceiptError::InvalidReadSignature));
     }
@@ -435,7 +410,7 @@ mod tests {
             .unwrap();
 
         let receipt =
-            get_transaction_receipt(global_ctx, result.transaction_hash, Some(signed_read_data))
+            get_transaction_receipt(global_ctx, result.transaction_hash, signed_read_data)
                 .await
                 .unwrap();
 
@@ -522,7 +497,7 @@ mod tests {
         let receipt = get_transaction_receipt(
             global_ctx.clone(),
             emit_one_result.transaction_hash,
-            Some(signed_read_data.clone()),
+            signed_read_data.clone(),
         )
         .await
         .unwrap();
@@ -559,7 +534,7 @@ mod tests {
         let receipt = get_transaction_receipt(
             global_ctx.clone(),
             emit_one_result.transaction_hash,
-            Some(signed_read_data.clone()),
+            signed_read_data.clone(),
         )
         .await
         .unwrap();
@@ -612,7 +587,7 @@ mod tests {
         let receipt = get_transaction_receipt(
             global_ctx.clone(),
             emit_one_and_two_result.transaction_hash,
-            Some(signed_read_data.clone()),
+            signed_read_data.clone(),
         )
         .await
         .unwrap();
@@ -651,7 +626,7 @@ mod tests {
         let receipt = get_transaction_receipt(
             global_ctx,
             emit_one_and_two_result.transaction_hash,
-            Some(signed_read_data),
+            signed_read_data.clone(),
         )
         .await
         .unwrap();
@@ -735,7 +710,7 @@ mod tests {
             .unwrap();
 
         let receipt =
-            get_transaction_receipt(global_ctx, result.transaction_hash, Some(signed_read_data))
+            get_transaction_receipt(global_ctx, result.transaction_hash, signed_read_data)
                 .await
                 .unwrap();
 
@@ -799,7 +774,7 @@ mod tests {
         let receipt = get_transaction_receipt(
             global_ctx,
             declare_result.transaction_hash,
-            Some(signed_read_data),
+            signed_read_data.clone(),
         )
         .await
         .unwrap();
@@ -861,7 +836,7 @@ mod tests {
         let receipt = get_transaction_receipt(
             global_ctx,
             deploy_account_result.transaction_hash,
-            Some(signed_read_data),
+            signed_read_data.clone(),
         )
         .await
         .unwrap();
@@ -945,7 +920,7 @@ mod tests {
         ));
 
         // Try to get receipt with incorrect read type
-        let receipt = get_transaction_receipt(global_ctx, tx_hash, Some(signed_read_data)).await;
+        let receipt = get_transaction_receipt(global_ctx, tx_hash, signed_read_data).await;
         assert_matches!(
             receipt,
             Err(TransactionReceiptError::ReadSignatureError(
