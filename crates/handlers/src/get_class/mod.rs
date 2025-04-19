@@ -288,6 +288,11 @@ mod tests {
             Some(signed_read_data_with_different_class),
         )
         .await;
-        assert_matches!(class, Err(GetClassError::ReadDataError(ReadDataError::MissingRequiredReadTypes)));
+        assert_matches!(
+            class,
+            Err(GetClassError::ReadDataError(
+                ReadDataError::MissingRequiredReadTypes
+            ))
+        );
     }
 }
