@@ -64,7 +64,15 @@ pub async fn get_nonce(
     if has_selector {
         // Check if the read signature is valid by calling `is_valid_signature`
         let signed_read_data = signed_read_data.ok_or(NonceError::ReadSignatureNotProvided)?;
-        if !signed_read_data.verify(starknet_provider.clone()).await? {
+
+        // Verify the signature and check that it has the required read type
+        if !signed_read_data
+            .verify(
+                starknet_provider.clone(),
+                vec![units_primitives::read_data::ReadType::Nonce(address)],
+            )
+            .await?
+        {
             return Err(NonceError::InvalidReadSignature);
         }
 
@@ -178,7 +186,7 @@ mod tests {
     #[rstest]
     #[tokio::test]
     #[cfg(feature = "testing")]
-    async fn test_can_read_nonce_returns_invalid_read_data(
+    async fn test_can_read_nonce_returns_invalid_read_signature(
         #[future]
         #[with("src/nonce/test_contracts")]
         scarb_build: ArtifactsMap,
@@ -202,7 +210,7 @@ mod tests {
             ReadVerifier::Account(VerifierAccount {
                 singer_address: account.address(),
             }),
-            ReadType::Nonce(Felt::ZERO),
+            vec![ReadType::Nonce(contract_address)],
             ReadValidity::Block(1000000),
             provider.chain_id().await.unwrap(),
             ReadDataVersion::ONE,
@@ -262,7 +270,7 @@ mod tests {
             ReadVerifier::Account(VerifierAccount {
                 singer_address: account_with_private_key.account.address(),
             }),
-            ReadType::Nonce(address),
+            vec![ReadType::Nonce(address)],
             ReadValidity::Block(1000000),
             provider.chain_id().await.unwrap(),
             ReadDataVersion::ONE,
@@ -321,7 +329,7 @@ mod tests {
             ReadVerifier::Account(VerifierAccount {
                 singer_address: owner_account_with_private_key.account.address(),
             }),
-            ReadType::Nonce(contract_address),
+            vec![ReadType::Nonce(contract_address)],
             ReadValidity::Block(1000000),
             provider.chain_id().await.unwrap(),
             ReadDataVersion::ONE,
@@ -350,7 +358,7 @@ mod tests {
             ReadVerifier::Account(VerifierAccount {
                 singer_address: other_account_with_private_key.account.address(),
             }),
-            ReadType::Nonce(contract_address),
+            vec![ReadType::Nonce(contract_address)],
             ReadValidity::Block(1000000),
             provider.chain_id().await.unwrap(),
             ReadDataVersion::ONE,
@@ -367,5 +375,71 @@ mod tests {
         )
         .await;
         assert_matches!(nonce, Err(NonceError::NonceReadNotAllowed));
+    }
+
+    #[rstest]
+    #[tokio::test]
+    #[cfg(feature = "testing")]
+    async fn test_get_nonce_missing_required_read_type(
+        #[future]
+        #[with("src/nonce/test_contracts")]
+        scarb_build: ArtifactsMap,
+        #[future] madara_node_with_accounts: (
+            MadaraRunner,
+            Arc<StarknetProvider>,
+            Vec<StarknetWalletWithPrivateKey>,
+        ),
+    ) {
+        let (_runner, provider, accounts_with_private_key) = madara_node_with_accounts.await;
+        let account_with_private_key = &accounts_with_private_key[0];
+
+        let mut artifacts = scarb_build.await;
+        let artifact = artifacts
+            .remove("ContractWithCanReadNonceOnlyOwner")
+            .unwrap();
+        let contract_address = artifact
+            .declare_and_deploy_and_wait_for_receipt(
+                account_with_private_key.account.clone(),
+                vec![],
+                Felt::ZERO,
+                false,
+            )
+            .await;
+
+        // Create a read data without nonce read type (use transaction receipt instead)
+        let read_data = ReadData::new(
+            ReadVerifier::Account(VerifierAccount {
+                singer_address: account_with_private_key.account.address(),
+            }),
+            vec![ReadType::TransactionReceipt(Felt::ONE)], // Different type than what's needed
+            ReadValidity::Block(1000000),
+            provider.chain_id().await.unwrap(),
+            ReadDataVersion::ONE,
+        );
+
+        let signed_read_data = sign_read_data(read_data, account_with_private_key.private_key)
+            .await
+            .unwrap();
+
+        let global_ctx = Arc::new(GlobalContext::new_with_provider(
+            provider,
+            Felt::ONE,
+            Arc::new(StarknetWallet::test_default()),
+        ));
+
+        let nonce = get_nonce(
+            global_ctx,
+            BlockId::Tag(BlockTag::Pending),
+            contract_address,
+            Some(signed_read_data),
+        )
+        .await;
+
+        assert_matches!(
+            nonce,
+            Err(NonceError::ReadSignatureError(
+                ReadDataError::MissingRequiredReadTypes
+            ))
+        );
     }
 }

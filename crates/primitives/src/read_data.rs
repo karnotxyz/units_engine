@@ -30,6 +30,8 @@ pub enum ReadDataError {
     InvalidReturnTypeForGetKey,
     #[error("Empty key result")]
     EmptyKeyResult,
+    #[error("Missing required read type permissions")]
+    MissingRequiredReadTypes,
 }
 
 #[derive(Debug, Clone)]
@@ -91,7 +93,7 @@ impl ReadVerifier {
 #[derive(Debug, Clone)]
 pub struct ReadData {
     verifier: ReadVerifier,
-    read_type: ReadType,
+    read_type: Vec<ReadType>,
     read_validity: ReadValidity,
     chain_id: Felt,
     version: ReadDataVersion,
@@ -100,7 +102,7 @@ pub struct ReadData {
 impl ReadData {
     pub fn new(
         contract_address: ReadVerifier,
-        read_type: ReadType,
+        read_type: Vec<ReadType>,
         read_validity: ReadValidity,
         chain_id: Felt,
         version: ReadDataVersion,
@@ -126,12 +128,12 @@ impl ReadData {
         self.verifier.signer_address()
     }
 
-    pub fn read_type(&self) -> &ReadType {
+    pub fn read_type(&self) -> &Vec<ReadType> {
         &self.read_type
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ReadType {
     // stores contract address
     Nonce(Felt),
@@ -201,12 +203,17 @@ impl ReadValidity {
 impl ReadData {
     pub fn hash(&self) -> Felt {
         let mut hasher = starknet_crypto::PoseidonHasher::new();
-        hasher.update(self.verifier.hash());
+        let read_type_hashes = self
+            .read_type
+            .iter()
+            .map(|read_type| read_type.hash())
+            .collect::<Vec<_>>();
         // safe because we know the string is valid
         hasher.update(Felt::from_hex_unchecked(
             hex::encode("read_string").as_str(),
         ));
-        hasher.update(self.read_type.hash());
+        hasher.update(self.verifier.hash());
+        hasher.update(poseidon_hash_many(read_type_hashes.iter().as_ref()));
         hasher.update(self.read_validity.hash());
         hasher.update(self.chain_id);
         hasher.update(self.version.hash());
@@ -235,7 +242,22 @@ impl SignedReadData {
     pub async fn verify(
         &self,
         starknet_provider: Arc<StarknetProvider>,
+        required_read_types: Vec<ReadType>,
     ) -> Result<bool, ReadDataError> {
+        // Check if all required read types are present in the read_data.read_type vector
+        if !required_read_types.is_empty() {
+            let contains_all_required = required_read_types.iter().all(|required_type| {
+                self.read_data
+                    .read_type
+                    .iter()
+                    .any(|actual_type| required_type == actual_type)
+            });
+
+            if !contains_all_required {
+                return Err(ReadDataError::MissingRequiredReadTypes);
+            }
+        }
+
         // Check for expiry
         match &self.read_data.read_validity {
             ReadValidity::Block(expiry_block) => {
@@ -375,7 +397,7 @@ mod tests {
             ReadVerifier::Account(VerifierAccount {
                 singer_address: address,
             }),
-            ReadType::Nonce(Felt::from_hex_unchecked("0x1")),
+            vec![ReadType::Nonce(Felt::from_hex_unchecked("0x1"))],
             ReadValidity::Block(100),
             Felt::from_hex_unchecked("0x3"),
             ReadDataVersion::ONE,
@@ -383,18 +405,18 @@ mod tests {
         assert_eq!(
             read_signature.hash(),
             poseidon_hash_many(vec![
+                // read_string
+                &Felt::from_hex_unchecked("0x726561645f737472696e67"),
                 // contract_address (account hash)
                 &poseidon_hash_many(vec![
                     &Felt::from_hex_unchecked(hex::encode("account").as_str()),
                     &address,
                 ]),
-                // read_string
-                &Felt::from_hex_unchecked("0x726561645f737472696e67"),
                 // nonce
-                &poseidon_hash_many(vec![
+                &poseidon_hash_many(vec![&poseidon_hash_many(vec![
                     &Felt::from_hex_unchecked("0x6e6f6e6365"),
                     &Felt::from_hex_unchecked("0x1"),
-                ]),
+                ]),]),
                 // valid_until_block
                 &poseidon_hash_many(vec![
                     &Felt::from_hex_unchecked("0x626c6f636b"),
@@ -419,7 +441,7 @@ mod tests {
             ReadVerifier::Account(VerifierAccount {
                 singer_address: address,
             }),
-            ReadType::Nonce(Felt::from_hex_unchecked("0x1")),
+            vec![ReadType::Nonce(Felt::from_hex_unchecked("0x1"))],
             ReadValidity::Timestamp(100),
             Felt::from_hex_unchecked("0x3"),
             ReadDataVersion::ONE,
@@ -427,18 +449,18 @@ mod tests {
         assert_eq!(
             read_signature.hash(),
             poseidon_hash_many(vec![
+                // read_string
+                &Felt::from_hex_unchecked("0x726561645f737472696e67"),
                 // contract_address (account hash)
                 &poseidon_hash_many(vec![
                     &Felt::from_hex_unchecked(hex::encode("account").as_str()),
                     &address,
                 ]),
-                // read_string
-                &Felt::from_hex_unchecked("0x726561645f737472696e67"),
                 // nonce
-                &poseidon_hash_many(vec![
+                &poseidon_hash_many(vec![&poseidon_hash_many(vec![
                     &Felt::from_hex_unchecked("0x6e6f6e6365"),
                     &Felt::from(1),
-                ]),
+                ]),]),
                 // valid_until_block
                 &poseidon_hash_many(vec![
                     &Felt::from_hex_unchecked("0x74696d657374616d70"),
@@ -463,7 +485,9 @@ mod tests {
             ReadVerifier::Account(VerifierAccount {
                 singer_address: address,
             }),
-            ReadType::TransactionReceipt(Felt::from_hex_unchecked("0x123")),
+            vec![ReadType::TransactionReceipt(Felt::from_hex_unchecked(
+                "0x123",
+            ))],
             ReadValidity::Block(100),
             Felt::from_hex_unchecked("0x356"),
             ReadDataVersion::ONE,
@@ -471,18 +495,18 @@ mod tests {
         assert_eq!(
             read_signature.hash(),
             poseidon_hash_many(vec![
+                // read_string
+                &Felt::from_hex_unchecked("0x726561645f737472696e67"),
                 // contract_address (account hash)
                 &poseidon_hash_many(vec![
                     &Felt::from_hex_unchecked(hex::encode("account").as_str()),
                     &address,
                 ]),
-                // read_string
-                &Felt::from_hex_unchecked("0x726561645f737472696e67"),
                 // transaction_receipt_events
-                &poseidon_hash_many(vec![
+                &poseidon_hash_many(vec![&poseidon_hash_many(vec![
                     &Felt::from_hex_unchecked("0x7472616e73616374696f6e5f72656365697074"),
                     &Felt::from_hex_unchecked("0x123"),
-                ]),
+                ]),]),
                 // valid_until_block
                 &poseidon_hash_many(vec![
                     &Felt::from_hex_unchecked("0x626c6f636b"),
@@ -507,7 +531,7 @@ mod tests {
             ReadVerifier::Account(VerifierAccount {
                 singer_address: address,
             }),
-            ReadType::Class(Felt::from_hex_unchecked("0x123")),
+            vec![ReadType::Class(Felt::from_hex_unchecked("0x123"))],
             ReadValidity::Block(100),
             Felt::from_hex_unchecked("0x3"),
             ReadDataVersion::ONE,
@@ -515,18 +539,18 @@ mod tests {
         assert_eq!(
             read_signature.hash(),
             poseidon_hash_many(vec![
+                // read_string
+                &Felt::from_hex_unchecked("0x726561645f737472696e67"),
                 // contract_address (account hash)
                 &poseidon_hash_many(vec![
                     &Felt::from_hex_unchecked(hex::encode("account").as_str()),
                     &address,
                 ]),
-                // read_string
-                &Felt::from_hex_unchecked("0x726561645f737472696e67"),
                 // class
-                &poseidon_hash_many(vec![
+                &poseidon_hash_many(vec![&poseidon_hash_many(vec![
                     &Felt::from_hex_unchecked("0x636c617373"),
                     &Felt::from_hex_unchecked("0x123"),
-                ]),
+                ]),]),
                 // valid_until_block
                 &poseidon_hash_many(vec![
                     &Felt::from_hex_unchecked("0x626c6f636b"),
@@ -553,7 +577,7 @@ mod tests {
                 signer_address: account_address,
                 identity_address,
             }),
-            ReadType::Nonce(Felt::from_hex_unchecked("0x1")),
+            vec![ReadType::Nonce(Felt::from_hex_unchecked("0x1"))],
             ReadValidity::Block(100),
             Felt::from_hex_unchecked("0x3"),
             ReadDataVersion::ONE,
@@ -562,19 +586,19 @@ mod tests {
         assert_eq!(
             read_signature.hash(),
             poseidon_hash_many(vec![
+                // read_string
+                &Felt::from_hex_unchecked("0x726561645f737472696e67"),
                 // contract_address (identity hash)
                 &poseidon_hash_many(vec![
                     &Felt::from_hex_unchecked(hex::encode("identity").as_str()),
                     &account_address,
                     &identity_address,
                 ]),
-                // read_string
-                &Felt::from_hex_unchecked("0x726561645f737472696e67"),
                 // nonce
-                &poseidon_hash_many(vec![
+                &poseidon_hash_many(vec![&poseidon_hash_many(vec![
                     &Felt::from_hex_unchecked("0x6e6f6e6365"),
                     &Felt::from_hex_unchecked("0x1"),
-                ]),
+                ]),]),
                 // valid_until_block
                 &poseidon_hash_many(vec![
                     &Felt::from_hex_unchecked("0x626c6f636b"),
@@ -607,7 +631,7 @@ mod tests {
             ReadVerifier::Account(VerifierAccount {
                 singer_address: account_with_private_key.account.address(),
             }),
-            ReadType::Nonce(Felt::ZERO),
+            vec![ReadType::Nonce(Felt::ZERO)],
             ReadValidity::Block(1000000), // Set a high block number to avoid expiry
             provider.chain_id().await.unwrap(),
             ReadDataVersion::ONE,
@@ -617,7 +641,7 @@ mod tests {
             .await
             .unwrap();
 
-        let result = signed_read_data.verify(provider).await;
+        let result = signed_read_data.verify(provider, vec![]).await;
         assert_matches!(result, Ok(true));
     }
 
@@ -637,7 +661,7 @@ mod tests {
             ReadVerifier::Account(VerifierAccount {
                 singer_address: account_with_private_key.account.address(),
             }),
-            ReadType::Nonce(Felt::ZERO),
+            vec![ReadType::Nonce(Felt::ZERO)],
             ReadValidity::Block(1000000),
             provider.chain_id().await.unwrap(),
             ReadDataVersion::ONE,
@@ -646,7 +670,7 @@ mod tests {
         // Sign with an invalid private key (Felt::THREE)
         let signed_read_data = sign_read_data(read_data, Felt::THREE).await.unwrap();
 
-        let result = signed_read_data.verify(provider).await;
+        let result = signed_read_data.verify(provider, vec![]).await;
         assert_matches!(result, Ok(false));
     }
 
@@ -673,7 +697,7 @@ mod tests {
             ReadVerifier::Account(VerifierAccount {
                 singer_address: account_with_private_key.account.address(),
             }),
-            ReadType::Nonce(Felt::ZERO),
+            vec![ReadType::Nonce(Felt::ZERO)],
             ReadValidity::Timestamp(expired_timestamp),
             provider.chain_id().await.unwrap(),
             ReadDataVersion::ONE,
@@ -683,7 +707,7 @@ mod tests {
             .await
             .unwrap();
 
-        let result = signed_read_data.verify(provider).await;
+        let result = signed_read_data.verify(provider, vec![]).await;
         assert_matches!(result, Err(ReadDataError::SignatureExpired));
     }
 
@@ -703,7 +727,7 @@ mod tests {
             ReadVerifier::Account(VerifierAccount {
                 singer_address: account_with_private_key.account.address(),
             }),
-            ReadType::Nonce(Felt::ZERO),
+            vec![ReadType::Nonce(Felt::ZERO)],
             ReadValidity::Block(1),
             provider.chain_id().await.unwrap(),
             ReadDataVersion::ONE,
@@ -715,7 +739,7 @@ mod tests {
             .await
             .unwrap();
 
-        let result = signed_read_data.verify(provider).await;
+        let result = signed_read_data.verify(provider, vec![]).await;
         assert_matches!(result, Err(ReadDataError::SignatureExpired));
     }
 
@@ -788,7 +812,7 @@ mod tests {
                 signer_address: account_with_private_key.account.address(),
                 identity_address,
             }),
-            ReadType::Nonce(Felt::ZERO),
+            vec![ReadType::Nonce(Felt::ZERO)],
             ReadValidity::Block(1000000), // Set a high block number to avoid expiry
             provider.chain_id().await.unwrap(),
             ReadDataVersion::ONE,
@@ -801,7 +825,7 @@ mod tests {
                 .unwrap();
 
         // 3. Try to verify - should fail because account is not linked to identity
-        let result = signed_read_data.verify(provider.clone()).await;
+        let result = signed_read_data.verify(provider.clone(), vec![]).await;
         assert_matches!(result, Err(ReadDataError::InvalidIdentityKey));
 
         // 4. Now link the account to the identity by setting the key
@@ -835,7 +859,130 @@ mod tests {
             .unwrap();
 
         // 5. Try to verify again - should succeed now
-        let result = signed_read_data.verify(provider.clone()).await;
+        let result = signed_read_data.verify(provider.clone(), vec![]).await;
         assert_matches!(result, Ok(true));
+    }
+
+    #[rstest]
+    #[tokio::test]
+    #[cfg(feature = "testing")]
+    async fn test_verify_with_required_read_types_success(
+        #[future] madara_node_with_accounts: (
+            MadaraRunner,
+            Arc<StarknetProvider>,
+            Vec<StarknetWalletWithPrivateKey>,
+        ),
+    ) {
+        let (_runner, provider, accounts_with_private_key) = madara_node_with_accounts.await;
+        let account_with_private_key = &accounts_with_private_key[0];
+
+        // Create read data with two read types
+        let read_data = ReadData::new(
+            ReadVerifier::Account(VerifierAccount {
+                singer_address: account_with_private_key.account.address(),
+            }),
+            vec![
+                ReadType::Nonce(Felt::ZERO),
+                ReadType::TransactionReceipt(Felt::ONE),
+            ],
+            ReadValidity::Block(1000000), // Set a high block number to avoid expiry
+            provider.chain_id().await.unwrap(),
+            ReadDataVersion::ONE,
+        );
+
+        let signed_read_data = sign_read_data(read_data, account_with_private_key.private_key)
+            .await
+            .unwrap();
+
+        // Verify with one required read type
+        let result = signed_read_data
+            .verify(provider.clone(), vec![ReadType::Nonce(Felt::ZERO)])
+            .await;
+        assert_matches!(result, Ok(true));
+
+        // Verify with both required read types
+        let result = signed_read_data
+            .verify(
+                provider.clone(),
+                vec![
+                    ReadType::Nonce(Felt::ZERO),
+                    ReadType::TransactionReceipt(Felt::ONE),
+                ],
+            )
+            .await;
+        assert_matches!(result, Ok(true));
+    }
+
+    #[rstest]
+    #[tokio::test]
+    #[cfg(feature = "testing")]
+    async fn test_verify_with_required_read_types_missing_type(
+        #[future] madara_node_with_accounts: (
+            MadaraRunner,
+            Arc<StarknetProvider>,
+            Vec<StarknetWalletWithPrivateKey>,
+        ),
+    ) {
+        let (_runner, provider, accounts_with_private_key) = madara_node_with_accounts.await;
+        let account_with_private_key = &accounts_with_private_key[0];
+
+        // Create read data with one read type
+        let read_data = ReadData::new(
+            ReadVerifier::Account(VerifierAccount {
+                singer_address: account_with_private_key.account.address(),
+            }),
+            vec![ReadType::Nonce(Felt::ZERO)],
+            ReadValidity::Block(1000000), // Set a high block number to avoid expiry
+            provider.chain_id().await.unwrap(),
+            ReadDataVersion::ONE,
+        );
+
+        let signed_read_data = sign_read_data(read_data, account_with_private_key.private_key)
+            .await
+            .unwrap();
+
+        // Verify with a required read type that doesn't exist in the read data
+        let result = signed_read_data
+            .verify(
+                provider.clone(),
+                vec![ReadType::TransactionReceipt(Felt::ONE)],
+            )
+            .await;
+        assert_matches!(result, Err(ReadDataError::MissingRequiredReadTypes));
+    }
+
+    #[rstest]
+    #[tokio::test]
+    #[cfg(feature = "testing")]
+    async fn test_verify_with_required_read_types_different_value(
+        #[future] madara_node_with_accounts: (
+            MadaraRunner,
+            Arc<StarknetProvider>,
+            Vec<StarknetWalletWithPrivateKey>,
+        ),
+    ) {
+        let (_runner, provider, accounts_with_private_key) = madara_node_with_accounts.await;
+        let account_with_private_key = &accounts_with_private_key[0];
+
+        // Create read data with a nonce read type for address ZERO
+        let read_data = ReadData::new(
+            ReadVerifier::Account(VerifierAccount {
+                singer_address: account_with_private_key.account.address(),
+            }),
+            vec![ReadType::Nonce(Felt::ZERO)],
+            ReadValidity::Block(1000000), // Set a high block number to avoid expiry
+            provider.chain_id().await.unwrap(),
+            ReadDataVersion::ONE,
+        );
+
+        let signed_read_data = sign_read_data(read_data, account_with_private_key.private_key)
+            .await
+            .unwrap();
+
+        // Verify with a nonce read type but for a different address
+        let result = signed_read_data
+            .verify(provider.clone(), vec![ReadType::Nonce(Felt::ONE)])
+            .await;
+        assert_matches!(result, Err(ReadDataError::MissingRequiredReadTypes));
     }
 }

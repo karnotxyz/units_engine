@@ -57,7 +57,17 @@ pub async fn get_transaction_receipt(
 
     let signed_read_data =
         signed_read_data.ok_or(TransactionReceiptError::ReadSignatureNotProvided)?;
-    if !signed_read_data.verify(starknet_provider.clone()).await? {
+
+    // Verify signature and ensure it has the required read type
+    if !signed_read_data
+        .verify(
+            starknet_provider.clone(),
+            vec![units_primitives::read_data::ReadType::TransactionReceipt(
+                transaction_hash,
+            )],
+        )
+        .await?
+    {
         return Err(TransactionReceiptError::InvalidReadSignature);
     }
 
@@ -264,7 +274,7 @@ mod tests {
             ReadVerifier::Account(VerifierAccount {
                 singer_address: account2_with_private_key.account.address(),
             }),
-            ReadType::TransactionReceipt(result.transaction_hash),
+            vec![ReadType::TransactionReceipt(result.transaction_hash)],
             ReadValidity::Block(1000000),
             provider.chain_id().await.unwrap(),
             ReadDataVersion::ONE,
@@ -282,6 +292,75 @@ mod tests {
     #[rstest]
     #[tokio::test]
     #[cfg(feature = "testing")]
+    async fn test_get_receipt_fails_with_invalid_read_signature(
+        #[future]
+        #[with("src/transaction_receipt/test_contracts")]
+        scarb_build: ArtifactsMap,
+        #[future]
+        #[with(2)]
+        madara_node_with_accounts: (
+            MadaraRunner,
+            Arc<StarknetProvider>,
+            Vec<StarknetWalletWithPrivateKey>,
+        ),
+    ) {
+        let (_runner, provider, accounts_with_private_key) = madara_node_with_accounts.await;
+        let account1 = accounts_with_private_key[0].account.clone();
+        let account2_with_private_key = &accounts_with_private_key[1];
+
+        let mut artifacts = scarb_build.await;
+        let artifact = artifacts.remove("ContractWithoutCanReadEvent").unwrap();
+        let contract_address = artifact
+            .declare_and_deploy_and_wait_for_receipt(account1.clone(), vec![], Felt::ZERO, false)
+            .await;
+
+        // Call emit_event from account1
+        let result = account1
+            .execute_v3(vec![Call {
+                to: contract_address,
+                selector: selector!("emit_event"),
+                calldata: vec![],
+            }])
+            .gas(0)
+            .gas_price(0)
+            .send()
+            .await
+            .unwrap();
+        // Wait for the transaction to be executed
+        result
+            .wait_for_receipt(provider.clone(), None)
+            .await
+            .unwrap();
+
+        // Try to get receipt using an invalid read signature
+        let global_ctx = Arc::new(GlobalContext::new_with_provider(
+            provider.clone(),
+            Felt::ONE,
+            Arc::new(StarknetWallet::test_default()),
+        ));
+        let read_data = ReadData::new(
+            ReadVerifier::Account(VerifierAccount {
+                singer_address: account1.address(),
+            }),
+            vec![ReadType::TransactionReceipt(result.transaction_hash)],
+            ReadValidity::Block(1000000),
+            provider.chain_id().await.unwrap(),
+            ReadDataVersion::ONE,
+        );
+        let signed_read_data = sign_read_data(read_data, account2_with_private_key.private_key)
+            .await
+            .unwrap();
+
+        let receipt =
+            get_transaction_receipt(global_ctx, result.transaction_hash, Some(signed_read_data))
+                .await;
+        assert_matches!(receipt, Err(TransactionReceiptError::InvalidReadSignature));
+    }
+
+    #[rstest]
+    #[tokio::test]
+    #[cfg(feature = "testing")]
+    #[ignore]
     async fn test_get_receipt_l1_handler_todo() {
         // TODO: Implement test for L1 handler transaction receipt
         // This requires setting up L1 -> L2 messaging which is complex
@@ -346,7 +425,7 @@ mod tests {
             ReadVerifier::Account(VerifierAccount {
                 singer_address: account_with_private_key.account.address(),
             }),
-            ReadType::TransactionReceipt(result.transaction_hash),
+            vec![ReadType::TransactionReceipt(result.transaction_hash)],
             ReadValidity::Block(1000000),
             provider.chain_id().await.unwrap(),
             ReadDataVersion::ONE,
@@ -428,7 +507,9 @@ mod tests {
             ReadVerifier::Account(VerifierAccount {
                 singer_address: account_with_private_key.account.address(),
             }),
-            ReadType::TransactionReceipt(emit_one_result.transaction_hash),
+            vec![ReadType::TransactionReceipt(
+                emit_one_result.transaction_hash,
+            )],
             ReadValidity::Block(1000000),
             provider.chain_id().await.unwrap(),
             ReadDataVersion::ONE,
@@ -509,6 +590,23 @@ mod tests {
             .wait_for_receipt(provider.clone(), None)
             .await
             .unwrap();
+
+        // Create new signed read data with new transaction hash
+        let read_data = ReadData::new(
+            ReadVerifier::Account(VerifierAccount {
+                singer_address: account_with_private_key.account.address(),
+            }),
+            vec![ReadType::TransactionReceipt(
+                emit_one_and_two_result.transaction_hash,
+            )],
+            ReadValidity::Block(1000000),
+            provider.chain_id().await.unwrap(),
+            ReadDataVersion::ONE,
+        );
+        let signed_read_data =
+            sign_read_data(read_data.clone(), account_with_private_key.private_key)
+                .await
+                .unwrap();
 
         // Get receipt - should only have TestEventOne since we only have permission for it
         let receipt = get_transaction_receipt(
@@ -627,7 +725,7 @@ mod tests {
             ReadVerifier::Account(VerifierAccount {
                 singer_address: account_with_private_key.account.address(),
             }),
-            ReadType::TransactionReceipt(result.transaction_hash),
+            vec![ReadType::TransactionReceipt(result.transaction_hash)],
             ReadValidity::Block(1000000),
             provider.chain_id().await.unwrap(),
             ReadDataVersion::ONE,
@@ -687,7 +785,9 @@ mod tests {
             ReadVerifier::Account(VerifierAccount {
                 singer_address: account_with_private_key.account.address(),
             }),
-            ReadType::TransactionReceipt(declare_result.transaction_hash),
+            vec![ReadType::TransactionReceipt(
+                declare_result.transaction_hash,
+            )],
             ReadValidity::Block(1000000),
             provider.chain_id().await.unwrap(),
             ReadDataVersion::ONE,
@@ -749,7 +849,9 @@ mod tests {
             ReadVerifier::Account(VerifierAccount {
                 singer_address: deploy_account_result.contract_address,
             }),
-            ReadType::TransactionReceipt(deploy_account_result.transaction_hash),
+            vec![ReadType::TransactionReceipt(
+                deploy_account_result.transaction_hash,
+            )],
             ReadValidity::Block(1000000),
             provider.chain_id().await.unwrap(),
             ReadDataVersion::ONE,
@@ -771,6 +873,84 @@ mod tests {
                 // OwnerAdded event
                 assert_eq!(deploy_account_receipt.events[0].keys[0], selector!("OwnerAdded"));
             }
+        );
+    }
+
+    #[rstest]
+    #[tokio::test]
+    #[cfg(feature = "testing")]
+    async fn test_get_receipt_missing_required_read_type(
+        #[future]
+        #[with("src/transaction_receipt/test_contracts")]
+        scarb_build: ArtifactsMap,
+        #[future] madara_node_with_accounts: (
+            MadaraRunner,
+            Arc<StarknetProvider>,
+            Vec<StarknetWalletWithPrivateKey>,
+        ),
+    ) {
+        let (_runner, provider, accounts_with_private_key) = madara_node_with_accounts.await;
+        let account_with_private_key = &accounts_with_private_key[0];
+
+        let mut artifacts = scarb_build.await;
+        let artifact = artifacts.remove("ContractWithoutCanReadEvent").unwrap();
+        let contract_address = artifact
+            .declare_and_deploy_and_wait_for_receipt(
+                account_with_private_key.account.clone(),
+                vec![],
+                Felt::ZERO,
+                false,
+            )
+            .await;
+
+        // Call emit_event
+        let result = account_with_private_key
+            .account
+            .execute_v3(vec![Call {
+                to: contract_address,
+                selector: selector!("emit_event"),
+                calldata: vec![],
+            }])
+            .gas(0)
+            .gas_price(0)
+            .send()
+            .await
+            .unwrap();
+
+        let tx_hash = result.transaction_hash;
+        result
+            .wait_for_receipt(provider.clone(), None)
+            .await
+            .unwrap();
+
+        // Create read data with the wrong read type (Nonce instead of TransactionReceipt)
+        let read_data = ReadData::new(
+            ReadVerifier::Account(VerifierAccount {
+                singer_address: account_with_private_key.account.address(),
+            }),
+            vec![ReadType::Nonce(Felt::ZERO)], // Wrong read type
+            ReadValidity::Block(1000000),
+            provider.chain_id().await.unwrap(),
+            ReadDataVersion::ONE,
+        );
+
+        let signed_read_data = sign_read_data(read_data, account_with_private_key.private_key)
+            .await
+            .unwrap();
+
+        let global_ctx = Arc::new(GlobalContext::new_with_provider(
+            provider,
+            Felt::ONE,
+            Arc::new(StarknetWallet::test_default()),
+        ));
+
+        // Try to get receipt with incorrect read type
+        let receipt = get_transaction_receipt(global_ctx, tx_hash, Some(signed_read_data)).await;
+        assert_matches!(
+            receipt,
+            Err(TransactionReceiptError::ReadSignatureError(
+                ReadDataError::MissingRequiredReadTypes
+            ))
         );
     }
 }
