@@ -1,7 +1,10 @@
-use crate::{units::v0_1_0::api::UnitsReadRpcApiV0_1_0Server, RpcContext};
+use crate::{
+    units::{errors::UnitsRpcApiError, v0_1_0::api::UnitsReadRpcApiV0_1_0Server},
+    RpcContext,
+};
 use jsonrpsee::core::{async_trait, RpcResult};
 use units_primitives::rpc::{
-    GetNonceParams, GetNonceResult, GetProgramParams, GetProgramResult,
+    GetChainIdResult, GetNonceParams, GetNonceResult, GetProgramParams, GetProgramResult,
     GetTransactionReceiptParams, GetTransactionReceiptResult, HexBytes32,
 };
 
@@ -22,7 +25,10 @@ impl UnitsReadRpcApiV0_1_0Server for RpcContext {
         unimplemented!()
     }
 
-    async fn get_chain_id(&self) -> RpcResult<HexBytes32> {
-        unimplemented!()
+    async fn get_chain_id(&self) -> RpcResult<GetChainIdResult> {
+        let chain_id = units_handlers_common::chain_id::chain_id(self.global_ctx.clone())
+            .await
+            .map_err(UnitsRpcApiError::from)?;
+        Ok(chain_id)
     }
 }

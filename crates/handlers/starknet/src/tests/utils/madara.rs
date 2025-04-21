@@ -21,6 +21,7 @@ use std::{
 };
 use tokio::time::sleep;
 use units_tests_utils::port::{get_free_port, PortAllocation};
+use units_tests_utils::units::ChainBackend;
 use units_tests_utils::workspace::WORKSPACE_ROOT;
 use url::Url;
 use uuid::Uuid;
@@ -152,6 +153,20 @@ impl Drop for MadaraRunner {
     }
 }
 
+/// Used in `UnitsRunner` to start a Madara node
+impl ChainBackend for MadaraRunner {
+    fn add_args(&self, command: &mut Command) {
+        command
+            .arg("--madara-rpc-url")
+            .arg(self.rpc_url().unwrap().to_string())
+            .arg("--declare-acl-address")
+            .arg("0x0")
+            .arg("--owner-private-key")
+            .arg("0x0")
+            .arg("--account-address")
+            .arg("0x0");
+    }
+}
 /// Returns a running Madara node and configured Starknet provider
 #[fixture]
 pub async fn madara_node() -> (MadaraRunner, Arc<StarknetProvider>) {

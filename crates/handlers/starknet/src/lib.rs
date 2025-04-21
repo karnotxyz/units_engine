@@ -34,8 +34,8 @@ use utils::{
     contract_address_has_selector, simulate_boolean_read, GetSenderAddress, ToFelt, WaitForReceipt,
 };
 
-#[cfg(test)]
-mod tests;
+#[cfg(any(test, feature = "testing"))]
+pub mod tests;
 pub mod utils;
 
 pub type StarknetProvider = JsonRpcClient<HttpTransport>;

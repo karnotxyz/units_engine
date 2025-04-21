@@ -1,9 +1,6 @@
 use jsonrpsee::core::RpcResult;
 use units_primitives::rpc::{
-    DeclareProgramParams, DeclareTransactionResult, DeployAccountParams, DeployAccountResult,
-    GetNonceParams, GetNonceResult, GetProgramParams, GetProgramResult,
-    GetTransactionReceiptParams, GetTransactionReceiptResult, HexBytes32, SendTransactionParams,
-    SendTransactionResult,
+    DeclareProgramParams, DeclareTransactionResult, DeployAccountParams, DeployAccountResult, GetChainIdResult, GetNonceParams, GetNonceResult, GetProgramParams, GetProgramResult, GetTransactionReceiptParams, GetTransactionReceiptResult, HexBytes32, SendTransactionParams, SendTransactionResult
 };
 use units_proc_macros::versioned_rpc;
 
@@ -50,5 +47,5 @@ pub trait UnitsReadRpcApi {
 
     /// Get the chain ID
     #[method(name = "getChainId")]
-    async fn get_chain_id(&self) -> RpcResult<HexBytes32>;
+    async fn get_chain_id(&self) -> RpcResult<GetChainIdResult>;
 }

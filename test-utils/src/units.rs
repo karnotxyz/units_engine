@@ -11,34 +11,36 @@ use tokio::time::{sleep, Duration};
 use url::Url;
 
 use crate::{
-    madara::MadaraRunner,
     port::{get_free_port, PortAllocation},
     workspace::WORKSPACE_ROOT,
 };
 
 const UNITS_BINARY_PATH: &str = "target/debug/units_engine";
 
-pub struct UnitsRunner {
+pub trait ChainBackend {
+    fn add_args(&self, command: &mut Command);
+}
+
+pub struct UnitsRunner<T>
+where
+    T: ChainBackend,
+{
     process: Option<Child>,
-    madara: Option<MadaraRunner>,
+    chain_backend: T,
     port_allocation: Option<PortAllocation>,
 }
 
-impl UnitsRunner {
-    pub fn new() -> Result<Self> {
+impl<T: ChainBackend> UnitsRunner<T> {
+    pub fn new(chain_backend: T) -> Result<Self> {
         Ok(Self {
             process: None,
-            madara: None,
+            chain_backend,
             port_allocation: None,
         })
     }
 
     pub async fn run(&mut self) -> Result<()> {
-        // First start Madara
-        let mut madara = MadaraRunner::new()?;
-        madara.run().await?;
-        let madara_port = madara.port().unwrap();
-        self.madara = Some(madara);
+        // First start the chain backend
 
         // Get a free port for Units
         let port_allocation = get_free_port()?;
@@ -59,11 +61,10 @@ impl UnitsRunner {
         // Start the Units process
         println!("Starting Units engine...");
         let units_path = WORKSPACE_ROOT.join(UNITS_BINARY_PATH);
-        let mut process = Command::new(units_path)
-            .arg("--rpc-port")
-            .arg(units_port.to_string())
-            .arg("--madara-rpc-url")
-            .arg(format!("http://localhost:{}", madara_port))
+        let mut command = Command::new(units_path);
+        command.arg("--rpc-port").arg(units_port.to_string());
+        self.chain_backend.add_args(&mut command);
+        let mut process = command
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()?;
@@ -128,7 +129,7 @@ impl UnitsRunner {
     }
 }
 
-impl Drop for UnitsRunner {
+impl<T: ChainBackend> Drop for UnitsRunner<T> {
     fn drop(&mut self) {
         // Kill the Units process
         if let Some(mut process) = self.process.take() {
@@ -137,10 +138,7 @@ impl Drop for UnitsRunner {
             let _ = process.wait();
         }
 
-        // Madara will be automatically killed when dropped
-        if self.madara.take().is_some() {
-            println!("Cleaning up Madara instance...");
-        }
+        // Chain backend will be automatically killed when dropped
         println!("Units runner cleaned up.");
     }
 }

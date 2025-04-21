@@ -1,8 +1,9 @@
 use std::sync::Arc;
 
+use serde::Serialize;
 use units_primitives::{context::GlobalContext, rpc::GetChainIdResult};
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, thiserror::Error, PartialEq, Eq, Serialize)]
 pub enum ChainIdError {
     #[error("Failed to get chain id: {0}")]
     FailedToGetChainId(String),

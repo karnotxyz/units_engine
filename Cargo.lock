@@ -3648,16 +3648,19 @@ name = "units-db"
 version = "0.1.0"
 
 [[package]]
-name = "units-e2e-tests"
+name = "units-e2e-starknet-tests"
 version = "0.1.0"
 dependencies = [
  "anyhow",
  "once_cell",
  "reqwest 0.12.15",
  "rstest",
+ "serde_json",
  "starknet",
  "tokio",
  "units-handlers-common",
+ "units-handlers-starknet",
+ "units-primitives",
  "units-tests-utils",
  "units-utils",
  "url",
@@ -3703,6 +3706,7 @@ dependencies = [
  "hex",
  "jsonrpsee",
  "rstest",
+ "serde",
  "serde_json",
  "starknet",
  "thiserror 2.0.12",

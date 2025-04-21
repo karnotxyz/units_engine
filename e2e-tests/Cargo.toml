@@ -1,5 +1,5 @@
 [package]
-name = "units-e2e-tests"
+name = "units-e2e-starknet-tests"
 homepage.workspace = true
 edition.workspace = true
 authors.workspace = true
@@ -10,7 +10,7 @@ license.workspace = true
 [dependencies]
 anyhow.workspace = true
 once_cell.workspace = true
-reqwest.workspace = true
+reqwest = { workspace = true, features = ["json"] }
 rstest.workspace = true
 starknet.workspace = true
 tokio.workspace = true
@@ -19,6 +19,9 @@ units-tests-utils.workspace = true
 units-utils.workspace = true
 url.workspace = true
 uuid.workspace = true
+units-handlers-starknet = { workspace = true, features = ["testing"] }
+serde_json.workspace = true
+units-primitives.workspace = true
 
 [lints]
 workspace = true
