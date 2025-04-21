@@ -12,9 +12,8 @@ use starknet::{
     signers::{LocalWallet, SigningKey},
 };
 use std::sync::Arc;
-use units_utils::starknet::{
-    deploy_account, wait_for_receipt, BuildAccount, StarknetProvider, StarknetWallet,
-};
+use units_handlers_starknet::utils::{deploy_account, wait_for_receipt, BuildAccount};
+use units_handlers_starknet::{StarknetProvider, StarknetWallet};
 use url::Url;
 
 pub const PREDEPLOYED_ACCOUNT_CLASS_HASH: &str =

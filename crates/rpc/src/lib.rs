@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use jsonrpsee::RpcModule;
-use units_utils::context::GlobalContext;
+use units_primitives::context::GlobalContext;
 
 mod starknet;
 mod units;

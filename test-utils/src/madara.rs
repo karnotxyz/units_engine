@@ -20,7 +20,8 @@ use std::{
     time::Duration,
 };
 use tokio::time::sleep;
-use units_utils::starknet::{deploy_account, BuildAccount, StarknetProvider, StarknetWallet};
+use units_handlers_starknet::utils::{deploy_account, BuildAccount};
+use units_handlers_starknet::{StarknetProvider, StarknetWallet};
 use url::Url;
 use uuid::Uuid;
 

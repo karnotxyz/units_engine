@@ -1,6 +1,6 @@
 [package]
-name = "units-primitives"
-description = "Units Primitives"
+name = "units-handlers-common"
+description = "Units Handlers Common"
 authors.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -10,21 +10,21 @@ homepage.workspace = true
 
 [dependencies]
 anyhow.workspace = true
-hex.workspace = true
-starknet.workspace = true
-starknet-crypto.workspace = true
-thiserror.workspace = true
-units-utils.workspace = true
-serde.workspace = true
-serde_json.workspace = true
-jsonrpsee.workspace = true
 async-trait.workspace = true
+futures.workspace = true
+hex.workspace = true
+jsonrpsee = { workspace = true }
+serde_json.workspace = true
+starknet.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+units-primitives = { workspace = true }
+units-utils.workspace = true
 
 [dev-dependencies]
 rstest.workspace = true
-tokio = { workspace = true }
 units-tests-utils.workspace = true
 assert_matches.workspace = true
 
 [features]
-testing = []
+testing = ["units-primitives/testing"]

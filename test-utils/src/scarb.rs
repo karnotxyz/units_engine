@@ -15,10 +15,8 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::Arc;
 use std::sync::Mutex;
-use units_utils::starknet::declare_contract;
-use units_utils::starknet::deploy_contract;
-use units_utils::starknet::StarknetWallet;
-use units_utils::starknet::WaitForReceipt;
+use units_handlers_starknet::utils::{declare_contract, deploy_contract, WaitForReceipt};
+use units_handlers_starknet::StarknetWallet;
 
 static BUILT_PATHS: Lazy<Mutex<HashSet<PathBuf>>> = Lazy::new(|| Mutex::new(HashSet::new()));
 pub type ArtifactsMap = HashMap<String, Artifacts>;

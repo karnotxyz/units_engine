@@ -32,6 +32,9 @@ units-rpc.workspace = true
 units-telemetery.workspace = true
 units-utils.workspace = true
 url.workspace = true
+units-handlers-common.workspace = true
+units-handlers-starknet.workspace = true
+units-primitives.workspace = true
 
 [features]
-testing = ["units-rpc/testing"]
+testing = ["units-handlers-common/testing"]

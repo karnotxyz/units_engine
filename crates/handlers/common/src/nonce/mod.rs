@@ -2,17 +2,15 @@ use std::sync::Arc;
 
 use starknet::{
     core::types::{BlockId, Call, Felt, StarknetError},
-    macros::selector,
     providers::{Provider, ProviderError},
 };
-use units_utils::{
-    context::GlobalContext,
-    starknet::{contract_address_has_selector, simulate_boolean_read, SimulationError},
+use units_primitives::{
+    context::{ChainHandlerError, GlobalContext},
+    read_data::{ReadDataError, ReadType, SignedReadData},
+    rpc::{GetNonceParams, GetNonceResult, HexBytes32, HexBytes32Error},
 };
 
-use units_primitives::read_data::{ReadDataError, ReadType, SignedReadData};
-
-const CAN_READ_NONCE_SELECTOR: Felt = selector!("can_read_nonce");
+const CAN_READ_NONCE_FUNCTION_NAME: &str = "can_read_nonce";
 
 #[derive(Debug, thiserror::Error)]
 pub enum NonceError {
@@ -24,53 +22,43 @@ pub enum NonceError {
     EmptyCanGetNonceReadResult,
     #[error("Nonce read not allowed")]
     NonceReadNotAllowed,
-    #[error("Starknet error: {0}")]
-    StarknetError(#[from] ProviderError),
     #[error("Read Data Error: {0}")]
     ReadSignatureError(#[from] ReadDataError),
     #[error("Invalid read signature")]
     InvalidReadSignature,
-    #[error("Simulation error: {0}")]
-    SimulationError(#[from] SimulationError),
-}
-
-impl From<NonceError> for ProviderError {
-    fn from(value: NonceError) -> Self {
-        match value {
-            NonceError::StarknetError(error) => error,
-            _ => ProviderError::StarknetError(StarknetError::UnexpectedError(value.to_string())),
-        }
-    }
+    #[error("Chain handler error: {0}")]
+    ChainHandlerError(#[from] ChainHandlerError),
+    #[error("HexBytes32 error: {0}")]
+    HexBytes32Error(#[from] HexBytes32Error),
 }
 
 pub async fn get_nonce(
     global_ctx: Arc<GlobalContext>,
-    block_id: BlockId,
-    address: Felt,
-    signed_read_data: Option<SignedReadData>,
-) -> Result<Felt, NonceError> {
-    let starknet_provider = global_ctx.starknet_provider();
+    params: GetNonceParams,
+) -> Result<GetNonceResult, NonceError> {
+    let handler = global_ctx.handler();
 
     // Get contract ABI to check for `can_read_nonce` method
-    let has_selector = contract_address_has_selector(
-        starknet_provider.clone(),
-        address,
-        block_id,
-        CAN_READ_NONCE_SELECTOR,
-    )
-    .await
-    .map_err(NonceError::StarknetError)?;
+    let has_selector = handler
+        .contract_has_function(
+            params.account_address,
+            CAN_READ_NONCE_FUNCTION_NAME.to_string(),
+        )
+        .await
+        .map_err(NonceError::ChainHandlerError)?;
 
     if has_selector {
         // Check if the read signature is valid by calling `is_valid_signature`
-        let signed_read_data = signed_read_data.ok_or(NonceError::ReadSignatureNotProvided)?;
+        let signed_read_data = params
+            .signed_read_data
+            .ok_or(NonceError::ReadSignatureNotProvided)?;
 
         // Verify the signature and check that it has the required read type
         if !signed_read_data
             .verify(
-                starknet_provider.clone(),
+                handler.clone(),
                 vec![ReadType::Nonce {
-                    nonce: address.into(),
+                    nonce: params.account_address.try_into()?,
                 }],
             )
             .await?
@@ -82,23 +70,23 @@ pub async fn get_nonce(
         // So we build a simulated transaction that tries to call `can_read_nonce` on the smart contract
         // and the "sender_address" is the address of the account that is trying to read the nonce
         // If the account has access, the simulation will succeed and the result will be 0x1 (true)
-        let can_read_nonce = simulate_boolean_read(
-            vec![Call {
-                to: address,
-                selector: CAN_READ_NONCE_SELECTOR,
-                calldata: vec![],
-            }],
-            *signed_read_data.read_data().read_address(),
-            starknet_provider.clone(),
-        )
-        .await?;
+        let can_read_nonce = handler
+            .simulate_read_access_check(
+                params.account_address,
+                params.account_address,
+                CAN_READ_NONCE_FUNCTION_NAME.to_string(),
+                vec![],
+            )
+            .await?;
 
         if !can_read_nonce {
             return Err(NonceError::NonceReadNotAllowed);
         }
     }
 
-    Ok(starknet_provider.get_nonce(block_id, address).await?)
+    Ok(GetNonceResult {
+        nonce: handler.get_nonce(params.account_address).await?,
+    })
 }
 
 #[cfg(test)]
@@ -111,6 +99,7 @@ mod tests {
     #[cfg(feature = "testing")]
     use units_primitives::read_data::sign_read_data;
 
+    use crate::{StarknetProvider, StarknetWallet};
     use units_primitives::read_data::{ReadData, ReadDataVersion, ReadType, ReadValidity};
     use units_primitives::read_data::{ReadVerifier, VerifierAccount};
     use units_tests_utils::starknet::TestDefault;
@@ -118,8 +107,6 @@ mod tests {
         madara::{madara_node_with_accounts, MadaraRunner, StarknetWalletWithPrivateKey},
         scarb::{scarb_build, ArtifactsMap},
     };
-    use units_utils::starknet::StarknetProvider;
-    use units_utils::starknet::StarknetWallet;
 
     #[rstest]
     #[tokio::test]
@@ -143,12 +130,12 @@ mod tests {
             .declare_and_deploy_and_wait_for_receipt(account, vec![], Felt::ZERO, false)
             .await;
 
-        let global_ctx = Arc::new(GlobalContext::new_with_provider(
+        let starknet_ctx = Arc::new(StarknetContext::new_with_provider(
             provider,
             Felt::ONE,
             Arc::new(StarknetWallet::test_default()),
         ));
-        let nonce = get_nonce(global_ctx, BlockId::Tag(BlockTag::Pending), address, None)
+        let nonce = get_nonce(starknet_ctx, BlockId::Tag(BlockTag::Pending), address, None)
             .await
             .unwrap();
         assert_eq!(nonce, Felt::ZERO);
@@ -176,12 +163,12 @@ mod tests {
             .declare_and_deploy_and_wait_for_receipt(account, vec![], Felt::ZERO, false)
             .await;
 
-        let global_ctx = Arc::new(GlobalContext::new_with_provider(
+        let starknet_ctx = Arc::new(StarknetContext::new_with_provider(
             provider,
             Felt::ONE,
             Arc::new(StarknetWallet::test_default()),
         ));
-        let nonce = get_nonce(global_ctx, BlockId::Tag(BlockTag::Pending), address, None).await;
+        let nonce = get_nonce(starknet_ctx, BlockId::Tag(BlockTag::Pending), address, None).await;
         assert_matches!(nonce, Err(NonceError::ReadSignatureNotProvided));
     }
 
@@ -215,22 +202,20 @@ mod tests {
             vec![ReadType::Nonce {
                 nonce: contract_address.into(),
             }],
-            ReadValidity::Block {
-                block: 1000000,
-            },
+            ReadValidity::Block { block: 1000000 },
             provider.chain_id().await.unwrap(),
             ReadDataVersion::One,
         );
         // Using an invalid private key to sign the read data
         let signed_read_data = sign_read_data(read_data, Felt::THREE).await.unwrap();
 
-        let global_ctx = Arc::new(GlobalContext::new_with_provider(
+        let starknet_ctx = Arc::new(StarknetContext::new_with_provider(
             provider,
             Felt::ONE,
             Arc::new(StarknetWallet::test_default()),
         ));
         let nonce = get_nonce(
-            global_ctx,
+            starknet_ctx,
             BlockId::Tag(BlockTag::Pending),
             contract_address,
             Some(signed_read_data),
@@ -267,7 +252,7 @@ mod tests {
             )
             .await;
 
-        let global_ctx = Arc::new(GlobalContext::new_with_provider(
+        let starknet_ctx = Arc::new(StarknetContext::new_with_provider(
             provider.clone(),
             Felt::ONE,
             Arc::new(StarknetWallet::test_default()),
@@ -279,9 +264,7 @@ mod tests {
             vec![ReadType::Nonce {
                 nonce: address.into(),
             }],
-            ReadValidity::Block {
-                block: 1000000,
-            },
+            ReadValidity::Block { block: 1000000 },
             provider.chain_id().await.unwrap(),
             ReadDataVersion::One,
         );
@@ -290,7 +273,7 @@ mod tests {
             .unwrap();
 
         let nonce = get_nonce(
-            global_ctx,
+            starknet_ctx,
             BlockId::Tag(BlockTag::Pending),
             address,
             Some(signed_read_data),
@@ -330,7 +313,7 @@ mod tests {
             )
             .await;
 
-        let global_ctx = Arc::new(GlobalContext::new_with_provider(
+        let starknet_ctx = Arc::new(StarknetContext::new_with_provider(
             provider.clone(),
             Felt::ONE,
             Arc::new(StarknetWallet::test_default()),
@@ -342,9 +325,7 @@ mod tests {
             vec![ReadType::Nonce {
                 nonce: contract_address.into(),
             }],
-            ReadValidity::Block {
-                block: 1000000,
-            },
+            ReadValidity::Block { block: 1000000 },
             provider.chain_id().await.unwrap(),
             ReadDataVersion::One,
         );
@@ -357,7 +338,7 @@ mod tests {
         .await
         .unwrap();
         let nonce = get_nonce(
-            global_ctx.clone(),
+            starknet_ctx.clone(),
             BlockId::Tag(BlockTag::Pending),
             contract_address,
             Some(signed_read_data),
@@ -375,9 +356,7 @@ mod tests {
             vec![ReadType::Nonce {
                 nonce: contract_address.into(),
             }],
-            ReadValidity::Block {
-                block: 1000000,
-            },
+            ReadValidity::Block { block: 1000000 },
             provider.chain_id().await.unwrap(),
             ReadDataVersion::One,
         );
@@ -386,7 +365,7 @@ mod tests {
                 .await
                 .unwrap();
         let nonce = get_nonce(
-            global_ctx,
+            starknet_ctx,
             BlockId::Tag(BlockTag::Pending),
             contract_address,
             Some(signed_read_data),
@@ -432,9 +411,7 @@ mod tests {
             vec![ReadType::TransactionReceipt {
                 transaction_hash: Felt::ONE.into(),
             }], // Different type than what's needed
-            ReadValidity::Block {
-                block: 1000000,
-            },
+            ReadValidity::Block { block: 1000000 },
             provider.chain_id().await.unwrap(),
             ReadDataVersion::One,
         );
@@ -443,14 +420,14 @@ mod tests {
             .await
             .unwrap();
 
-        let global_ctx = Arc::new(GlobalContext::new_with_provider(
+        let starknet_ctx = Arc::new(StarknetContext::new_with_provider(
             provider,
             Felt::ONE,
             Arc::new(StarknetWallet::test_default()),
         ));
 
         let nonce = get_nonce(
-            global_ctx,
+            starknet_ctx,
             BlockId::Tag(BlockTag::Pending),
             contract_address,
             Some(signed_read_data),

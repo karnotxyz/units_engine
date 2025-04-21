@@ -3657,6 +3657,7 @@ dependencies = [
  "rstest",
  "starknet",
  "tokio",
+ "units-handlers-common",
  "units-tests-utils",
  "units-utils",
  "url",
@@ -3682,6 +3683,9 @@ dependencies = [
  "tower 0.4.13",
  "tower-http",
  "tracing",
+ "units-handlers-common",
+ "units-handlers-starknet",
+ "units-primitives",
  "units-rpc",
  "units-telemetery",
  "units-utils",
@@ -3689,13 +3693,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "units-handlers"
+name = "units-handlers-common"
 version = "0.1.0"
 dependencies = [
  "anyhow",
  "assert_matches",
+ "async-trait",
  "futures",
  "hex",
+ "jsonrpsee",
  "rstest",
  "serde_json",
  "starknet",
@@ -3707,12 +3713,34 @@ dependencies = [
 ]
 
 [[package]]
+name = "units-handlers-starknet"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "assert_matches",
+ "async-trait",
+ "futures",
+ "hex",
+ "rstest",
+ "serde_json",
+ "starknet",
+ "thiserror 2.0.12",
+ "tokio",
+ "units-handlers-common",
+ "units-primitives",
+ "units-tests-utils",
+ "units-utils",
+]
+
+[[package]]
 name = "units-primitives"
 version = "0.1.0"
 dependencies = [
  "anyhow",
  "assert_matches",
+ "async-trait",
  "hex",
+ "jsonrpsee",
  "rstest",
  "serde",
  "serde_json",
@@ -3744,7 +3772,7 @@ dependencies = [
  "serde_json",
  "starknet",
  "thiserror 2.0.12",
- "units-handlers",
+ "units-handlers-common",
  "units-primitives",
  "units-proc-macros",
  "units-utils",
@@ -3780,6 +3808,8 @@ dependencies = [
  "serde_json",
  "starknet",
  "tokio",
+ "units-handlers-common",
+ "units-handlers-starknet",
  "units-primitives",
  "units-utils",
  "url",

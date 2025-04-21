@@ -25,10 +25,7 @@ jsonrpsee = { workspace = true, default-features = true, features = [
 serde_json.workspace = true
 starknet.workspace = true
 thiserror.workspace = true
-units-handlers.workspace = true
 units-primitives.workspace = true
 units-proc-macros.workspace = true
 units-utils.workspace = true
-
-[features]
-testing = ["units-handlers/testing"]
+units-handlers-common.workspace = true

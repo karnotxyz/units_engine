@@ -5,23 +5,31 @@ use starknet::core::types::{
     DeployAccountTransactionResult,
 };
 use starknet::providers::{Provider, ProviderError};
-use units_utils::context::GlobalContext;
+use units_primitives::context::{ChainHandlerError, GlobalContext};
+use units_primitives::rpc::{DeployAccountParams, DeployAccountResult};
+
+#[derive(Debug, thiserror::Error)]
+pub enum DeployAccountError {
+    #[error("Chain handler error: {0}")]
+    ChainHandlerError(#[from] ChainHandlerError),
+}
 
 pub async fn add_deploy_account_transaction(
     global_ctx: Arc<GlobalContext>,
-    deploy_account_transaction: BroadcastedDeployAccountTransactionV3,
-) -> Result<DeployAccountTransactionResult, ProviderError> {
-    let starknet_provider = global_ctx.starknet_provider();
-    starknet_provider
-        .add_deploy_account_transaction(BroadcastedDeployAccountTransaction::V3(
-            deploy_account_transaction,
-        ))
+    deploy_account_transaction: DeployAccountParams,
+) -> Result<DeployAccountResult, DeployAccountError> {
+    global_ctx
+        .handler()
+        .deploy_account(deploy_account_transaction)
         .await
+        .map_err(DeployAccountError::ChainHandlerError)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::utils::wait_for_receipt;
+    use crate::{StarknetProvider, StarknetWallet};
     use rstest::*;
     use starknet::{
         accounts::{AccountFactory, OpenZeppelinAccountFactory},
@@ -35,7 +43,6 @@ mod tests {
         madara::{madara_node, MadaraRunner},
         starknet::{TestDefault, PREDEPLOYED_ACCOUNT_CLASS_HASH},
     };
-    use units_utils::starknet::{wait_for_receipt, StarknetProvider, StarknetWallet};
 
     #[rstest]
     #[tokio::test]
@@ -43,7 +50,7 @@ mod tests {
         #[future] madara_node: (MadaraRunner, Arc<StarknetProvider>),
     ) {
         let (_madara_runner, starknet_provider) = madara_node.await;
-        let global_ctx = Arc::new(GlobalContext::new_with_provider(
+        let starknet_ctx = Arc::new(StarknetContext::new_with_provider(
             starknet_provider.clone(),
             Felt::ONE,
             Arc::new(StarknetWallet::test_default()),
@@ -94,7 +101,7 @@ mod tests {
             is_query: false,
         };
 
-        let result = add_deploy_account_transaction(global_ctx, deploy_account_transaction)
+        let result = add_deploy_account_transaction(starknet_ctx, deploy_account_transaction)
             .await
             .unwrap();
         assert_eq!(result.transaction_hash, tx_hash);

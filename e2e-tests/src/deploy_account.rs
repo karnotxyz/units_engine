@@ -6,11 +6,11 @@ use starknet::{
     core::types::{BlockId, BlockTag, Felt},
     providers::Provider,
 };
+use units_handlers_common::StarknetProvider;
 use units_tests_utils::{
     madara::{madara_node, MadaraRunner},
     starknet::deploy_dummy_account,
 };
-use units_utils::starknet::StarknetProvider;
 
 #[tokio::test]
 #[rstest]

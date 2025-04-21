@@ -33,9 +33,12 @@ impl StarknetReadRpcApiV0_7_1Server for RpcContext {
     }
 
     async fn chain_id(&self) -> RpcResult<Felt> {
-        Ok(units_handlers::chain_id::chain_id(self.global_ctx.clone())
-            .await
-            .map_err(StarknetRpcApiError::from)?)
+        todo!()
+        // Ok(
+        //     units_handlers_common::chain_id::chain_id(self.global_ctx.clone())
+        //         .await
+        //         .map_err(StarknetRpcApiError::from)?,
+        // )
     }
 
     async fn estimate_fee(
@@ -104,15 +107,16 @@ impl StarknetReadRpcApiV0_7_1Server for RpcContext {
     }
 
     async fn get_nonce(&self, _block_id: BlockId, _contract_address: Felt) -> RpcResult<Felt> {
-        Ok(units_handlers::nonce::get_nonce(
-            self.global_ctx.clone(),
-            _block_id,
-            _contract_address,
-            None,
-        )
-        .await
-        .map_err(ProviderError::from)
-        .map_err(StarknetRpcApiError::from)?)
+        todo!()
+        // Ok(units_handlers_common::nonce::get_nonce(
+        //     self.global_ctx.clone(),
+        //     _block_id,
+        //     _contract_address,
+        //     None,
+        // )
+        // .await
+        // .map_err(ProviderError::from)
+        // .map_err(StarknetRpcApiError::from)?)
     }
 
     fn get_transaction_by_block_id_and_index(

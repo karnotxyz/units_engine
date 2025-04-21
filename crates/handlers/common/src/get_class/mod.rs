@@ -1,14 +1,15 @@
 use std::sync::Arc;
 
+use jsonrpsee::core::params;
 use starknet::core::types::{BlockId, BlockTag, Call, ContractClass, Felt, FunctionCall};
 use starknet::macros::selector;
 use starknet::providers::{Provider, ProviderError};
+use units_primitives::context::{ChainHandlerError, GlobalContext};
 use units_primitives::read_data::{ReadDataError, ReadType, SignedReadData};
+use units_primitives::rpc::{GetClassParams, GetProgramResult, HexBytes32Error};
 use units_primitives::types::{ClassVisibility, ClassVisibilityError};
-use units_utils::context::GlobalContext;
-use units_utils::starknet::{simulate_boolean_read, SimulationError};
 
-pub const HAS_READ_ACCESS_SELECTOR: Felt = selector!("has_read_access");
+pub const HAS_READ_ACCESS_FUNCTION_NAME: &str = "has_read_access";
 /// If the public address has access then it's assumed that the contract is public
 /// and any address can read it
 pub const PUBLIC_ACCESS_ADDRESS: Felt = Felt::ZERO;
@@ -17,8 +18,6 @@ pub const PUBLIC_ACCESS_ADDRESS: Felt = Felt::ZERO;
 pub enum GetClassError {
     #[error("Starknet error: {0}")]
     StarknetError(#[from] ProviderError),
-    #[error("Simulation error: {0}")]
-    SimulationError(#[from] SimulationError),
     #[error("Read signature not provided")]
     ReadSignatureNotProvided,
     #[error("Class read not allowed")]
@@ -27,29 +26,21 @@ pub enum GetClassError {
     InvalidClassVisibility(#[from] ClassVisibilityError),
     #[error("Read data error: {0}")]
     ReadDataError(#[from] ReadDataError),
+    #[error("Chain handler error: {0}")]
+    ChainHandlerError(#[from] ChainHandlerError),
+    #[error("HexBytes32 error: {0}")]
+    HexBytes32Error(#[from] HexBytes32Error),
 }
 
 pub async fn get_class(
     global_ctx: Arc<GlobalContext>,
-    class_hash: Felt,
+    params: GetClassParams,
     signed_read_data: Option<SignedReadData>,
-) -> Result<ContractClass, GetClassError> {
-    let starknet_provider = global_ctx.starknet_provider();
+) -> Result<GetProgramResult, GetClassError> {
+    let handler = global_ctx.handler();
 
     // Check if the contract is public
-    let declare_acl_address = global_ctx.declare_acl_address();
-    let visibility: ClassVisibility = starknet_provider
-        .call(
-            FunctionCall {
-                contract_address: declare_acl_address,
-                entry_point_selector: selector!("get_visibility"),
-                calldata: vec![class_hash],
-            },
-            BlockId::Tag(BlockTag::Pending),
-        )
-        .await
-        .map_err(GetClassError::StarknetError)?
-        .try_into()?;
+    let visibility: ClassVisibility = handler.get_class_visibility(params.class_hash).await?;
 
     if visibility != ClassVisibility::Public {
         // Check if user has access to the contract
@@ -58,9 +49,9 @@ pub async fn get_class(
         // Verify the signature and check that it has the required read type
         if !signed_read_data
             .verify(
-                starknet_provider.clone(),
+                handler.clone(),
                 vec![ReadType::Class {
-                    class_hash: class_hash.into(),
+                    class_hash: params.class_hash.try_into()?,
                 }],
             )
             .await
@@ -69,33 +60,29 @@ pub async fn get_class(
             return Err(GetClassError::ClassReadNotAllowed);
         }
 
-        let has_read_access = simulate_boolean_read(
-            vec![Call {
-                to: declare_acl_address,
-                selector: HAS_READ_ACCESS_SELECTOR,
-                calldata: vec![class_hash],
-            }],
-            *signed_read_data.read_data().read_address(),
-            starknet_provider.clone(),
-        )
-        .await
-        .map_err(GetClassError::SimulationError)?;
+        let has_read_access = handler
+            .simulate_read_access_check(
+                signed_read_data.read_data().read_address().clone().into(),
+                handler.get_declare_acl_address(),
+                HAS_READ_ACCESS_FUNCTION_NAME.to_string(),
+                vec![params.class_hash],
+            )
+            .await?;
 
         if !has_read_access {
             return Err(GetClassError::ClassReadNotAllowed);
         }
     }
 
-    let class = starknet_provider
-        .get_class(BlockId::Tag(BlockTag::Pending), class_hash)
-        .await
-        .map_err(GetClassError::StarknetError)?;
+    let class = handler.get_program(params.class_hash).await?;
     Ok(class)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::utils::WaitForReceipt;
+    use crate::StarknetProvider;
     use assert_matches::assert_matches;
     use rstest::*;
     use starknet::accounts::Account;
@@ -107,7 +94,6 @@ mod tests {
         madara::{madara_node_with_accounts, MadaraRunner, StarknetWalletWithPrivateKey},
         scarb::{scarb_build, ArtifactsMap},
     };
-    use units_utils::starknet::{StarknetProvider, WaitForReceipt};
 
     #[rstest]
     #[tokio::test]
@@ -140,7 +126,7 @@ mod tests {
                 false,
             )
             .await;
-        let global_ctx = Arc::new(GlobalContext::new_with_provider(
+        let starknet_ctx = Arc::new(StarknetContext::new_with_provider(
             provider.clone(),
             declare_acl_address,
             accounts_with_private_key[0].account.clone(),
@@ -156,7 +142,7 @@ mod tests {
         // As we're directly calling Madara and not going via the Units RPC,
         // the DeclareAcl contract is not updated and by default the contract visibility is private
         // i.e. Acl driven. This is just for this test contract, actual implementation could differ.
-        let class = get_class(global_ctx.clone(), dummy_contract_class_hash, None).await;
+        let class = get_class(starknet_ctx.clone(), dummy_contract_class_hash, None).await;
         assert_matches!(class, Err(GetClassError::ReadSignatureNotProvided));
 
         // Make the contract visbility Public
@@ -179,7 +165,7 @@ mod tests {
             .wait_for_receipt(provider.clone(), None)
             .await
             .unwrap();
-        let class = get_class(global_ctx.clone(), dummy_contract_class_hash, None).await;
+        let class = get_class(starknet_ctx.clone(), dummy_contract_class_hash, None).await;
         assert_contract_class_eq(
             dummy_contract_artifact
                 .clone()
@@ -218,9 +204,7 @@ mod tests {
             vec![ReadType::Class {
                 class_hash: dummy_contract_class_hash.into(),
             }],
-            ReadValidity::Block {
-                block: 100,
-            },
+            ReadValidity::Block { block: 100 },
             chain_id,
             ReadDataVersion::One,
         );
@@ -228,7 +212,7 @@ mod tests {
             .await
             .unwrap();
         let class = get_class(
-            global_ctx.clone(),
+            starknet_ctx.clone(),
             dummy_contract_class_hash,
             Some(signed_read_data.clone()),
         )
@@ -257,7 +241,7 @@ mod tests {
             .await
             .unwrap();
         let class = get_class(
-            global_ctx.clone(),
+            starknet_ctx.clone(),
             dummy_contract_class_hash,
             Some(signed_read_data),
         )
@@ -280,9 +264,7 @@ mod tests {
             vec![ReadType::Class {
                 class_hash: different_class_hash.into(),
             }],
-            ReadValidity::Block {
-                block: 100,
-            },
+            ReadValidity::Block { block: 100 },
             chain_id,
             ReadDataVersion::One,
         );
@@ -293,7 +275,7 @@ mod tests {
         .await
         .unwrap();
         let class = get_class(
-            global_ctx,
+            starknet_ctx,
             dummy_contract_class_hash,
             Some(signed_read_data_with_different_class),
         )

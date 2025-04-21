@@ -19,3 +19,5 @@ units-primitives.workspace = true
 units-utils.workspace = true
 url.workspace = true
 uuid.workspace = true
+units-handlers-common.workspace = true
+units-handlers-starknet.workspace = true

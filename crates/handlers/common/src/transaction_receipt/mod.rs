@@ -1,28 +1,15 @@
 use std::sync::Arc;
 
-use starknet::{
-    core::types::{
-        BlockId, BlockTag, Call, ExecuteInvocation, Felt, StarknetError, TransactionReceipt,
-        TransactionReceiptWithBlockInfo, TransactionTrace,
-    },
-    macros::selector,
-    providers::{Provider, ProviderError},
-};
-use units_primitives::read_data::{ReadDataError, SignedReadData};
-use units_utils::{
-    context::GlobalContext,
-    starknet::{
-        contract_address_has_selector, get_events_from_function_invocation, simulate_boolean_read,
-        GetSenderAddress, SimulationError,
-    },
+use units_primitives::{
+    context::{ChainHandler, ChainHandlerError, GlobalContext},
+    read_data::{ReadDataError, SignedReadData},
+    rpc::{GetTransactionReceiptParams, GetTransactionReceiptResult, HexBytes32, HexBytes32Error},
 };
 
 #[derive(Debug, thiserror::Error)]
 pub enum TransactionReceiptError {
     #[error("More events than expected")]
     MoreEventsThanExpected,
-    #[error("Starknet error: {0}")]
-    StarknetError(#[from] ProviderError),
     #[error("Invalid read signature")]
     InvalidReadSignature,
     #[error("Read Data Error: {0}")]
@@ -31,34 +18,27 @@ pub enum TransactionReceiptError {
     InvalidTransactionType,
     #[error("Invalid sender address")]
     InvalidSenderAddress,
-    #[error("Simulation error: {0}")]
-    SimulationError(#[from] SimulationError),
+    #[error("Chain handler error: {0}")]
+    ChainHandlerError(#[from] ChainHandlerError),
+    #[error("HexBytes32 error: {0}")]
+    HexBytes32Error(#[from] HexBytes32Error),
 }
 
-impl From<TransactionReceiptError> for ProviderError {
-    fn from(value: TransactionReceiptError) -> Self {
-        match value {
-            TransactionReceiptError::StarknetError(error) => error,
-            _ => ProviderError::StarknetError(StarknetError::UnexpectedError(value.to_string())),
-        }
-    }
-}
-
-const CAN_READ_EVENT_SELECTOR: Felt = selector!("can_read_event");
+const CAN_READ_EVENT_FUNCTION_NAME: &str = "can_read_event";
 
 pub async fn get_transaction_receipt(
     global_ctx: Arc<GlobalContext>,
-    transaction_hash: Felt,
-    signed_read_data: SignedReadData,
-) -> Result<TransactionReceiptWithBlockInfo, TransactionReceiptError> {
-    let starknet_provider = global_ctx.starknet_provider();
+    params: GetTransactionReceiptParams,
+) -> Result<GetTransactionReceiptResult, TransactionReceiptError> {
+    let handler = global_ctx.handler();
 
     // Verify signature and ensure it has the required read type
-    if !signed_read_data
+    if !params
+        .signed_read_data
         .verify(
-            starknet_provider.clone(),
+            handler.clone(),
             vec![units_primitives::read_data::ReadType::TransactionReceipt {
-                transaction_hash: transaction_hash.into(),
+                transaction_hash: params.transaction_hash.try_into()?,
             }],
         )
         .await?
@@ -67,80 +47,56 @@ pub async fn get_transaction_receipt(
     }
 
     // Check if reader is the transaction originator
-    let raw_txn = starknet_provider
-        .get_transaction_by_hash(transaction_hash)
+    let raw_txn = handler
+        .get_transaction_by_hash(params.transaction_hash)
         .await?;
-    let sender_address = raw_txn
-        .get_sender_address()
-        .ok_or(TransactionReceiptError::InvalidTransactionType)?;
-    if sender_address != *signed_read_data.read_data().read_address() {
+    let sender_address = raw_txn.sender_address;
+    if sender_address
+        != params
+            .signed_read_data
+            .read_data()
+            .read_address()
+            .clone()
+            .into()
+    {
         return Err(TransactionReceiptError::InvalidSenderAddress);
     }
 
     // Get the receipt
-    let mut receipt = starknet_provider
-        .get_transaction_receipt(transaction_hash)
-        .await?;
+    let mut receipt = handler.get_transaction_receipt(params.transaction_hash).await?;
+
+    if receipt.events.is_empty() {
+        // If there are no events, we can return the receipt as is
+        return Ok(receipt);
+    }
 
     // Fetch events and the contract address from where the event was emitted
     // This is done because we need to call the contract address with the CAN_READ_EVENT_SELECTOR
     // to check if the user has access to read the events
-    let mut events = receipt.receipt.events().to_vec();
-    if events.is_empty() {
-        // If there are no events, we can return the receipt as is
-        return Ok(receipt);
-    }
-    // Events don't have the contract address, so we need to trace the transaction
-    // to get the contract address
-    let trace = starknet_provider
-        .trace_transaction(transaction_hash)
-        .await?;
-    let function_invocation = match trace {
-        TransactionTrace::Invoke(invoke_trace) => {
-            match invoke_trace.execute_invocation {
-                ExecuteInvocation::Success(invocation) => Some(invocation),
-                ExecuteInvocation::Reverted(_) => {
-                    // This should be unreachable as reverted txs only have one event (for sequencer fee transfer)
-                    // and so the code must have returned much earlier
-                    return Err(TransactionReceiptError::MoreEventsThanExpected);
-                }
-            }
-        }
-        TransactionTrace::Declare(_) => None,
-        TransactionTrace::DeployAccount(deploy_account_trace) => {
-            Some(deploy_account_trace.constructor_invocation)
-        }
-        TransactionTrace::L1Handler(_) => {
-            return Err(TransactionReceiptError::InvalidTransactionType);
-        }
-    };
-    let traced_events = match function_invocation {
-        Some(invocation) => get_events_from_function_invocation(invocation, vec![], true),
-        None => vec![],
-    };
+    let mut events = receipt.events;
 
     let mut can_read_events = Vec::new();
-    for event in traced_events {
-        let has_selector = contract_address_has_selector(
-            starknet_provider.clone(),
-            event.contract_address,
-            BlockId::Tag(BlockTag::Pending),
-            CAN_READ_EVENT_SELECTOR,
-        )
-        .await
-        .map_err(SimulationError::StarknetError)?;
-        let can_read = if has_selector {
-            simulate_boolean_read(
-                vec![Call {
-                    to: event.contract_address,
-                    selector: CAN_READ_EVENT_SELECTOR,
-                    calldata: vec![event.event.keys[0]], // first key is the event selector
-                }],
-                *signed_read_data.read_data().read_address(),
-                starknet_provider.clone(),
-            )
+    for event in events.iter() {
+        let has_selector = handler
+            .contract_has_function(event.from_address, CAN_READ_EVENT_FUNCTION_NAME.to_string())
             .await
-            .map_err(TransactionReceiptError::SimulationError)?
+            .map_err(ChainHandlerError::from)?;
+
+        let can_read = if has_selector {
+            handler
+                .simulate_read_access_check(
+                    params
+                        .signed_read_data
+                        .read_data()
+                        .read_address()
+                        .clone()
+                        .into(),
+                    event.from_address,
+                    CAN_READ_EVENT_FUNCTION_NAME.to_string(),
+                    vec![event.keys[0]],
+                )
+                .await
+                .map_err(TransactionReceiptError::ChainHandlerError)?
         } else {
             true
         };
@@ -154,20 +110,7 @@ pub async fn get_transaction_receipt(
         .filter_map(|(event, can_read)| if can_read { Some(event) } else { None })
         .collect();
 
-    match receipt.receipt {
-        TransactionReceipt::Invoke(ref mut invoke_receipt) => {
-            invoke_receipt.events = events;
-        }
-        TransactionReceipt::Declare(ref mut declare_receipt) => {
-            declare_receipt.events = events;
-        }
-        TransactionReceipt::DeployAccount(ref mut deploy_account_receipt) => {
-            deploy_account_receipt.events = events;
-        }
-        _ => {
-            return Err(TransactionReceiptError::InvalidTransactionType);
-        }
-    }
+    receipt.events = events;
 
     Ok(receipt)
 }
@@ -179,6 +122,8 @@ mod tests {
     use rstest::*;
     use starknet::accounts::Account;
 
+    use crate::utils::WaitForReceipt;
+    use crate::{StarknetProvider, StarknetWallet};
     use starknet::core::types::ExecutionResult;
     #[cfg(feature = "testing")]
     use units_primitives::read_data::{
@@ -192,9 +137,6 @@ mod tests {
         },
         scarb::{scarb_build, ArtifactsMap},
     };
-    use units_utils::starknet::StarknetProvider;
-    use units_utils::starknet::StarknetWallet;
-    use units_utils::starknet::WaitForReceipt;
 
     #[rstest]
     #[tokio::test]
@@ -240,7 +182,7 @@ mod tests {
             .unwrap();
 
         // Try to get receipt using account2's signature
-        let global_ctx = Arc::new(GlobalContext::new_with_provider(
+        let starknet_ctx = Arc::new(StarknetContext::new_with_provider(
             provider.clone(),
             Felt::ONE,
             Arc::new(StarknetWallet::test_default()),
@@ -261,7 +203,7 @@ mod tests {
             .unwrap();
 
         let receipt =
-            get_transaction_receipt(global_ctx, result.transaction_hash, signed_read_data).await;
+            get_transaction_receipt(starknet_ctx, result.transaction_hash, signed_read_data).await;
         assert_matches!(receipt, Err(TransactionReceiptError::InvalidSenderAddress));
     }
 
@@ -309,7 +251,7 @@ mod tests {
             .unwrap();
 
         // Try to get receipt using an invalid read signature
-        let global_ctx = Arc::new(GlobalContext::new_with_provider(
+        let starknet_ctx = Arc::new(StarknetContext::new_with_provider(
             provider.clone(),
             Felt::ONE,
             Arc::new(StarknetWallet::test_default()),
@@ -330,7 +272,7 @@ mod tests {
             .unwrap();
 
         let receipt =
-            get_transaction_receipt(global_ctx, result.transaction_hash, signed_read_data).await;
+            get_transaction_receipt(starknet_ctx, result.transaction_hash, signed_read_data).await;
         assert_matches!(receipt, Err(TransactionReceiptError::InvalidReadSignature));
     }
 
@@ -393,7 +335,7 @@ mod tests {
             .unwrap();
 
         // Get receipt with proper signature
-        let global_ctx = Arc::new(GlobalContext::new_with_provider(
+        let starknet_ctx = Arc::new(StarknetContext::new_with_provider(
             provider.clone(),
             Felt::ONE,
             Arc::new(StarknetWallet::test_default()),
@@ -414,7 +356,7 @@ mod tests {
             .unwrap();
 
         let receipt =
-            get_transaction_receipt(global_ctx, result.transaction_hash, signed_read_data)
+            get_transaction_receipt(starknet_ctx, result.transaction_hash, signed_read_data)
                 .await
                 .unwrap();
 
@@ -477,7 +419,7 @@ mod tests {
             .unwrap();
 
         // Get receipt - should have no events since we haven't given permission
-        let global_ctx = Arc::new(GlobalContext::new_with_provider(
+        let starknet_ctx = Arc::new(StarknetContext::new_with_provider(
             provider.clone(),
             Felt::ONE,
             Arc::new(StarknetWallet::test_default()),
@@ -499,7 +441,7 @@ mod tests {
                 .unwrap();
 
         let receipt = get_transaction_receipt(
-            global_ctx.clone(),
+            starknet_ctx.clone(),
             emit_one_result.transaction_hash,
             signed_read_data.clone(),
         )
@@ -536,7 +478,7 @@ mod tests {
 
         // Get receipt again - should now have the event
         let receipt = get_transaction_receipt(
-            global_ctx.clone(),
+            starknet_ctx.clone(),
             emit_one_result.transaction_hash,
             signed_read_data.clone(),
         )
@@ -589,7 +531,7 @@ mod tests {
 
         // Get receipt - should only have TestEventOne since we only have permission for it
         let receipt = get_transaction_receipt(
-            global_ctx.clone(),
+            starknet_ctx.clone(),
             emit_one_and_two_result.transaction_hash,
             signed_read_data.clone(),
         )
@@ -628,7 +570,7 @@ mod tests {
 
         // Get receipt again - should now have both events
         let receipt = get_transaction_receipt(
-            global_ctx,
+            starknet_ctx.clone(),
             emit_one_and_two_result.transaction_hash,
             signed_read_data.clone(),
         )
@@ -695,7 +637,7 @@ mod tests {
             .unwrap();
 
         // Get receipt with proper signature
-        let global_ctx = Arc::new(GlobalContext::new_with_provider(
+        let starknet_ctx = Arc::new(StarknetContext::new_with_provider(
             provider.clone(),
             Felt::ONE,
             Arc::new(StarknetWallet::test_default()),
@@ -716,7 +658,7 @@ mod tests {
             .unwrap();
 
         let receipt =
-            get_transaction_receipt(global_ctx, result.transaction_hash, signed_read_data)
+            get_transaction_receipt(starknet_ctx, result.transaction_hash, signed_read_data)
                 .await
                 .unwrap();
 
@@ -757,7 +699,7 @@ mod tests {
             declare_result.expect("Should not be None as it's contract isn't already declared");
 
         // Get receipt with proper signature
-        let global_ctx = Arc::new(GlobalContext::new_with_provider(
+        let starknet_ctx = Arc::new(StarknetContext::new_with_provider(
             provider.clone(),
             Felt::ONE,
             Arc::new(StarknetWallet::test_default()),
@@ -778,7 +720,7 @@ mod tests {
             .unwrap();
 
         let receipt = get_transaction_receipt(
-            global_ctx,
+            starknet_ctx,
             declare_result.transaction_hash,
             signed_read_data.clone(),
         )
@@ -801,8 +743,8 @@ mod tests {
     async fn test_get_receipt_deploy_account_transaction(
         #[future] madara_node: (MadaraRunner, Arc<StarknetProvider>),
     ) {
+        use crate::utils::deploy_account;
         use units_tests_utils::starknet::PREDEPLOYED_ACCOUNT_CLASS_HASH;
-        use units_utils::starknet::deploy_account;
 
         let (_runner, provider) = madara_node.await;
 
@@ -821,7 +763,7 @@ mod tests {
             .unwrap();
 
         // Get receipt with proper signature
-        let global_ctx = Arc::new(GlobalContext::new_with_provider(
+        let starknet_ctx = Arc::new(StarknetContext::new_with_provider(
             provider.clone(),
             Felt::ONE,
             Arc::new(StarknetWallet::test_default()),
@@ -840,7 +782,7 @@ mod tests {
         let signed_read_data = sign_read_data(read_data, private_key).await.unwrap();
 
         let receipt = get_transaction_receipt(
-            global_ctx,
+            starknet_ctx,
             deploy_account_result.transaction_hash,
             signed_read_data.clone(),
         )
@@ -921,14 +863,14 @@ mod tests {
             .await
             .unwrap();
 
-        let global_ctx = Arc::new(GlobalContext::new_with_provider(
+        let starknet_ctx = Arc::new(StarknetContext::new_with_provider(
             provider,
             Felt::ONE,
             Arc::new(StarknetWallet::test_default()),
         ));
 
         // Try to get receipt with incorrect read type
-        let receipt = get_transaction_receipt(global_ctx, tx_hash, signed_read_data).await;
+        let receipt = get_transaction_receipt(starknet_ctx, tx_hash, signed_read_data).await;
         assert_matches!(
             receipt,
             Err(TransactionReceiptError::ReadSignatureError(

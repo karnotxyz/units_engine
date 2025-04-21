@@ -18,6 +18,7 @@ units-tests-utils.workspace = true
 units-utils.workspace = true
 url.workspace = true
 uuid.workspace = true
+units-handlers-common.workspace = true
 
 [lints]
 workspace = true

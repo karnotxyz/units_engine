@@ -23,9 +23,12 @@ use starknet::{
     providers::{jsonrpc::HttpTransport, JsonRpcClient, Provider, ProviderError},
     signers::{LocalWallet, SigningKey},
 };
+use units_primitives::{
+    context::ChainHandlerError,
+    rpc::{HexBytes32, HexBytes32Error},
+};
 
-pub type StarknetProvider = JsonRpcClient<HttpTransport>;
-pub type StarknetWallet = SingleOwnerAccount<Arc<StarknetProvider>, Arc<LocalWallet>>;
+use crate::{StarknetProvider, StarknetWallet};
 
 pub async fn get_contract_class(
     starknet_provider: Arc<StarknetProvider>,
@@ -94,6 +97,19 @@ pub enum WaitForReceiptError {
     TransactionNotFound(u64),
     #[error("Starknet error: {0}")]
     StarknetError(#[from] ProviderError),
+}
+
+impl From<WaitForReceiptError> for ChainHandlerError {
+    fn from(value: WaitForReceiptError) -> Self {
+        match value {
+            WaitForReceiptError::TransactionNotFound(_) => {
+                ChainHandlerError::TransactionNotFound(value.to_string())
+            }
+            WaitForReceiptError::StarknetError(err) => {
+                ChainHandlerError::ProviderError(err.to_string())
+            }
+        }
+    }
 }
 
 pub async fn wait_for_receipt(
@@ -462,6 +478,27 @@ impl GetSenderAddress for Transaction {
             // L1 handler transactions don't have a sender address (maybe we can handle showing L1 from address later)
             Transaction::L1Handler(_) => None,
         }
+    }
+}
+
+pub trait ToFelt<T, E> {
+    fn to_felt(self) -> Result<T, E>;
+}
+
+impl ToFelt<Felt, ChainHandlerError> for HexBytes32 {
+    fn to_felt(self) -> Result<Felt, ChainHandlerError> {
+        self.try_into()
+            .map_err(|e: HexBytes32Error| ChainHandlerError::BadRequest(e.to_string()))
+    }
+}
+
+impl ToFelt<Vec<Felt>, ChainHandlerError> for Vec<HexBytes32> {
+    fn to_felt(self) -> Result<Vec<Felt>, ChainHandlerError> {
+        let mut result = Vec::with_capacity(self.len());
+        for hex_bytes32 in self {
+            result.push(hex_bytes32.to_felt()?);
+        }
+        Ok(result)
     }
 }
 

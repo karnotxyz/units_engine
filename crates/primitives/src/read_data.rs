@@ -1,17 +1,21 @@
 use std::sync::Arc;
 
-use crate::rpc::HexBytes32;
+use crate::{
+    context::{ChainHandler, ChainHandlerError},
+    rpc::HexBytes32,
+};
 use serde::{Deserialize, Serialize};
 use starknet::{
+    accounts::SingleOwnerAccount,
     core::types::{BlockId, BlockTag, Felt, FunctionCall, MaybePendingBlockWithTxs},
     macros::selector,
-    providers::{Provider, ProviderError},
+    providers::{jsonrpc::HttpTransport, JsonRpcClient, Provider, ProviderError},
+    signers::LocalWallet,
 };
 use starknet_crypto::poseidon_hash_many;
-use units_utils::starknet::StarknetProvider;
 
-const IS_VALID_SIGNATURE_SELECTOR: Felt = selector!("is_valid_signature");
-const GET_KEY_SELECTOR: Felt = selector!("get_key");
+pub type StarknetProvider = JsonRpcClient<HttpTransport>;
+pub type StarknetWallet = SingleOwnerAccount<Arc<StarknetProvider>, Arc<LocalWallet>>;
 
 // TODO: Add extensive testing for verify
 // TODO: Add version checks
@@ -34,6 +38,8 @@ pub enum ReadDataError {
     EmptyKeyResult,
     #[error("Missing required read type permissions")]
     MissingRequiredReadTypes,
+    #[error("Chain handler error: {0}")]
+    ChainHandlerError(#[from] ChainHandlerError),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -93,6 +99,7 @@ impl ReadVerifier {
     }
 }
 
+// TODO: Make ReadData generic in terms of the hasher used and the type should be HexBytes32 instead of Felt
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ReadData {
     verifier: ReadVerifier,
@@ -140,11 +147,11 @@ impl ReadData {
 #[serde(tag = "type", rename_all = "UPPERCASE")]
 pub enum ReadType {
     // stores contract address
-    Nonce { nonce: HexBytes32 },
+    Nonce { nonce: Felt },
     // stores transaction hash
-    TransactionReceipt { transaction_hash: HexBytes32 },
+    TransactionReceipt { transaction_hash: Felt },
     // stores class hash
-    Class { class_hash: HexBytes32 },
+    Class { class_hash: Felt },
 }
 
 impl ReadType {
@@ -249,7 +256,7 @@ impl SignedReadData {
 
     pub async fn verify(
         &self,
-        starknet_provider: Arc<StarknetProvider>,
+        handler: Arc<Box<dyn ChainHandler>>,
         required_read_types: Vec<ReadType>,
     ) -> Result<bool, ReadDataError> {
         // Check if all required read types are present in the read_data.read_type vector
@@ -274,19 +281,12 @@ impl SignedReadData {
                 // TODO: there could be an optimisation here to do a multicall that calls
                 // is_valid_signature and then calls a function to check signature block_number
                 // is less than equal to expiry_block
-                let current_block = starknet_provider
-                    .get_block_with_txs(BlockId::Tag(BlockTag::Latest))
-                    .await?;
-                match current_block {
-                    MaybePendingBlockWithTxs::Block(block) => {
-                        // do +1 to get pending block number
-                        if block.block_number + 1 > *expiry_block {
-                            return Err(ReadDataError::SignatureExpired);
-                        }
-                    }
-                    MaybePendingBlockWithTxs::PendingBlock(_) => {
-                        return Err(ReadDataError::UnexpectedLatestBlockInsteadOfPending);
-                    }
+                let current_block = handler
+                    .get_latest_block_number()
+                    .await
+                    .map_err(ChainHandlerError::from)?;
+                if current_block > *expiry_block {
+                    return Err(ReadDataError::SignatureExpired);
                 }
             }
             ReadValidity::Timestamp {
@@ -306,51 +306,32 @@ impl SignedReadData {
         let account_address = self.read_data.verifier.signer_address();
 
         // Verify signature
-        let is_signature_valid = starknet_provider
-            .call(
-                FunctionCall {
-                    contract_address: *account_address,
-                    entry_point_selector: IS_VALID_SIGNATURE_SELECTOR,
-                    calldata: [
-                        vec![self.read_data.hash(), self.signature.len().into()],
-                        self.signature.clone(),
-                    ]
-                    .concat(),
-                },
-                BlockId::Tag(BlockTag::Pending),
+        let is_valid = handler
+            .is_valid_signature(
+                account_address.clone().into(),
+                self.signature
+                    .clone()
+                    .into_iter()
+                    .map(|f| f.into())
+                    .collect(),
+                self.read_data.hash().into(),
             )
-            .await?;
-
-        if is_signature_valid.len() > 1 {
-            return Err(ReadDataError::InvalidReturnTypeForIsValidSignature);
-        }
-
-        // VALID in hex is 0x56414c4944
-        let is_valid = is_signature_valid[0] == Felt::from_hex_unchecked("0x56414c4944");
+            .await
+            .map_err(ChainHandlerError::from)?;
 
         // If this is an identity, perform additional check
         if is_valid {
             if let ReadVerifier::Identity(identity) = &self.read_data.verifier {
                 // Call get_key on the identity to verify it
-                let key_result = starknet_provider
-                    .call(
-                        FunctionCall {
-                            contract_address: identity.identity_address,
-                            entry_point_selector: GET_KEY_SELECTOR,
-                            calldata: vec![identity.signer_address],
-                        },
-                        BlockId::Tag(BlockTag::Pending),
+                let identity_contains_signer = handler
+                    .identity_contains_signer(
+                        identity.identity_address.clone().into(),
+                        account_address.clone().into(),
                     )
-                    .await?;
+                    .await
+                    .map_err(ChainHandlerError::from)?;
 
-                if key_result.is_empty() {
-                    return Err(ReadDataError::InvalidReturnTypeForGetKey);
-                }
-
-                // Check if the last element in the returned value matches the key itself
-                // If the account_address is not the last element, then the identity is invalid
-                let last_result = key_result.last().ok_or(ReadDataError::EmptyKeyResult)?;
-                if last_result != account_address {
+                if !identity_contains_signer {
                     return Err(ReadDataError::InvalidIdentityKey);
                 }
             }
@@ -395,11 +376,11 @@ mod tests {
         sync::Arc,
         time::{Duration, Instant},
     };
+    use units_handlers_common::utils::WaitForReceipt;
     use units_tests_utils::{
         madara::{madara_node_with_accounts, MadaraRunner, StarknetWalletWithPrivateKey},
         scarb::{scarb_build, ArtifactsMap},
     };
-    use units_utils::starknet::WaitForReceipt;
 
     #[test]
     fn test_hash_nonce() {

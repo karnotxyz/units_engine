@@ -7,7 +7,7 @@ use starknet_crypto::Felt;
 //------------------------------------------------------------------------------
 
 /// A 32-byte value encoded as a hex string with 0x prefix
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct HexBytes32([u8; 32]);
 #[derive(Debug, thiserror::Error)]
 pub enum HexBytes32Error {
@@ -188,10 +188,29 @@ pub struct GetTransactionReceiptResult {
     pub execution_status: ExecutionStatus,
 }
 
+/// Parameters and result for getting a class
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct GetClassParams {
+    pub class_hash: HexBytes32,
+    pub signed_read_data: Option<SignedReadData>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct GetClassResult {
+    pub class: serde_json::Value,
+}
+
+
 /// Result for getting chain ID (no parameters required)
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct ChainIdResult {
-    pub chain_id: String,
+pub struct GetChainIdResult {
+    pub chain_id: HexBytes32,
+}
+
+/// Result for getting a transaction by hash
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct GetTransactionByHashResult {
+    pub sender_address: HexBytes32,
 }
 
 #[cfg(test)]

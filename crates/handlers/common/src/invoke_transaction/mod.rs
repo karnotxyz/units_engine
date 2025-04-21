@@ -4,21 +4,31 @@ use starknet::core::types::{
     BroadcastedInvokeTransaction, BroadcastedInvokeTransactionV3, InvokeTransactionResult,
 };
 use starknet::providers::{Provider, ProviderError};
-use units_utils::context::GlobalContext;
+use units_primitives::context::{ChainHandlerError, GlobalContext};
+use units_primitives::rpc::{SendTransactionParams, SendTransactionResult};
 
-pub async fn add_invoke_transaction(
+#[derive(Debug, thiserror::Error)]
+pub enum InvokeTransactionError {
+    #[error("Chain handler error: {0}")]
+    ChainHandlerError(#[from] ChainHandlerError),
+}
+
+pub async fn send_transaction(
     global_ctx: Arc<GlobalContext>,
-    invoke_transaction: BroadcastedInvokeTransactionV3,
-) -> Result<InvokeTransactionResult, ProviderError> {
-    let starknet_provider = global_ctx.starknet_provider();
-    starknet_provider
-        .add_invoke_transaction(BroadcastedInvokeTransaction::V3(invoke_transaction))
+    params: SendTransactionParams,
+) -> Result<SendTransactionResult, InvokeTransactionError> {
+    let handler = global_ctx.handler();
+    handler
+        .send_transaction(params)
         .await
+        .map_err(InvokeTransactionError::ChainHandlerError)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::utils::{encode_calls, WaitForReceipt};
+    use crate::{StarknetProvider, StarknetWallet};
     use rstest::*;
     use starknet::{
         accounts::{Account, ExecutionEncoding},
@@ -33,7 +43,6 @@ mod tests {
         scarb::{scarb_build, ArtifactsMap},
         starknet::TestDefault,
     };
-    use units_utils::starknet::{encode_calls, StarknetProvider, StarknetWallet, WaitForReceipt};
 
     #[rstest]
     #[tokio::test]
@@ -48,7 +57,7 @@ mod tests {
         scarb_build: ArtifactsMap,
     ) {
         let (_runner, provider, accounts) = madara_node_with_accounts.await;
-        let global_ctx = Arc::new(GlobalContext::new_with_provider(
+        let starknet_ctx = Arc::new(StarknetContext::new_with_provider(
             provider.clone(),
             Felt::ONE,
             Arc::new(StarknetWallet::test_default()),
@@ -114,7 +123,9 @@ mod tests {
             fee_data_availability_mode: DataAvailabilityMode::L1,
             is_query: false,
         };
-        let invoke_tx_result = add_invoke_transaction(global_ctx, invoke_tx).await.unwrap();
+        let invoke_tx_result = send_transaction(starknet_ctx, invoke_tx)
+            .await
+            .unwrap();
         let receipt = invoke_tx_result
             .wait_for_receipt(provider, None)
             .await

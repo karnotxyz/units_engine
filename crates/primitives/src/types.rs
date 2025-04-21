@@ -6,6 +6,7 @@ pub enum ClassVisibility {
     Public,
 }
 
+// TODO: Move behind a feature flag?
 #[derive(Debug, thiserror::Error)]
 pub enum ClassVisibilityError {
     #[error("Invalid class visibility")]
