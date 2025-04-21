@@ -1,0 +1,80 @@
+use std::sync::Arc;
+
+use jsonrpsee::core::params;
+use starknet::core::types::{BlockId, BlockTag, Call, ContractClass, Felt, FunctionCall};
+use starknet::macros::selector;
+use starknet::providers::{Provider, ProviderError};
+use units_primitives::context::{ChainHandlerError, GlobalContext};
+use units_primitives::read_data::{ReadDataError, ReadType, SignedReadData};
+use units_primitives::rpc::{GetClassParams, GetProgramResult, HexBytes32Error};
+use units_primitives::types::{ClassVisibility, ClassVisibilityError};
+
+pub const HAS_READ_ACCESS_FUNCTION_NAME: &str = "has_read_access";
+/// If the public address has access then it's assumed that the contract is public
+/// and any address can read it
+pub const PUBLIC_ACCESS_ADDRESS: Felt = Felt::ZERO;
+
+#[derive(Debug, thiserror::Error)]
+pub enum GetClassError {
+    #[error("Starknet error: {0}")]
+    StarknetError(#[from] ProviderError),
+    #[error("Read signature not provided")]
+    ReadSignatureNotProvided,
+    #[error("Class read not allowed")]
+    ClassReadNotAllowed,
+    #[error("Invalid class visibility")]
+    InvalidClassVisibility(#[from] ClassVisibilityError),
+    #[error("Read data error: {0}")]
+    ReadDataError(#[from] ReadDataError),
+    #[error("Chain handler error: {0}")]
+    ChainHandlerError(#[from] ChainHandlerError),
+    #[error("HexBytes32 error: {0}")]
+    HexBytes32Error(#[from] HexBytes32Error),
+}
+
+pub async fn get_class(
+    global_ctx: Arc<GlobalContext>,
+    params: GetClassParams,
+) -> Result<GetProgramResult, GetClassError> {
+    let handler = global_ctx.handler();
+
+    // Check if the contract is public
+    let visibility: ClassVisibility = handler.get_class_visibility(params.class_hash).await?;
+
+    if visibility != ClassVisibility::Public {
+        // Check if user has access to the contract
+        let signed_read_data = params
+            .signed_read_data
+            .ok_or(GetClassError::ReadSignatureNotProvided)?;
+
+        // Verify the signature and check that it has the required read type
+        if !signed_read_data
+            .verify(
+                handler.clone(),
+                vec![ReadType::Class {
+                    class_hash: params.class_hash.try_into()?,
+                }],
+            )
+            .await
+            .map_err(GetClassError::ReadDataError)?
+        {
+            return Err(GetClassError::ClassReadNotAllowed);
+        }
+
+        let has_read_access = handler
+            .simulate_read_access_check(
+                signed_read_data.read_data().read_address().clone().into(),
+                handler.get_declare_acl_address(),
+                HAS_READ_ACCESS_FUNCTION_NAME.to_string(),
+                vec![params.class_hash],
+            )
+            .await?;
+
+        if !has_read_access {
+            return Err(GetClassError::ClassReadNotAllowed);
+        }
+    }
+
+    let class = handler.get_program(params.class_hash).await?;
+    Ok(class)
+}

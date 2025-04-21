@@ -25,6 +25,10 @@ units-handlers-common.workspace = true
 rstest.workspace = true
 units-tests-utils.workspace = true
 assert_matches.workspace = true
+reqwest.workspace = true
+url.workspace = true
+uuid.workspace = true
+once_cell.workspace = true
 
 [features]
 testing = ["units-primitives/testing"]

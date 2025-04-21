@@ -3721,6 +3721,8 @@ dependencies = [
  "async-trait",
  "futures",
  "hex",
+ "once_cell",
+ "reqwest 0.12.15",
  "rstest",
  "serde_json",
  "starknet",
@@ -3730,6 +3732,8 @@ dependencies = [
  "units-primitives",
  "units-tests-utils",
  "units-utils",
+ "url",
+ "uuid 1.16.0",
 ]
 
 [[package]]
@@ -3809,7 +3813,6 @@ dependencies = [
  "starknet",
  "tokio",
  "units-handlers-common",
- "units-handlers-starknet",
  "units-primitives",
  "units-utils",
  "url",

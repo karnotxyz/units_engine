@@ -1,8 +1,8 @@
 #![allow(clippy::print_stdout, clippy::print_stderr)]
 
-use crate::port::{get_free_port, PortAllocation};
-use crate::starknet::PREDEPLOYED_ACCOUNT_CLASS_HASH;
-use crate::workspace::WORKSPACE_ROOT;
+use super::starknet::PREDEPLOYED_ACCOUNT_CLASS_HASH;
+use crate::utils::{deploy_account, BuildAccount};
+use crate::{StarknetProvider, StarknetWallet};
 use anyhow::{anyhow, Result};
 use reqwest::Client;
 use rstest::*;
@@ -20,8 +20,8 @@ use std::{
     time::Duration,
 };
 use tokio::time::sleep;
-use units_handlers_starknet::utils::{deploy_account, BuildAccount};
-use units_handlers_starknet::{StarknetProvider, StarknetWallet};
+use units_tests_utils::port::{get_free_port, PortAllocation};
+use units_tests_utils::workspace::WORKSPACE_ROOT;
 use url::Url;
 use uuid::Uuid;
 

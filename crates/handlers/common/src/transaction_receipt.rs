@@ -1,0 +1,118 @@
+use std::sync::Arc;
+
+use units_primitives::{
+    context::{ChainHandler, ChainHandlerError, GlobalContext},
+    read_data::{ReadDataError, SignedReadData},
+    rpc::{GetTransactionReceiptParams, GetTransactionReceiptResult, HexBytes32, HexBytes32Error},
+};
+
+#[derive(Debug, thiserror::Error)]
+pub enum TransactionReceiptError {
+    #[error("More events than expected")]
+    MoreEventsThanExpected,
+    #[error("Invalid read signature")]
+    InvalidReadSignature,
+    #[error("Read Data Error: {0}")]
+    ReadSignatureError(#[from] ReadDataError),
+    #[error("Invalid transaction type")]
+    InvalidTransactionType,
+    #[error("Invalid sender address")]
+    InvalidSenderAddress,
+    #[error("Chain handler error: {0}")]
+    ChainHandlerError(#[from] ChainHandlerError),
+    #[error("HexBytes32 error: {0}")]
+    HexBytes32Error(#[from] HexBytes32Error),
+}
+
+const CAN_READ_EVENT_FUNCTION_NAME: &str = "can_read_event";
+
+pub async fn get_transaction_receipt(
+    global_ctx: Arc<GlobalContext>,
+    params: GetTransactionReceiptParams,
+) -> Result<GetTransactionReceiptResult, TransactionReceiptError> {
+    let handler = global_ctx.handler();
+
+    // Verify signature and ensure it has the required read type
+    if !params
+        .signed_read_data
+        .verify(
+            handler.clone(),
+            vec![units_primitives::read_data::ReadType::TransactionReceipt {
+                transaction_hash: params.transaction_hash.try_into()?,
+            }],
+        )
+        .await?
+    {
+        return Err(TransactionReceiptError::InvalidReadSignature);
+    }
+
+    // Check if reader is the transaction originator
+    let raw_txn = handler
+        .get_transaction_by_hash(params.transaction_hash)
+        .await?;
+    let sender_address = raw_txn.sender_address;
+    if sender_address
+        != params
+            .signed_read_data
+            .read_data()
+            .read_address()
+            .clone()
+            .into()
+    {
+        return Err(TransactionReceiptError::InvalidSenderAddress);
+    }
+
+    // Get the receipt
+    let mut receipt = handler
+        .get_transaction_receipt(params.transaction_hash)
+        .await?;
+
+    if receipt.events.is_empty() {
+        // If there are no events, we can return the receipt as is
+        return Ok(receipt);
+    }
+
+    // Fetch events and the contract address from where the event was emitted
+    // This is done because we need to call the contract address with the CAN_READ_EVENT_SELECTOR
+    // to check if the user has access to read the events
+    let mut events = receipt.events;
+
+    let mut can_read_events = Vec::new();
+    for event in events.iter() {
+        let has_selector = handler
+            .contract_has_function(event.from_address, CAN_READ_EVENT_FUNCTION_NAME.to_string())
+            .await
+            .map_err(ChainHandlerError::from)?;
+
+        let can_read = if has_selector {
+            handler
+                .simulate_read_access_check(
+                    params
+                        .signed_read_data
+                        .read_data()
+                        .read_address()
+                        .clone()
+                        .into(),
+                    event.from_address,
+                    CAN_READ_EVENT_FUNCTION_NAME.to_string(),
+                    vec![event.keys[0]],
+                )
+                .await
+                .map_err(TransactionReceiptError::ChainHandlerError)?
+        } else {
+            true
+        };
+        can_read_events.push(can_read);
+    }
+
+    // Filter events based on read permissions
+    events = events
+        .into_iter()
+        .zip(can_read_events)
+        .filter_map(|(event, can_read)| if can_read { Some(event) } else { None })
+        .collect();
+
+    receipt.events = events;
+
+    Ok(receipt)
+}

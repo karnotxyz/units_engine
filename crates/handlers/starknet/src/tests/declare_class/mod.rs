@@ -1,89 +1,68 @@
-use std::sync::Arc;
-
-use starknet::accounts::Account;
-use starknet::core::types::{
-    BlockId, BlockTag, BroadcastedDeclareTransaction, BroadcastedDeclareTransactionV3, Call,
-    StarknetError,
+use assert_matches::assert_matches;
+use rstest::*;
+use starknet::{
+    accounts::Account,
+    core::types::{BlockId, BlockTag, FunctionCall},
 };
-use starknet::macros::selector;
-use starknet::providers::{Provider, ProviderError};
-use units_primitives::context::{ChainHandlerError, GlobalContext};
-use units_primitives::rpc::{DeclareProgramParams, DeclareTransactionResult};
-use units_primitives::types::ClassVisibility;
 
-#[derive(Debug, thiserror::Error)]
-pub enum AddDeclareClassTransactionError {
-    #[error("Error setting ACL")]
-    ErrorSettingAcl,
-    #[error("Chain handler error: {0}")]
-    ChainHandlerError(#[from] ChainHandlerError),
-}
-
-pub async fn declare_class(
-    global_ctx: Arc<GlobalContext>,
-    params: DeclareProgramParams,
-    visibility: ClassVisibility,
-) -> Result<DeclareTransactionResult, AddDeclareClassTransactionError> {
-    let handler = global_ctx.handler();
-
-    // Check if class exists already
-    let class_hash = handler.compute_class_hash(&params.program).await?;
-    let class_exists = match handler.get_program(class_hash).await {
-        Ok(_) => true,
-        Err(err) => match err {
-            ChainHandlerError::ProgramNotFound(_) => false,
-            _ => return Err(AddDeclareClassTransactionError::ChainHandlerError(err)),
+use crate::utils::WaitForReceipt;
+use crate::{
+    tests::utils::{
+        madara::{
+            madara_node, madara_node_with_accounts, MadaraRunner, StarknetWalletWithPrivateKey,
         },
-    };
-
-    if class_exists {
-        // Set the ACL before declaring. This is a hacky fix, the ideal
-        // solution might be to have an indexer sync the chain and set ACLs
-        // after we know a declaration has been made OR to add atomicity in Madara
-        // for declare and invoke transactions.
-        handler
-            .set_class_visibility(class_hash, visibility, params.account_address)
-            .await?;
-
-        return Ok(DeclareTransactionResult {
-            class_hash,
-            transaction_hash: None,
-            acl_updated: true,
-        });
-    }
-
-    let declare_transaction_hash = handler.declare_program(params).await?;
-
-    Ok(DeclareTransactionResult {
-        class_hash,
-        transaction_hash: Some(declare_transaction_hash),
-        acl_updated: true,
-    })
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use rstest::*;
-    use starknet::{
-        accounts::{Account, ConnectedAccount},
-        core::types::{
-            BlockId, BlockTag, BroadcastedDeclareTransactionV3, DataAvailabilityMode, Felt,
-            FunctionCall, ResourceBounds, ResourceBoundsMapping,
-        },
-        providers::Provider,
-    };
-    use units_tests_utils::utils::WaitForReceipt;
-    use units_tests_utils::{
-        madara::{madara_node_with_accounts, MadaraRunner, StarknetWalletWithPrivateKey},
-        scarb::{scarb_builds, Artifacts},
+        scarb::{scarb_build, scarb_builds, ArtifactsMap},
         starknet::assert_contract_class_eq,
+    },
+    StarknetContext,
+};
+use crate::{StarknetProvider, StarknetWallet};
+use starknet::core::types::ExecutionResult;
+use starknet::macros::selector;
+use std::sync::Arc;
+#[cfg(feature = "testing")]
+use units_primitives::read_data::{
+    sign_read_data, ReadData, ReadDataVersion, ReadType, ReadValidity,
+};
+use units_primitives::{
+    context::GlobalContext,
+    read_data::{ReadVerifier, VerifierAccount},
+    rpc::{DeclareProgramParams, DeclareTransactionResult},
+    types::ClassVisibility,
+};
+
+use starknet::core::types::Call;
+use starknet::core::types::Felt;
+use starknet::providers::Provider;
+use units_handlers_common::{
+    declare_class::declare_class, transaction_receipt::get_transaction_receipt,
+};
+use units_primitives::rpc::GetTransactionReceiptParams;
+
+use crate::tests::utils::starknet::ProviderToDummyGlobalContext;
+use units_handlers_common::transaction_receipt::TransactionReceiptError;
+use units_primitives::rpc::ExecutionStatus;
+
+#[cfg(feature = "testing")]
+mod tests {
+    use starknet::{
+        accounts::ConnectedAccount,
+        core::types::{
+            BroadcastedDeclareTransactionV3, DataAvailabilityMode, ResourceBounds,
+            ResourceBoundsMapping,
+        },
     };
+
+    use crate::tests::utils::scarb::Artifacts;
+
+    use super::*;
 
     #[rstest]
     #[tokio::test]
     async fn test_declare_class(
-        #[future] madara_node_with_accounts: (
+        #[future]
+        #[with(2)]
+        madara_node_with_accounts: (
             MadaraRunner,
             Arc<StarknetProvider>,
             Vec<StarknetWalletWithPrivateKey>,
@@ -93,15 +72,16 @@ mod tests {
 
         // Get the contract artifacts
         let mut artifacts = scarb_builds(vec![
-            "src/declare_class/test_contracts",
-            "src/get_class/test_contracts",
+            "src/tests/declare_class/test_contracts",
+            "src/tests/get_class/test_contracts",
         ])
         .await;
         let test_contract = artifacts.remove("EmptyContract").unwrap();
         let declare_acl_contract = artifacts.remove("DeclareAclContract").unwrap();
+        let declare_acl_owner: StarknetWalletWithPrivateKey = accounts[1].clone();
         let declare_acl_address = declare_acl_contract
             .declare_and_deploy_and_wait_for_receipt(
-                accounts[0].account.clone(),
+                declare_acl_owner.account.clone(),
                 vec![],
                 Felt::ZERO,
                 false,
@@ -109,30 +89,35 @@ mod tests {
             .await;
 
         // Create a starknet context with the declare ACL contract address and the account
-        let starknet_ctx = Arc::new(StarknetContext::new_with_provider(
+        let starknet_ctx = StarknetContext::new_with_provider(
             provider.clone(),
-            declare_acl_address,
-            accounts[0].account.clone(),
-        ));
-
-        // Sign the declare transaction
-        let declare_txn = build_declare_txn(accounts[0].clone(), test_contract.clone()).await;
+            declare_acl_address.into(),
+            declare_acl_owner.private_key.into(),
+            declare_acl_owner.account.address().into(),
+        )
+        .await
+        .unwrap();
+        let global_ctx = Arc::new(GlobalContext::new(Arc::new(Box::new(starknet_ctx))));
 
         // Declare the class
+        let declare_txn = build_declare_txn(accounts[0].clone(), test_contract.clone()).await;
         let result = declare_class(
-            starknet_ctx.clone(),
+            global_ctx.clone(),
             declare_txn.clone(),
             ClassVisibility::Acl,
         )
         .await
         .unwrap();
-        println!("result: {:?}", result);
         let starknet_declare_txn = starknet::core::types::DeclareTransactionResult {
             class_hash: result.class_hash.try_into().unwrap(),
             transaction_hash: result.transaction_hash.unwrap().try_into().unwrap(),
         };
-        starknet_declare_txn
+        let receipt = starknet_declare_txn
             .wait_for_receipt(provider.clone(), None)
+            .await
+            .unwrap();
+        let txn = provider
+            .get_transaction_by_hash(starknet_declare_txn.transaction_hash)
             .await
             .unwrap();
 
@@ -146,7 +131,7 @@ mod tests {
             .unwrap();
 
         assert_contract_class_eq(
-            test_contract.contract_class.flatten().unwrap(),
+            test_contract.clone().contract_class.flatten().unwrap(),
             declared_class,
         );
 
@@ -154,7 +139,11 @@ mod tests {
         let visibility = provider
             .call(
                 FunctionCall {
-                    contract_address: starknet_ctx.declare_acl_address(),
+                    contract_address: global_ctx
+                        .handler()
+                        .get_declare_acl_address()
+                        .try_into()
+                        .unwrap(),
                     entry_point_selector: selector!("get_visibility"),
                     calldata: vec![starknet_declare_txn.class_hash],
                 },
@@ -166,7 +155,8 @@ mod tests {
         assert_eq!(visibility, vec![ClassVisibility::Acl.into()]);
 
         // Declare again with new ACL
-        let result = declare_class(starknet_ctx.clone(), declare_txn, ClassVisibility::Public)
+        let declare_txn = build_declare_txn(accounts[0].clone(), test_contract.clone()).await;
+        let result = declare_class(global_ctx.clone(), declare_txn, ClassVisibility::Public)
             .await
             .unwrap();
         assert_eq!(
@@ -199,7 +189,11 @@ mod tests {
         let visibility = provider
             .call(
                 FunctionCall {
-                    contract_address: starknet_ctx.declare_acl_address(),
+                    contract_address: global_ctx
+                        .handler()
+                        .get_declare_acl_address()
+                        .try_into()
+                        .unwrap(),
                     entry_point_selector: selector!("get_visibility"),
                     calldata: vec![starknet_declare_txn.class_hash],
                 },
@@ -213,12 +207,13 @@ mod tests {
     async fn build_declare_txn(
         account: StarknetWalletWithPrivateKey,
         artifact: Artifacts,
-    ) -> BroadcastedDeclareTransactionV3 {
+    ) -> DeclareProgramParams {
         let provider = account.account.provider();
         let nonce = provider
             .get_nonce(BlockId::Tag(BlockTag::Pending), account.account.address())
             .await
             .unwrap();
+
         let declare_tx = account
             .account
             .declare_v3(
@@ -233,28 +228,13 @@ mod tests {
         let tx_hash = declare_tx.transaction_hash(false);
         let signature = account.sign_message(&tx_hash);
 
-        BroadcastedDeclareTransactionV3 {
-            contract_class: Arc::new(artifact.contract_class.clone().flatten().unwrap()),
-            compiled_class_hash: artifact.compiled_class_hash,
-            sender_address: account.account.address(),
-            nonce,
-            signature: vec![signature.r, signature.s],
-            resource_bounds: ResourceBoundsMapping {
-                l1_gas: ResourceBounds {
-                    max_amount: 0,
-                    max_price_per_unit: 0,
-                },
-                l2_gas: ResourceBounds {
-                    max_amount: 0,
-                    max_price_per_unit: 0,
-                },
-            },
-            tip: 0,
-            paymaster_data: vec![],
-            account_deployment_data: vec![],
-            nonce_data_availability_mode: DataAvailabilityMode::L1,
-            fee_data_availability_mode: DataAvailabilityMode::L1,
-            is_query: false,
+        let flattened_contract_class = artifact.contract_class.flatten().unwrap();
+        DeclareProgramParams {
+            account_address: account.account.address().into(),
+            signature: vec![signature.r.into(), signature.s.into()],
+            nonce: nonce.try_into().unwrap(),
+            program: serde_json::to_value(flattened_contract_class.clone()).unwrap(),
+            compiled_program_hash: Some(artifact.compiled_class_hash.into()),
         }
     }
 }

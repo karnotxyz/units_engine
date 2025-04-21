@@ -1,3 +1,5 @@
+use crate::utils::{deploy_account, wait_for_receipt, BuildAccount};
+use crate::{StarknetContext, StarknetProvider, StarknetWallet};
 use starknet::{
     accounts::{Account, ConnectedAccount, ExecutionEncoding, SingleOwnerAccount},
     core::types::{
@@ -12,8 +14,7 @@ use starknet::{
     signers::{LocalWallet, SigningKey},
 };
 use std::sync::Arc;
-use units_handlers_starknet::utils::{deploy_account, wait_for_receipt, BuildAccount};
-use units_handlers_starknet::{StarknetProvider, StarknetWallet};
+use units_primitives::context::{ChainHandler, GlobalContext};
 use url::Url;
 
 pub const PREDEPLOYED_ACCOUNT_CLASS_HASH: &str =
@@ -172,5 +173,25 @@ impl TestDefault for StarknetWallet {
             Felt::ZERO,
             ExecutionEncoding::New,
         )
+    }
+}
+
+pub trait ProviderToDummyGlobalContext {
+    async fn provider_to_dummy_global_context(&self) -> Arc<GlobalContext>;
+}
+
+impl ProviderToDummyGlobalContext for Arc<StarknetProvider> {
+    async fn provider_to_dummy_global_context(&self) -> Arc<GlobalContext> {
+        let starknet_ctx: Arc<Box<dyn ChainHandler>> = Arc::new(Box::new(
+            StarknetContext::new_with_provider(
+                self.clone(),
+                Felt::ONE.into(),
+                Felt::ZERO.into(),
+                Felt::ZERO.into(),
+            )
+            .await
+            .unwrap(),
+        ));
+        Arc::new(GlobalContext::new(starknet_ctx))
     }
 }

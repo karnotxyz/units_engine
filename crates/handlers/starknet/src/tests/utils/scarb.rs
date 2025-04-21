@@ -1,3 +1,5 @@
+use crate::utils::{declare_contract, deploy_contract, WaitForReceipt};
+use crate::StarknetWallet;
 use once_cell::sync::Lazy;
 use rstest::*;
 use serde_json;
@@ -15,8 +17,6 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::Arc;
 use std::sync::Mutex;
-use units_handlers_starknet::utils::{declare_contract, deploy_contract, WaitForReceipt};
-use units_handlers_starknet::StarknetWallet;
 
 static BUILT_PATHS: Lazy<Mutex<HashSet<PathBuf>>> = Lazy::new(|| Mutex::new(HashSet::new()));
 pub type ArtifactsMap = HashMap<String, Artifacts>;

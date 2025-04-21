@@ -7,7 +7,8 @@ use starknet::{
     core::{
         types::{
             BlockId, BlockTag, BroadcastedDeclareTransaction, BroadcastedDeclareTransactionV3,
-            BroadcastedDeployAccountTransaction, BroadcastedDeployAccountTransactionV3, Call,
+            BroadcastedDeployAccountTransaction, BroadcastedDeployAccountTransactionV3,
+            BroadcastedInvokeTransaction, BroadcastedInvokeTransactionV3, Call,
             DataAvailabilityMode, ExecutionResult, Felt, FlattenedSierraClass, FunctionCall,
             ResourceBounds, ResourceBoundsMapping, TransactionExecutionStatus,
             TransactionFinalityStatus,
@@ -36,6 +37,8 @@ use utils::{
     contract_address_has_selector, simulate_boolean_read, GetSenderAddress, ToFelt, WaitForReceipt,
 };
 
+#[cfg(test)]
+mod tests;
 pub mod utils;
 
 pub type StarknetProvider = JsonRpcClient<HttpTransport>;
@@ -160,7 +163,40 @@ impl ChainHandler for StarknetContext {
         &self,
         params: SendTransactionParams,
     ) -> Result<SendTransactionResult, ChainHandlerError> {
-        todo!()
+        let send_transaction_transaction = BroadcastedInvokeTransactionV3 {
+            sender_address: params.account_address.to_felt()?,
+            calldata: params.calldata.to_felt()?,
+            nonce: params.nonce.into(),
+            signature: params.signature.to_felt()?,
+            account_deployment_data: vec![],
+            resource_bounds: ResourceBoundsMapping {
+                l1_gas: ResourceBounds {
+                    max_amount: 0,
+                    max_price_per_unit: 0,
+                },
+                l2_gas: ResourceBounds {
+                    max_amount: 0,
+                    max_price_per_unit: 0,
+                },
+            },
+            tip: 0,
+            paymaster_data: vec![],
+            nonce_data_availability_mode: DataAvailabilityMode::L1,
+            fee_data_availability_mode: DataAvailabilityMode::L1,
+            is_query: false,
+        };
+
+        let result = self
+            .starknet_provider
+            .add_invoke_transaction(BroadcastedInvokeTransaction::V3(
+                send_transaction_transaction,
+            ))
+            .await
+            .map_err(|e| ChainHandlerError::ProviderError(e.to_string()))?;
+
+        Ok(SendTransactionResult {
+            transaction_hash: result.transaction_hash.into(),
+        })
     }
 
     async fn deploy_account(

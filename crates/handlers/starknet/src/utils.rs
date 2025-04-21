@@ -3,6 +3,7 @@ use std::{
     time::{Duration, Instant},
 };
 
+use anyhow::Context;
 use starknet::{
     accounts::{
         Account, AccountFactory, ExecutionEncoding, OpenZeppelinAccountFactory, SingleOwnerAccount,
@@ -25,7 +26,7 @@ use starknet::{
 };
 use units_primitives::{
     context::ChainHandlerError,
-    rpc::{HexBytes32, HexBytes32Error},
+    rpc::{HexBytes32, HexBytes32Error, SendTransactionResult},
 };
 
 use crate::{StarknetProvider, StarknetWallet};
@@ -97,6 +98,8 @@ pub enum WaitForReceiptError {
     TransactionNotFound(u64),
     #[error("Starknet error: {0}")]
     StarknetError(#[from] ProviderError),
+    #[error("Failed to convert transaction hash to Felt: {0}")]
+    TransactionHashConversionError(#[from] HexBytes32Error),
 }
 
 impl From<WaitForReceiptError> for ChainHandlerError {
@@ -107,6 +110,9 @@ impl From<WaitForReceiptError> for ChainHandlerError {
             }
             WaitForReceiptError::StarknetError(err) => {
                 ChainHandlerError::ProviderError(err.to_string())
+            }
+            WaitForReceiptError::TransactionHashConversionError(err) => {
+                ChainHandlerError::ConversionError(err.to_string())
             }
         }
     }
@@ -262,6 +268,22 @@ impl_wait_for_receipt!(DeclareTransactionResult);
 impl_wait_for_receipt!(InvokeTransactionResult);
 impl_wait_for_receipt!(DeployAccountTransactionResult);
 
+impl WaitForReceipt for SendTransactionResult {
+    async fn wait_for_receipt(
+        &self,
+        provider: Arc<StarknetProvider>,
+        timeout: Option<Duration>,
+    ) -> Result<TransactionReceiptWithBlockInfo, WaitForReceiptError> {
+        wait_for_receipt(
+            provider,
+            self.transaction_hash
+                .try_into()
+                .map_err(WaitForReceiptError::TransactionHashConversionError)?,
+            timeout,
+        )
+        .await
+    }
+}
 pub async fn build_invoke_simulate_transaction(
     calls: Vec<Call>,
     account_address: Felt,
@@ -324,7 +346,6 @@ pub async fn simulate_boolean_read(
             vec![SimulationFlag::SkipFeeCharge, SimulationFlag::SkipValidate],
         )
         .await?;
-    println!("Simulated txn: {:?}", simulated_txn);
 
     match simulated_txn
         .get_execution_result()
@@ -505,6 +526,16 @@ impl ToFelt<Vec<Felt>, ChainHandlerError> for Vec<HexBytes32> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::tests::utils::{
+        madara::{
+            madara_node, madara_node_with_accounts, MadaraRunner, StarknetWalletWithPrivateKey,
+        },
+        starknet::{
+            build_declare_trace, build_deploy_account_trace, build_execution_resources,
+            build_function_invocation, build_l1_handler_trace, dummy_transfer,
+            PREDEPLOYED_ACCOUNT_ADDRESS, PREDEPLOYED_ACCOUNT_CLASS_HASH,
+        },
+    };
     use assert_matches::assert_matches;
     use rstest::*;
     use starknet::{
@@ -514,16 +545,6 @@ mod tests {
             RevertedInvocation,
         },
         macros::selector,
-    };
-    use units_tests_utils::{
-        madara::{
-            madara_node, madara_node_with_accounts, MadaraRunner, StarknetWalletWithPrivateKey,
-        },
-        starknet::{
-            build_declare_trace, build_deploy_account_trace, build_execution_resources,
-            build_function_invocation, build_l1_handler_trace, dummy_transfer,
-            PREDEPLOYED_ACCOUNT_ADDRESS, PREDEPLOYED_ACCOUNT_CLASS_HASH,
-        },
     };
 
     #[rstest]
