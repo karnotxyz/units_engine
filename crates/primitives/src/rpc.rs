@@ -117,7 +117,7 @@ pub struct DeclareProgramParams {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DeclareTransactionResult {
     pub transaction_hash: Option<Bytes32>,
-    pub class_hash: Bytes32,
+    pub program_hash: Bytes32,
     pub acl_updated: bool,
 }
 

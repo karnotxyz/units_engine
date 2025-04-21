@@ -50,7 +50,7 @@ mod tests {
         // Get the contract artifacts
         let mut artifacts = scarb_builds(vec![
             "src/tests/declare_program/test_contracts",
-            "src/tests/get_class/test_contracts",
+            "src/tests/get_program/test_contracts",
         ])
         .await;
         let test_contract = artifacts.remove("EmptyContract").unwrap();
@@ -87,7 +87,7 @@ mod tests {
             .await
             .unwrap();
         let starknet_declare_txn = starknet::core::types::DeclareTransactionResult {
-            class_hash: result.class_hash.try_into().unwrap(),
+            class_hash: result.program_hash.try_into().unwrap(),
             transaction_hash: result.transaction_hash.unwrap().try_into().unwrap(),
         };
         starknet_declare_txn
@@ -141,7 +141,7 @@ mod tests {
         assert_eq!(
             result,
             DeclareTransactionResult {
-                class_hash: starknet_declare_txn.class_hash.into(),
+                program_hash: starknet_declare_txn.class_hash.into(),
                 transaction_hash: None,
                 acl_updated: true,
             }

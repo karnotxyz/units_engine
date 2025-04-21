@@ -18,9 +18,9 @@ pub async fn declare_program(
 ) -> Result<DeclareTransactionResult, DeclareProgramError> {
     let handler = global_ctx.handler();
 
-    // Check if class exists already
-    let class_hash = handler.compute_class_hash(&params.program).await?;
-    let class_exists = match handler.get_program(class_hash).await {
+    // Check if program exists already
+    let program_hash = handler.compute_program_hash(&params.program).await?;
+    let program_exists = match handler.get_program(program_hash).await {
         Ok(_) => true,
         Err(err) => match err {
             ChainHandlerError::ProgramNotFound(_) => false,
@@ -28,17 +28,21 @@ pub async fn declare_program(
         },
     };
 
-    if class_exists {
+    if program_exists {
         // Set the ACL before declaring. This is a hacky fix, the ideal
         // solution might be to have an indexer sync the chain and set ACLs
         // after we know a declaration has been made OR to add atomicity in Madara
         // for declare and invoke transactions.
         handler
-            .set_class_visibility(class_hash, params.class_visibility, params.account_address)
+            .set_program_visibility(
+                program_hash,
+                params.class_visibility,
+                params.account_address,
+            )
             .await?;
 
         return Ok(DeclareTransactionResult {
-            class_hash,
+            program_hash,
             transaction_hash: None,
             acl_updated: true,
         });
@@ -47,7 +51,7 @@ pub async fn declare_program(
     let declare_transaction_hash = handler.declare_program(params).await?;
 
     Ok(DeclareTransactionResult {
-        class_hash,
+        program_hash,
         transaction_hash: Some(declare_transaction_hash),
         acl_updated: true,
     })

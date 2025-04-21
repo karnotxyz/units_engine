@@ -25,8 +25,8 @@ use units_primitives::{
 };
 use units_primitives::{
     rpc::{
-        DeclareProgramParams, DeployAccountParams, DeployAccountResult, GetProgramResult,
-        GetTransactionReceiptResult, Bytes32, SendTransactionParams, SendTransactionResult,
+        Bytes32, DeclareProgramParams, DeployAccountParams, DeployAccountResult, GetProgramResult,
+        GetTransactionReceiptResult, SendTransactionParams, SendTransactionResult,
     },
     types::ClassVisibility,
 };
@@ -442,7 +442,7 @@ impl ChainHandler for StarknetContext {
         .map_err(|e| ChainHandlerError::SimulationError(e.to_string()))
     }
 
-    async fn compute_class_hash(
+    async fn compute_program_hash(
         &self,
         program: &serde_json::Value,
     ) -> Result<Bytes32, ChainHandlerError> {
@@ -453,7 +453,7 @@ impl ChainHandler for StarknetContext {
         Ok(class_hash.into())
     }
 
-    async fn set_class_visibility(
+    async fn set_program_visibility(
         &self,
         class_hash: Bytes32,
         visibility: ClassVisibility,
@@ -480,7 +480,7 @@ impl ChainHandler for StarknetContext {
         Ok(class_hash)
     }
 
-    async fn get_class_visibility(
+    async fn get_program_visibility(
         &self,
         class_hash: Bytes32,
     ) -> Result<ClassVisibility, ChainHandlerError> {

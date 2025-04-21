@@ -31,7 +31,7 @@ pub async fn get_program(
     let handler = global_ctx.handler();
 
     // Check if the contract is public
-    let visibility: ClassVisibility = handler.get_class_visibility(params.class_hash).await?;
+    let visibility: ClassVisibility = handler.get_program_visibility(params.class_hash).await?;
 
     if visibility != ClassVisibility::Public {
         // Check if user has access to the contract

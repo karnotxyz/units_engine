@@ -4,8 +4,8 @@ use serde::Serialize;
 
 use crate::{
     rpc::{
-        DeclareProgramParams, DeployAccountParams, DeployAccountResult, GetProgramResult,
-        GetTransactionByHashResult, GetTransactionReceiptResult, Bytes32, SendTransactionParams,
+        Bytes32, DeclareProgramParams, DeployAccountParams, DeployAccountResult, GetProgramResult,
+        GetTransactionByHashResult, GetTransactionReceiptResult, SendTransactionParams,
         SendTransactionResult,
     },
     types::ClassVisibility,
@@ -67,10 +67,8 @@ pub trait ChainHandler: Send + Sync {
     ) -> Result<DeployAccountResult, ChainHandlerError>;
 
     /// Get a program by its hash
-    async fn get_program(
-        &self,
-        class_hash: Bytes32,
-    ) -> Result<GetProgramResult, ChainHandlerError>;
+    async fn get_program(&self, class_hash: Bytes32)
+        -> Result<GetProgramResult, ChainHandlerError>;
 
     /// Get the nonce for an account
     async fn get_nonce(&self, address: Bytes32) -> Result<u32, ChainHandlerError>;
@@ -125,13 +123,13 @@ pub trait ChainHandler: Send + Sync {
     ) -> Result<bool, ChainHandlerError>;
 
     /// Compute class hash
-    async fn compute_class_hash(
+    async fn compute_program_hash(
         &self,
         program: &serde_json::Value,
     ) -> Result<Bytes32, ChainHandlerError>;
 
     /// Set class visibility
-    async fn set_class_visibility(
+    async fn set_program_visibility(
         &self,
         class_hash: Bytes32,
         visibility: ClassVisibility,
@@ -139,7 +137,7 @@ pub trait ChainHandler: Send + Sync {
     ) -> Result<Bytes32, ChainHandlerError>;
 
     /// Get class visibility
-    async fn get_class_visibility(
+    async fn get_program_visibility(
         &self,
         class_hash: Bytes32,
     ) -> Result<ClassVisibility, ChainHandlerError>;
