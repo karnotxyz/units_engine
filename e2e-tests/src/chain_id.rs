@@ -4,14 +4,10 @@ use rstest::*;
 use serde_json::{json, Value};
 use starknet::{
     accounts::Account,
-    core::types::{BlockId, BlockTag, Felt},
     providers::Provider,
 };
 use units_handlers_starknet::{
-    tests::utils::{
-        madara::{madara_node, MadaraRunner},
-        starknet::deploy_dummy_account,
-    },
+    tests::utils::madara::{madara_node, MadaraRunner},
     StarknetProvider,
 };
 use units_primitives::rpc::{GetChainIdResult, HexBytes32};

@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use serde::Serialize;
 use units_primitives::{
     context::{ChainHandlerError, GlobalContext},
     read_data::{ReadDataError, ReadType},
@@ -8,12 +9,10 @@ use units_primitives::{
 
 const CAN_READ_NONCE_FUNCTION_NAME: &str = "can_read_nonce";
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, thiserror::Error, Serialize, PartialEq, Eq)]
 pub enum NonceError {
     #[error("Read signature not provided")]
     ReadSignatureNotProvided,
-    #[error("Failed to read execution result")]
-    FailedExecutionResultRead(anyhow::Error),
     #[error("Empty can get nonce read result")]
     EmptyCanGetNonceReadResult,
     #[error("Nonce read not allowed")]

@@ -1,22 +1,21 @@
 use std::sync::Arc;
 
+use serde::Serialize;
 use units_primitives::context::{ChainHandlerError, GlobalContext};
 use units_primitives::rpc::{DeclareProgramParams, DeclareTransactionResult};
-use units_primitives::types::ClassVisibility;
 
-#[derive(Debug, thiserror::Error)]
-pub enum AddDeclareClassTransactionError {
+#[derive(Debug, thiserror::Error, Serialize, PartialEq, Eq)]
+pub enum DeclareProgramError {
     #[error("Error setting ACL")]
     ErrorSettingAcl,
     #[error("Chain handler error: {0}")]
     ChainHandlerError(#[from] ChainHandlerError),
 }
 
-pub async fn declare_class(
+pub async fn declare_program(
     global_ctx: Arc<GlobalContext>,
     params: DeclareProgramParams,
-    visibility: ClassVisibility,
-) -> Result<DeclareTransactionResult, AddDeclareClassTransactionError> {
+) -> Result<DeclareTransactionResult, DeclareProgramError> {
     let handler = global_ctx.handler();
 
     // Check if class exists already
@@ -25,7 +24,7 @@ pub async fn declare_class(
         Ok(_) => true,
         Err(err) => match err {
             ChainHandlerError::ProgramNotFound(_) => false,
-            _ => return Err(AddDeclareClassTransactionError::ChainHandlerError(err)),
+            _ => return Err(DeclareProgramError::ChainHandlerError(err)),
         },
     };
 
@@ -35,7 +34,7 @@ pub async fn declare_class(
         // after we know a declaration has been made OR to add atomicity in Madara
         // for declare and invoke transactions.
         handler
-            .set_class_visibility(class_hash, visibility, params.account_address)
+            .set_class_visibility(class_hash, params.class_visibility, params.account_address)
             .await?;
 
         return Ok(DeclareTransactionResult {

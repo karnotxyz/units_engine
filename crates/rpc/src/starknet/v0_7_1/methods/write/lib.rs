@@ -1,7 +1,4 @@
-use crate::{
-    starknet::{errors::StarknetRpcApiError, v0_7_1::StarknetWriteRpcApiV0_7_1Server},
-    RpcContext,
-};
+use crate::{starknet::v0_7_1::StarknetWriteRpcApiV0_7_1Server, RpcContext};
 use jsonrpsee::core::{async_trait, RpcResult};
 use starknet::core::types::{
     BroadcastedDeclareTransaction, BroadcastedDeployAccountTransaction,
@@ -22,7 +19,7 @@ impl StarknetWriteRpcApiV0_7_1Server for RpcContext {
     /// * `declare_transaction_result` - the result of the declare transaction
     async fn add_declare_transaction(
         &self,
-        declare_transaction: BroadcastedDeclareTransaction,
+        _declare_transaction: BroadcastedDeclareTransaction,
     ) -> RpcResult<DeclareTransactionResult> {
         todo!()
         // let declare_transaction = match declare_transaction {
@@ -81,17 +78,17 @@ impl StarknetWriteRpcApiV0_7_1Server for RpcContext {
     /// * `contract_address` - address of the deployed contract account
     async fn add_deploy_account_transaction(
         &self,
-        deploy_account_transaction: BroadcastedDeployAccountTransaction,
+        _deploy_account_transaction: BroadcastedDeployAccountTransaction,
     ) -> RpcResult<DeployAccountTransactionResult> {
-        let deploy_account_transaction = match deploy_account_transaction {
-            BroadcastedDeployAccountTransaction::V3(deploy_account_transaction) => {
-                deploy_account_transaction
-            }
-            _ => {
-                return Err(StarknetRpcApiError::UnsupportedTxnVersion.into());
-            }
-        };
         todo!()
+        // let deploy_account_transaction = match deploy_account_transaction {
+        //     BroadcastedDeployAccountTransaction::V3(deploy_account_transaction) => {
+        //         deploy_account_transaction
+        //     }
+        //     _ => {
+        //         return Err(StarknetRpcApiError::UnsupportedTxnVersion.into());
+        //     }
+        // };
         // Ok(
         //     units_handlers_common::deploy_account::add_deploy_account_transaction(
         //         self.global_ctx.clone(),

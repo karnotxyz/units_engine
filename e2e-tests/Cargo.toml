@@ -12,16 +12,16 @@ anyhow.workspace = true
 once_cell.workspace = true
 reqwest = { workspace = true, features = ["json"] }
 rstest.workspace = true
+serde_json.workspace = true
 starknet.workspace = true
 tokio.workspace = true
 units-handlers-common.workspace = true
+units-handlers-starknet = { workspace = true, features = ["testing"] }
+units-primitives.workspace = true
 units-tests-utils.workspace = true
 units-utils.workspace = true
 url.workspace = true
 uuid.workspace = true
-units-handlers-starknet = { workspace = true, features = ["testing"] }
-serde_json.workspace = true
-units-primitives.workspace = true
 
 [lints]
 workspace = true

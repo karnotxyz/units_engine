@@ -1,6 +1,9 @@
 use jsonrpsee::core::RpcResult;
 use units_primitives::rpc::{
-    DeclareProgramParams, DeclareTransactionResult, DeployAccountParams, DeployAccountResult, GetChainIdResult, GetNonceParams, GetNonceResult, GetProgramParams, GetProgramResult, GetTransactionReceiptParams, GetTransactionReceiptResult, HexBytes32, SendTransactionParams, SendTransactionResult
+    DeclareProgramParams, DeclareTransactionResult, DeployAccountParams, DeployAccountResult,
+    GetChainIdResult, GetNonceParams, GetNonceResult, GetProgramParams, GetProgramResult,
+    GetTransactionReceiptParams, GetTransactionReceiptResult, SendTransactionParams,
+    SendTransactionResult,
 };
 use units_proc_macros::versioned_rpc;
 

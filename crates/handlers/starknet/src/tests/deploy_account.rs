@@ -13,7 +13,7 @@ use starknet::{
     providers::Provider,
     signers::{LocalWallet, Signer, SigningKey},
 };
-use units_handlers_common::deploy_account::add_deploy_account_transaction;
+use units_handlers_common::deploy_account::deploy_account;
 use units_primitives::rpc::DeployAccountParams;
 
 #[rstest]
@@ -54,7 +54,7 @@ async fn test_add_deploy_account_transaction(
         program_hash: Felt::from_hex_unchecked(PREDEPLOYED_ACCOUNT_CLASS_HASH).into(),
     };
 
-    let result = add_deploy_account_transaction(global_ctx, deploy_account_transaction)
+    let result = deploy_account(global_ctx, deploy_account_transaction)
         .await
         .unwrap();
     assert_eq!(result.transaction_hash, tx_hash.into());

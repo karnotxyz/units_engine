@@ -1,7 +1,7 @@
 pub mod chain_id;
-pub mod declare_class;
+pub mod declare_program;
 pub mod deploy_account;
-pub mod get_class;
-pub mod invoke_transaction;
+pub mod get_program;
+pub mod send_transaction;
 pub mod nonce;
 pub mod transaction_receipt;

@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
+use serde::Serialize;
 use starknet::core::types::Felt;
-use starknet::providers::ProviderError;
 use units_primitives::context::{ChainHandlerError, GlobalContext};
 use units_primitives::read_data::{ReadDataError, ReadType};
-use units_primitives::rpc::{GetClassParams, GetProgramResult, HexBytes32Error};
+use units_primitives::rpc::{GetProgramParams, GetProgramResult, HexBytes32Error};
 use units_primitives::types::{ClassVisibility, ClassVisibilityError};
 
 pub const HAS_READ_ACCESS_FUNCTION_NAME: &str = "has_read_access";
@@ -12,10 +12,8 @@ pub const HAS_READ_ACCESS_FUNCTION_NAME: &str = "has_read_access";
 /// and any address can read it
 pub const PUBLIC_ACCESS_ADDRESS: Felt = Felt::ZERO;
 
-#[derive(Debug, thiserror::Error)]
-pub enum GetClassError {
-    #[error("Starknet error: {0}")]
-    StarknetError(#[from] ProviderError),
+#[derive(Debug, thiserror::Error, Serialize, PartialEq, Eq)]
+pub enum GetProgramError {
     #[error("Read signature not provided")]
     ReadSignatureNotProvided,
     #[error("Class read not allowed")]
@@ -30,10 +28,10 @@ pub enum GetClassError {
     HexBytes32Error(#[from] HexBytes32Error),
 }
 
-pub async fn get_class(
+pub async fn get_program(
     global_ctx: Arc<GlobalContext>,
-    params: GetClassParams,
-) -> Result<GetProgramResult, GetClassError> {
+    params: GetProgramParams,
+) -> Result<GetProgramResult, GetProgramError> {
     let handler = global_ctx.handler();
 
     // Check if the contract is public
@@ -43,7 +41,7 @@ pub async fn get_class(
         // Check if user has access to the contract
         let signed_read_data = params
             .signed_read_data
-            .ok_or(GetClassError::ReadSignatureNotProvided)?;
+            .ok_or(GetProgramError::ReadSignatureNotProvided)?;
 
         // Verify the signature and check that it has the required read type
         if !signed_read_data
@@ -54,9 +52,9 @@ pub async fn get_class(
                 }],
             )
             .await
-            .map_err(GetClassError::ReadDataError)?
+            .map_err(GetProgramError::ReadDataError)?
         {
-            return Err(GetClassError::ClassReadNotAllowed);
+            return Err(GetProgramError::ClassReadNotAllowed);
         }
 
         let has_read_access = handler
@@ -69,7 +67,7 @@ pub async fn get_class(
             .await?;
 
         if !has_read_access {
-            return Err(GetClassError::ClassReadNotAllowed);
+            return Err(GetProgramError::ClassReadNotAllowed);
         }
     }
 

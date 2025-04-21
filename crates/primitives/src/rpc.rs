@@ -1,4 +1,4 @@
-use crate::read_data::SignedReadData;
+use crate::{read_data::SignedReadData, types::ClassVisibility};
 use serde::{Deserialize, Serialize};
 use starknet_crypto::Felt;
 
@@ -9,12 +9,12 @@ use starknet_crypto::Felt;
 /// A 32-byte value encoded as a hex string with 0x prefix
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct HexBytes32([u8; 32]);
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, thiserror::Error, Serialize, PartialEq, Eq)]
 pub enum HexBytes32Error {
     #[error("hex string exceeds 32 bytes")]
     TooLong,
     #[error("invalid hex string: {0}")]
-    InvalidHex(#[from] hex::FromHexError),
+    InvalidHex(String),
     #[error("conversion error: {0}")]
     ConversionError(String),
 }
@@ -28,7 +28,7 @@ impl HexBytes32 {
         } else {
             hex_str.to_string()
         };
-        let bytes = hex::decode(hex_str).map_err(HexBytes32Error::InvalidHex)?;
+        let bytes = hex::decode(hex_str).map_err(|e| HexBytes32Error::InvalidHex(e.to_string()))?;
 
         if bytes.len() > 32 {
             return Err(HexBytes32Error::TooLong);
@@ -111,6 +111,7 @@ pub struct DeclareProgramParams {
     pub nonce: Nonce,
     pub program: serde_json::Value,
     pub compiled_program_hash: Option<HexBytes32>,
+    pub class_visibility: ClassVisibility,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -134,17 +135,6 @@ pub struct DeployAccountParams {
 pub struct DeployAccountResult {
     pub transaction_hash: HexBytes32,
     pub account_address: HexBytes32,
-}
-
-/// Parameters and result for getting a program
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct GetProgramParams {
-    pub program_hash: HexBytes32,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct GetProgramResult {
-    pub program: serde_json::Value,
 }
 
 /// Parameters and result for sending a transaction
@@ -190,14 +180,14 @@ pub struct GetTransactionReceiptResult {
 
 /// Parameters and result for getting a class
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct GetClassParams {
+pub struct GetProgramParams {
     pub class_hash: HexBytes32,
     pub signed_read_data: Option<SignedReadData>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct GetClassResult {
-    pub class: serde_json::Value,
+pub struct GetProgramResult {
+    pub program: serde_json::Value,
 }
 
 /// Result for getting chain ID (no parameters required)
@@ -241,12 +231,12 @@ mod tests {
     }
 
     #[rstest]
-    #[case("0xzz", HexBytes32Error::InvalidHex(hex::FromHexError::InvalidHexCharacter { c: 'z', index: 0 }))]
+    #[case("0xzz", HexBytes32Error::InvalidHex("invalid character 'z' at position 2".to_string()))]
     #[case(
         "0x000000000000000000000000000000000000000000000000000000000000000001",
         HexBytes32Error::TooLong
     )]
-    #[case("0xgh", HexBytes32Error::InvalidHex(hex::FromHexError::InvalidHexCharacter { c: 'g', index: 0 }))]
+    #[case("0xgh", HexBytes32Error::InvalidHex("invalid character 'g' at position 2".to_string()))]
     fn test_hexbytes32_from_hex_invalid(
         #[case] input: &str,
         #[case] expected_error: HexBytes32Error,

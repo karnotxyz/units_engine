@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use starknet::{
     accounts::SingleOwnerAccount,
     core::types::Felt,
-    providers::{jsonrpc::HttpTransport, JsonRpcClient, ProviderError},
+    providers::{jsonrpc::HttpTransport, JsonRpcClient},
     signers::LocalWallet,
 };
 use starknet_crypto::poseidon_hash_many;
@@ -16,12 +16,10 @@ pub type StarknetWallet = SingleOwnerAccount<Arc<StarknetProvider>, Arc<LocalWal
 // TODO: Add extensive testing for verify
 // TODO: Add version checks
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, thiserror::Error, Serialize, PartialEq, Eq)]
 pub enum ReadDataError {
     #[error("Invalid return type for is_valid_signature")]
     InvalidReturnTypeForIsValidSignature,
-    #[error("Starknet error: {0}")]
-    StarknetError(#[from] ProviderError),
     #[error("Signature has expired")]
     SignatureExpired,
     #[error("Asked for pending block, but got latest block")]

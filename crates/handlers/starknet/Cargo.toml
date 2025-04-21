@@ -22,12 +22,12 @@ units-primitives = { workspace = true }
 units-utils.workspace = true
 
 # Used only in tests at the moment
-rstest = { workspace = true, optional = true }
+once_cell = { workspace = true, optional = true }
 reqwest = { workspace = true, optional = true }
+rstest = { workspace = true, optional = true }
+units-tests-utils = { workspace = true, optional = true }
 url = { workspace = true, optional = true }
 uuid = { workspace = true, optional = true }
-once_cell = { workspace = true, optional = true }
-units-tests-utils = { workspace = true, optional = true }
 
 [dev-dependencies]
 rstest.workspace = true
@@ -39,4 +39,12 @@ uuid.workspace = true
 once_cell.workspace = true
 
 [features]
-testing = ["units-primitives/testing", "rstest", "reqwest", "url", "uuid", "once_cell", "units-tests-utils"]
+testing = [
+  "units-primitives/testing",
+  "rstest",
+  "reqwest",
+  "url",
+  "uuid",
+  "once_cell",
+  "units-tests-utils",
+]

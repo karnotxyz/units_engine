@@ -23,9 +23,9 @@ use starknet::providers::Provider;
 #[rstest]
 #[tokio::test]
 #[cfg(feature = "testing")]
-async fn test_get_class(
+async fn test_get_program(
     #[future]
-    #[with("src/tests/get_class/test_contracts")]
+    #[with("src/tests/get_program/test_contracts")]
     scarb_build: ArtifactsMap,
     #[future]
     #[with(2)]
@@ -36,9 +36,9 @@ async fn test_get_class(
     ),
 ) {
     use starknet::core::types::{ContractClass, FlattenedSierraClass};
-    use units_handlers_common::get_class::{get_class, GetClassError};
+    use units_handlers_common::get_program::{get_program, GetProgramError};
     use units_primitives::{
-        context::GlobalContext, read_data::ReadDataError, rpc::GetClassParams,
+        context::GlobalContext, read_data::ReadDataError, rpc::GetProgramParams,
         types::ClassVisibility,
     };
 
@@ -68,7 +68,7 @@ async fn test_get_class(
     .unwrap();
     let global_ctx = Arc::new(GlobalContext::new(Arc::new(Box::new(starknet_ctx))));
 
-    // Declare a dummy contract for us to get via get_class
+    // Declare a dummy contract for us to get via get_program
     let dummy_contract_artifact = artifacts.remove("EmptyContract").unwrap();
     let (dummy_contract_class_hash, _) = dummy_contract_artifact
         .clone()
@@ -78,15 +78,15 @@ async fn test_get_class(
     // As we're directly calling Madara and not going via the Units RPC,
     // the DeclareAcl contract is not updated and by default the contract visibility is private
     // i.e. Acl driven. This is just for this test contract, actual implementation could differ.
-    let class = get_class(
+    let class = get_program(
         global_ctx.clone(),
-        GetClassParams {
+        GetProgramParams {
             class_hash: dummy_contract_class_hash.into(),
             signed_read_data: None,
         },
     )
     .await;
-    assert_matches!(class, Err(GetClassError::ReadSignatureNotProvided));
+    assert_matches!(class, Err(GetProgramError::ReadSignatureNotProvided));
 
     // Make the contract visbility Public
     let owner_account = owner_account_with_private_key.account.clone();
@@ -108,9 +108,9 @@ async fn test_get_class(
         .wait_for_receipt(provider.clone(), None)
         .await
         .unwrap();
-    let class = get_class(
+    let class = get_program(
         global_ctx.clone(),
-        GetClassParams {
+        GetProgramParams {
             class_hash: dummy_contract_class_hash.into(),
             signed_read_data: None,
         },
@@ -162,15 +162,15 @@ async fn test_get_class(
     let signed_read_data = sign_read_data(read_data, accounts_with_private_key[1].private_key)
         .await
         .unwrap();
-    let class = get_class(
+    let class = get_program(
         global_ctx.clone(),
-        GetClassParams {
+        GetProgramParams {
             class_hash: dummy_contract_class_hash.into(),
             signed_read_data: Some(signed_read_data.clone()),
         },
     )
     .await;
-    assert_matches!(class, Err(GetClassError::ClassReadNotAllowed));
+    assert_matches!(class, Err(GetProgramError::ClassReadNotAllowed));
 
     // Grant access to the account
     owner_account
@@ -193,9 +193,9 @@ async fn test_get_class(
         .wait_for_receipt(provider.clone(), None)
         .await
         .unwrap();
-    let class = get_class(
+    let class = get_program(
         global_ctx.clone(),
-        GetClassParams {
+        GetProgramParams {
             class_hash: dummy_contract_class_hash.into(),
             signed_read_data: Some(signed_read_data),
         },
@@ -230,9 +230,9 @@ async fn test_get_class(
     )
     .await
     .unwrap();
-    let class = get_class(
+    let class = get_program(
         global_ctx.clone(),
-        GetClassParams {
+        GetProgramParams {
             class_hash: dummy_contract_class_hash.into(),
             signed_read_data: Some(signed_read_data_with_different_class),
         },
@@ -240,7 +240,7 @@ async fn test_get_class(
     .await;
     assert_matches!(
         class,
-        Err(GetClassError::ReadDataError(
+        Err(GetProgramError::ReadDataError(
             ReadDataError::MissingRequiredReadTypes
         ))
     );

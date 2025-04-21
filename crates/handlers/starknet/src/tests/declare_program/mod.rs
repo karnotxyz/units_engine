@@ -24,7 +24,7 @@ use units_primitives::{
 
 use starknet::core::types::Felt;
 use starknet::providers::Provider;
-use units_handlers_common::declare_class::declare_class;
+use units_handlers_common::declare_program::declare_program;
 
 #[cfg(feature = "testing")]
 mod tests {
@@ -49,7 +49,7 @@ mod tests {
 
         // Get the contract artifacts
         let mut artifacts = scarb_builds(vec![
-            "src/tests/declare_class/test_contracts",
+            "src/tests/declare_program/test_contracts",
             "src/tests/get_class/test_contracts",
         ])
         .await;
@@ -77,14 +77,15 @@ mod tests {
         let global_ctx = Arc::new(GlobalContext::new(Arc::new(Box::new(starknet_ctx))));
 
         // Declare the class
-        let declare_txn = build_declare_txn(accounts[0].clone(), test_contract.clone()).await;
-        let result = declare_class(
-            global_ctx.clone(),
-            declare_txn.clone(),
+        let declare_txn = build_declare_txn(
+            accounts[0].clone(),
+            test_contract.clone(),
             ClassVisibility::Acl,
         )
-        .await
-        .unwrap();
+        .await;
+        let result = declare_program(global_ctx.clone(), declare_txn.clone())
+            .await
+            .unwrap();
         let starknet_declare_txn = starknet::core::types::DeclareTransactionResult {
             class_hash: result.class_hash.try_into().unwrap(),
             transaction_hash: result.transaction_hash.unwrap().try_into().unwrap(),
@@ -128,8 +129,13 @@ mod tests {
         assert_eq!(visibility, vec![ClassVisibility::Acl.into()]);
 
         // Declare again with new ACL
-        let declare_txn = build_declare_txn(accounts[0].clone(), test_contract.clone()).await;
-        let result = declare_class(global_ctx.clone(), declare_txn, ClassVisibility::Public)
+        let declare_txn = build_declare_txn(
+            accounts[0].clone(),
+            test_contract.clone(),
+            ClassVisibility::Public,
+        )
+        .await;
+        let result = declare_program(global_ctx.clone(), declare_txn)
             .await
             .unwrap();
         assert_eq!(
@@ -180,6 +186,7 @@ mod tests {
     async fn build_declare_txn(
         account: StarknetWalletWithPrivateKey,
         artifact: Artifacts,
+        class_visibility: ClassVisibility,
     ) -> DeclareProgramParams {
         let provider = account.account.provider();
         let nonce = provider
@@ -208,6 +215,7 @@ mod tests {
             nonce: nonce.try_into().unwrap(),
             program: serde_json::to_value(flattened_contract_class.clone()).unwrap(),
             compiled_program_hash: Some(artifact.compiled_class_hash.into()),
+            class_visibility,
         }
     }
 }

@@ -21,7 +21,7 @@ use units_primitives::rpc::SendTransactionParams;
 use starknet::core::types::Call;
 use starknet::core::types::Felt;
 use starknet::providers::Provider;
-use units_handlers_common::invoke_transaction::send_transaction;
+use units_handlers_common::send_transaction::send_transaction;
 
 use crate::tests::utils::starknet::ProviderToDummyGlobalContext;
 
@@ -35,7 +35,7 @@ async fn test_add_invoke_transaction(
         Vec<StarknetWalletWithPrivateKey>,
     ),
     #[future]
-    #[with("src/tests/invoke_transaction/test_contracts")]
+    #[with("src/tests/send_transaction/test_contracts")]
     scarb_build: ArtifactsMap,
 ) {
     let (_runner, provider, accounts) = madara_node_with_accounts.await;

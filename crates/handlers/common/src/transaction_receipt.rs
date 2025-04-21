@@ -1,12 +1,13 @@
 use std::sync::Arc;
 
+use serde::Serialize;
 use units_primitives::{
     context::{ChainHandlerError, GlobalContext},
     read_data::ReadDataError,
     rpc::{GetTransactionReceiptParams, GetTransactionReceiptResult, HexBytes32Error},
 };
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, thiserror::Error, Serialize, PartialEq, Eq)]
 pub enum TransactionReceiptError {
     #[error("More events than expected")]
     MoreEventsThanExpected,

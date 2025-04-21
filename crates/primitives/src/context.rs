@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use serde::Serialize;
+
 use crate::{
     rpc::{
         DeclareProgramParams, DeployAccountParams, DeployAccountResult, GetProgramResult,
@@ -10,7 +12,7 @@ use crate::{
 };
 
 // TODO: Divide this into more specific errors
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, thiserror::Error, Serialize, PartialEq, Eq)]
 pub enum ChainHandlerError {
     #[error("Bad request: {0}")]
     BadRequest(String),

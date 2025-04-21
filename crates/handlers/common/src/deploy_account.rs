@@ -1,15 +1,16 @@
 use std::sync::Arc;
 
+use serde::Serialize;
 use units_primitives::context::{ChainHandlerError, GlobalContext};
 use units_primitives::rpc::{DeployAccountParams, DeployAccountResult};
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, thiserror::Error, Serialize, PartialEq, Eq)]
 pub enum DeployAccountError {
     #[error("Chain handler error: {0}")]
     ChainHandlerError(#[from] ChainHandlerError),
 }
 
-pub async fn add_deploy_account_transaction(
+pub async fn deploy_account(
     global_ctx: Arc<GlobalContext>,
     deploy_account_transaction: DeployAccountParams,
 ) -> Result<DeployAccountResult, DeployAccountError> {
