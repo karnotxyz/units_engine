@@ -26,7 +26,7 @@ use units_tests_utils::workspace::WORKSPACE_ROOT;
 use url::Url;
 use uuid::Uuid;
 
-const MADARA_BINARY_PATH: &str = "test-utils/build/madara";
+const MADARA_BINARY_PATH: &str = "crates/handlers/starknet/src/tests/build/madara";
 
 pub struct MadaraRunner {
     port_allocation: Option<PortAllocation>,
