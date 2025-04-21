@@ -5,9 +5,7 @@ use starknet::core::types::{
     InvokeTransactionV1, MsgFromL1, SimulationFlagForEstimateFee, SyncStatusType, Transaction,
     TransactionStatus,
 };
-use starknet::providers::ProviderError;
 
-use crate::starknet::errors::StarknetRpcApiError;
 use crate::starknet::v0_7_1::StarknetReadRpcApiV0_7_1Server;
 use crate::RpcContext;
 

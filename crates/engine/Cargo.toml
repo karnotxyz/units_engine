@@ -28,13 +28,13 @@ tokio.workspace = true
 tower.workspace = true
 tower-http.workspace = true
 tracing.workspace = true
+units-handlers-common.workspace = true
+units-handlers-starknet.workspace = true
+units-primitives.workspace = true
 units-rpc.workspace = true
 units-telemetery.workspace = true
 units-utils.workspace = true
 url.workspace = true
-units-handlers-common.workspace = true
-units-handlers-starknet.workspace = true
-units-primitives.workspace = true
 
 [features]
 testing = ["units-handlers-common/testing"]

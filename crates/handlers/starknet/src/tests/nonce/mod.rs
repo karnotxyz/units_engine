@@ -3,13 +3,10 @@ use rstest::*;
 use starknet::accounts::Account;
 
 use crate::tests::utils::{
-    madara::{madara_node, madara_node_with_accounts, MadaraRunner, StarknetWalletWithPrivateKey},
+    madara::{madara_node_with_accounts, MadaraRunner, StarknetWalletWithPrivateKey},
     scarb::{scarb_build, ArtifactsMap},
 };
-use crate::utils::WaitForReceipt;
-use crate::{StarknetProvider, StarknetWallet};
-use starknet::core::types::ExecutionResult;
-use starknet::macros::selector;
+use crate::StarknetProvider;
 use std::sync::Arc;
 #[cfg(feature = "testing")]
 use units_primitives::read_data::{
@@ -20,18 +17,11 @@ use units_primitives::{
     rpc::{GetNonceParams, GetNonceResult},
 };
 
-use starknet::core::types::Call;
 use starknet::core::types::Felt;
 use starknet::providers::Provider;
-use units_handlers_common::{
-    nonce::{get_nonce, NonceError},
-    transaction_receipt::get_transaction_receipt,
-};
-use units_primitives::rpc::GetTransactionReceiptParams;
+use units_handlers_common::nonce::{get_nonce, NonceError};
 
 use crate::tests::utils::starknet::ProviderToDummyGlobalContext;
-use units_handlers_common::transaction_receipt::TransactionReceiptError;
-use units_primitives::rpc::ExecutionStatus;
 
 #[rstest]
 #[tokio::test]
@@ -129,7 +119,7 @@ async fn test_can_read_nonce_returns_invalid_read_signature(
             singer_address: account.address(),
         }),
         vec![ReadType::Nonce {
-            nonce: contract_address.into(),
+            nonce: contract_address,
         }],
         ReadValidity::Block { block: 1000000 },
         provider.chain_id().await.unwrap(),
@@ -183,9 +173,7 @@ async fn test_can_read_nonce_returns_false(
         ReadVerifier::Account(VerifierAccount {
             singer_address: account_with_private_key.account.address(),
         }),
-        vec![ReadType::Nonce {
-            nonce: address.into(),
-        }],
+        vec![ReadType::Nonce { nonce: address }],
         ReadValidity::Block { block: 1000000 },
         provider.chain_id().await.unwrap(),
         ReadDataVersion::One,
@@ -242,7 +230,7 @@ async fn test_can_read_nonce_only_owner(
             singer_address: owner_account_with_private_key.account.address(),
         }),
         vec![ReadType::Nonce {
-            nonce: contract_address.into(),
+            nonce: contract_address,
         }],
         ReadValidity::Block { block: 1000000 },
         provider.chain_id().await.unwrap(),
@@ -274,7 +262,7 @@ async fn test_can_read_nonce_only_owner(
             singer_address: other_account_with_private_key.account.address(),
         }),
         vec![ReadType::Nonce {
-            nonce: contract_address.into(),
+            nonce: contract_address,
         }],
         ReadValidity::Block { block: 1000000 },
         provider.chain_id().await.unwrap(),
@@ -331,7 +319,7 @@ async fn test_get_nonce_missing_required_read_type(
             singer_address: account_with_private_key.account.address(),
         }),
         vec![ReadType::TransactionReceipt {
-            transaction_hash: Felt::ONE.into(),
+            transaction_hash: Felt::ONE,
         }], // Different type than what's needed
         ReadValidity::Block { block: 1000000 },
         provider.chain_id().await.unwrap(),

@@ -1,4 +1,3 @@
-use assert_matches::assert_matches;
 use rstest::*;
 use starknet::{
     accounts::Account,
@@ -6,52 +5,30 @@ use starknet::{
 };
 
 use crate::utils::WaitForReceipt;
+use crate::StarknetProvider;
 use crate::{
     tests::utils::{
-        madara::{
-            madara_node, madara_node_with_accounts, MadaraRunner, StarknetWalletWithPrivateKey,
-        },
-        scarb::{scarb_build, scarb_builds, ArtifactsMap},
+        madara::{madara_node_with_accounts, MadaraRunner, StarknetWalletWithPrivateKey},
+        scarb::scarb_builds,
         starknet::assert_contract_class_eq,
     },
     StarknetContext,
 };
-use crate::{StarknetProvider, StarknetWallet};
-use starknet::core::types::ExecutionResult;
 use starknet::macros::selector;
 use std::sync::Arc;
-#[cfg(feature = "testing")]
-use units_primitives::read_data::{
-    sign_read_data, ReadData, ReadDataVersion, ReadType, ReadValidity,
-};
 use units_primitives::{
     context::GlobalContext,
-    read_data::{ReadVerifier, VerifierAccount},
     rpc::{DeclareProgramParams, DeclareTransactionResult},
     types::ClassVisibility,
 };
 
-use starknet::core::types::Call;
 use starknet::core::types::Felt;
 use starknet::providers::Provider;
-use units_handlers_common::{
-    declare_class::declare_class, transaction_receipt::get_transaction_receipt,
-};
-use units_primitives::rpc::GetTransactionReceiptParams;
-
-use crate::tests::utils::starknet::ProviderToDummyGlobalContext;
-use units_handlers_common::transaction_receipt::TransactionReceiptError;
-use units_primitives::rpc::ExecutionStatus;
+use units_handlers_common::declare_class::declare_class;
 
 #[cfg(feature = "testing")]
 mod tests {
-    use starknet::{
-        accounts::ConnectedAccount,
-        core::types::{
-            BroadcastedDeclareTransactionV3, DataAvailabilityMode, ResourceBounds,
-            ResourceBoundsMapping,
-        },
-    };
+    use starknet::accounts::ConnectedAccount;
 
     use crate::tests::utils::scarb::Artifacts;
 
@@ -112,12 +89,8 @@ mod tests {
             class_hash: result.class_hash.try_into().unwrap(),
             transaction_hash: result.transaction_hash.unwrap().try_into().unwrap(),
         };
-        let receipt = starknet_declare_txn
+        starknet_declare_txn
             .wait_for_receipt(provider.clone(), None)
-            .await
-            .unwrap();
-        let txn = provider
-            .get_transaction_by_hash(starknet_declare_txn.transaction_hash)
             .await
             .unwrap();
 

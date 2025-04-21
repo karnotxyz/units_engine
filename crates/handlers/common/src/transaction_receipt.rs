@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
 use units_primitives::{
-    context::{ChainHandler, ChainHandlerError, GlobalContext},
-    read_data::{ReadDataError, SignedReadData},
-    rpc::{GetTransactionReceiptParams, GetTransactionReceiptResult, HexBytes32, HexBytes32Error},
+    context::{ChainHandlerError, GlobalContext},
+    read_data::ReadDataError,
+    rpc::{GetTransactionReceiptParams, GetTransactionReceiptResult, HexBytes32Error},
 };
 
 #[derive(Debug, thiserror::Error)]
@@ -51,14 +51,7 @@ pub async fn get_transaction_receipt(
         .get_transaction_by_hash(params.transaction_hash)
         .await?;
     let sender_address = raw_txn.sender_address;
-    if sender_address
-        != params
-            .signed_read_data
-            .read_data()
-            .read_address()
-            .clone()
-            .into()
-    {
+    if sender_address != (*params.signed_read_data.read_data().read_address()).into() {
         return Err(TransactionReceiptError::InvalidSenderAddress);
     }
 
@@ -81,18 +74,12 @@ pub async fn get_transaction_receipt(
     for event in events.iter() {
         let has_selector = handler
             .contract_has_function(event.from_address, CAN_READ_EVENT_FUNCTION_NAME.to_string())
-            .await
-            .map_err(ChainHandlerError::from)?;
+            .await?;
 
         let can_read = if has_selector {
             handler
                 .simulate_read_access_check(
-                    params
-                        .signed_read_data
-                        .read_data()
-                        .read_address()
-                        .clone()
-                        .into(),
+                    (*params.signed_read_data.read_data().read_address()).into(),
                     event.from_address,
                     CAN_READ_EVENT_FUNCTION_NAME.to_string(),
                     vec![event.keys[0]],

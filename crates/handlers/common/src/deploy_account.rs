@@ -1,10 +1,5 @@
 use std::sync::Arc;
 
-use starknet::core::types::{
-    BroadcastedDeployAccountTransaction, BroadcastedDeployAccountTransactionV3,
-    DeployAccountTransactionResult,
-};
-use starknet::providers::{Provider, ProviderError};
 use units_primitives::context::{ChainHandlerError, GlobalContext};
 use units_primitives::rpc::{DeployAccountParams, DeployAccountResult};
 

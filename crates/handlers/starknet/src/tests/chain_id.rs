@@ -1,12 +1,7 @@
 use std::sync::Arc;
 
-use crate::tests::utils::{
-    madara::{madara_node, MadaraRunner},
-    starknet::TestDefault,
-};
-use crate::{
-    tests::utils::starknet::ProviderToDummyGlobalContext, StarknetProvider, StarknetWallet,
-};
+use crate::tests::utils::madara::{madara_node, MadaraRunner};
+use crate::{tests::utils::starknet::ProviderToDummyGlobalContext, StarknetProvider};
 use rstest::*;
 use starknet::core::types::Felt;
 use units_handlers_common::chain_id::chain_id;

@@ -2,10 +2,9 @@ use std::sync::Arc;
 
 use crate::{
     rpc::{
-        DeclareProgramParams, DeclareTransactionResult, DeployAccountParams, DeployAccountResult,
-        GetNonceParams, GetNonceResult, GetProgramParams, GetProgramResult,
-        GetTransactionByHashResult, GetTransactionReceiptParams, GetTransactionReceiptResult,
-        HexBytes32, SendTransactionParams, SendTransactionResult,
+        DeclareProgramParams, DeployAccountParams, DeployAccountResult, GetProgramResult,
+        GetTransactionByHashResult, GetTransactionReceiptResult, HexBytes32, SendTransactionParams,
+        SendTransactionResult,
     },
     types::ClassVisibility,
 };

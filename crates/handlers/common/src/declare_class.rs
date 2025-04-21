@@ -1,12 +1,5 @@
 use std::sync::Arc;
 
-use starknet::accounts::Account;
-use starknet::core::types::{
-    BlockId, BlockTag, BroadcastedDeclareTransaction, BroadcastedDeclareTransactionV3, Call,
-    StarknetError,
-};
-use starknet::macros::selector;
-use starknet::providers::{Provider, ProviderError};
 use units_primitives::context::{ChainHandlerError, GlobalContext};
 use units_primitives::rpc::{DeclareProgramParams, DeclareTransactionResult};
 use units_primitives::types::ClassVisibility;

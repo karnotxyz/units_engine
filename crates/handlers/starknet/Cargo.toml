@@ -17,9 +17,9 @@ serde_json.workspace = true
 starknet.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
+units-handlers-common.workspace = true
 units-primitives = { workspace = true }
 units-utils.workspace = true
-units-handlers-common.workspace = true
 
 [dev-dependencies]
 rstest.workspace = true

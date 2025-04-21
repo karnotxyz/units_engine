@@ -10,8 +10,7 @@ use starknet::{
             BroadcastedDeployAccountTransaction, BroadcastedDeployAccountTransactionV3,
             BroadcastedInvokeTransaction, BroadcastedInvokeTransactionV3, Call,
             DataAvailabilityMode, ExecutionResult, Felt, FlattenedSierraClass, FunctionCall,
-            ResourceBounds, ResourceBoundsMapping, TransactionExecutionStatus,
-            TransactionFinalityStatus,
+            ResourceBounds, ResourceBoundsMapping, TransactionFinalityStatus,
         },
         utils::get_selector_from_name,
     },
@@ -26,10 +25,8 @@ use units_primitives::{
 };
 use units_primitives::{
     rpc::{
-        DeclareProgramParams, DeclareTransactionResult, DeployAccountParams, DeployAccountResult,
-        GetNonceParams, GetNonceResult, GetProgramParams, GetProgramResult,
-        GetTransactionReceiptParams, GetTransactionReceiptResult, HexBytes32,
-        SendTransactionParams, SendTransactionResult,
+        DeclareProgramParams, DeployAccountParams, DeployAccountResult, GetProgramResult,
+        GetTransactionReceiptResult, HexBytes32, SendTransactionParams, SendTransactionResult,
     },
     types::ClassVisibility,
 };
@@ -283,8 +280,8 @@ impl ChainHandler for StarknetContext {
             .iter()
             .map(|event| Event {
                 from_address: event.from_address.into(),
-                keys: event.keys.iter().map(|key| key.clone().into()).collect(),
-                data: event.data.iter().map(|data| data.clone().into()).collect(),
+                keys: event.keys.iter().map(|key| (*key).into()).collect(),
+                data: event.data.iter().map(|data| (*data).into()).collect(),
             })
             .collect();
 
@@ -367,7 +364,7 @@ impl ChainHandler for StarknetContext {
                 FunctionCall {
                     contract_address: identity_address.to_felt()?,
                     entry_point_selector: GET_KEY_SELECTOR,
-                    calldata: vec![account_address.clone().to_felt()?],
+                    calldata: vec![account_address.to_felt()?],
                 },
                 BlockId::Tag(BlockTag::Pending),
             )
@@ -480,7 +477,7 @@ impl ChainHandler for StarknetContext {
             .wait_for_receipt(self.starknet_provider.clone(), None)
             .await
             .map_err(ChainHandlerError::from)?;
-        Ok(class_hash.into())
+        Ok(class_hash)
     }
 
     async fn get_class_visibility(

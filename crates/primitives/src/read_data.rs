@@ -1,15 +1,11 @@
 use std::sync::Arc;
 
-use crate::{
-    context::{ChainHandler, ChainHandlerError},
-    rpc::HexBytes32,
-};
+use crate::context::{ChainHandler, ChainHandlerError};
 use serde::{Deserialize, Serialize};
 use starknet::{
     accounts::SingleOwnerAccount,
-    core::types::{BlockId, BlockTag, Felt, FunctionCall, MaybePendingBlockWithTxs},
-    macros::selector,
-    providers::{jsonrpc::HttpTransport, JsonRpcClient, Provider, ProviderError},
+    core::types::Felt,
+    providers::{jsonrpc::HttpTransport, JsonRpcClient, ProviderError},
     signers::LocalWallet,
 };
 use starknet_crypto::poseidon_hash_many;
@@ -281,10 +277,7 @@ impl SignedReadData {
                 // TODO: there could be an optimisation here to do a multicall that calls
                 // is_valid_signature and then calls a function to check signature block_number
                 // is less than equal to expiry_block
-                let current_block = handler
-                    .get_latest_block_number()
-                    .await
-                    .map_err(ChainHandlerError::from)?;
+                let current_block = handler.get_latest_block_number().await?;
                 if current_block > *expiry_block {
                     return Err(ReadDataError::SignatureExpired);
                 }
@@ -308,7 +301,7 @@ impl SignedReadData {
         // Verify signature
         let is_valid = handler
             .is_valid_signature(
-                account_address.clone().into(),
+                (*account_address).into(),
                 self.signature
                     .clone()
                     .into_iter()
@@ -316,8 +309,7 @@ impl SignedReadData {
                     .collect(),
                 self.read_data.hash().into(),
             )
-            .await
-            .map_err(ChainHandlerError::from)?;
+            .await?;
 
         // If this is an identity, perform additional check
         if is_valid {
@@ -325,11 +317,10 @@ impl SignedReadData {
                 // Call get_key on the identity to verify it
                 let identity_contains_signer = handler
                     .identity_contains_signer(
-                        identity.identity_address.clone().into(),
-                        account_address.clone().into(),
+                        identity.identity_address.into(),
+                        (*account_address).into(),
                     )
-                    .await
-                    .map_err(ChainHandlerError::from)?;
+                    .await?;
 
                 if !identity_contains_signer {
                     return Err(ReadDataError::InvalidIdentityKey);
@@ -366,16 +357,6 @@ pub async fn sign_read_data(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use assert_matches::assert_matches;
-    use rstest::*;
-    use starknet::{
-        accounts::Account as StarknetAccount,
-        core::types::{BlockWithTxHashes, Call, MaybePendingBlockWithTxHashes},
-    };
-    use std::{
-        sync::Arc,
-        time::{Duration, Instant},
-    };
 
     #[test]
     fn test_hash_nonce() {

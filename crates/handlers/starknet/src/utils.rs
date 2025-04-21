@@ -3,7 +3,6 @@ use std::{
     time::{Duration, Instant},
 };
 
-use anyhow::Context;
 use starknet::{
     accounts::{
         Account, AccountFactory, ExecutionEncoding, OpenZeppelinAccountFactory, SingleOwnerAccount,
@@ -21,7 +20,7 @@ use starknet::{
             TransactionReceiptWithBlockInfo, TransactionTrace,
         },
     },
-    providers::{jsonrpc::HttpTransport, JsonRpcClient, Provider, ProviderError},
+    providers::{Provider, ProviderError},
     signers::{LocalWallet, SigningKey},
 };
 use units_primitives::{

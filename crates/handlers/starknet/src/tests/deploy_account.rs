@@ -2,25 +2,19 @@ use std::sync::Arc;
 
 use crate::tests::utils::{
     madara::{madara_node, MadaraRunner},
-    starknet::{ProviderToDummyGlobalContext, TestDefault, PREDEPLOYED_ACCOUNT_CLASS_HASH},
+    starknet::{ProviderToDummyGlobalContext, PREDEPLOYED_ACCOUNT_CLASS_HASH},
 };
 use crate::utils::wait_for_receipt;
-use crate::{StarknetContext, StarknetProvider, StarknetWallet};
+use crate::StarknetProvider;
 use rstest::*;
 use starknet::{
     accounts::{AccountFactory, OpenZeppelinAccountFactory},
-    core::types::{
-        BlockId, BlockTag, BroadcastedDeployAccountTransactionV3, DataAvailabilityMode, Felt,
-        ResourceBounds, ResourceBoundsMapping,
-    },
+    core::types::{BlockId, BlockTag, Felt},
     providers::Provider,
     signers::{LocalWallet, Signer, SigningKey},
 };
 use units_handlers_common::deploy_account::add_deploy_account_transaction;
-use units_primitives::{
-    context::{ChainHandler, GlobalContext},
-    rpc::DeployAccountParams,
-};
+use units_primitives::rpc::DeployAccountParams;
 
 #[rstest]
 #[tokio::test]

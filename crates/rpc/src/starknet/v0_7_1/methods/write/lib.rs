@@ -3,15 +3,11 @@ use crate::{
     RpcContext,
 };
 use jsonrpsee::core::{async_trait, RpcResult};
-use starknet::{
-    core::types::{
-        BroadcastedDeclareTransaction, BroadcastedDeployAccountTransaction,
-        BroadcastedInvokeTransaction, DeclareTransactionResult, DeployAccountTransactionResult,
-        Felt, InvokeTransactionResult,
-    },
-    providers::ProviderError,
+use starknet::core::types::{
+    BroadcastedDeclareTransaction, BroadcastedDeployAccountTransaction,
+    BroadcastedInvokeTransaction, DeclareTransactionResult, DeployAccountTransactionResult, Felt,
+    InvokeTransactionResult,
 };
-use units_primitives::types::ClassVisibility;
 
 #[async_trait]
 impl StarknetWriteRpcApiV0_7_1Server for RpcContext {

@@ -200,7 +200,6 @@ pub struct GetClassResult {
     pub class: serde_json::Value,
 }
 
-
 /// Result for getting chain ID (no parameters required)
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct GetChainIdResult {
@@ -329,7 +328,7 @@ mod tests {
     #[case("0x800000000000000000000000000000000000000000000000000000000000000")]
     fn test_hexbytes32_to_felt_roundtrip(#[case] input: &str) {
         let hex_bytes = HexBytes32::from_hex(input).unwrap();
-        let felt = Felt::try_from(hex_bytes.clone()).unwrap();
+        let felt = Felt::try_from(hex_bytes).unwrap();
         println!("felt: {:?}", felt);
         println!("felt max: {:?}", Felt::ELEMENT_UPPER_BOUND);
         let hex_bytes_from_felt: HexBytes32 = HexBytes32::from(felt);

@@ -1,11 +1,9 @@
 use std::sync::Arc;
 
-use jsonrpsee::core::params;
-use starknet::core::types::{BlockId, BlockTag, Call, ContractClass, Felt, FunctionCall};
-use starknet::macros::selector;
-use starknet::providers::{Provider, ProviderError};
+use starknet::core::types::Felt;
+use starknet::providers::ProviderError;
 use units_primitives::context::{ChainHandlerError, GlobalContext};
-use units_primitives::read_data::{ReadDataError, ReadType, SignedReadData};
+use units_primitives::read_data::{ReadDataError, ReadType};
 use units_primitives::rpc::{GetClassParams, GetProgramResult, HexBytes32Error};
 use units_primitives::types::{ClassVisibility, ClassVisibilityError};
 
@@ -63,7 +61,7 @@ pub async fn get_class(
 
         let has_read_access = handler
             .simulate_read_access_check(
-                signed_read_data.read_data().read_address().clone().into(),
+                (*signed_read_data.read_data().read_address()).into(),
                 handler.get_declare_acl_address(),
                 HAS_READ_ACCESS_FUNCTION_NAME.to_string(),
                 vec![params.class_hash],

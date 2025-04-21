@@ -1,9 +1,6 @@
 use std::sync::Arc;
 
-use units_primitives::{
-    context::GlobalContext,
-    rpc::{GetChainIdResult, HexBytes32},
-};
+use units_primitives::{context::GlobalContext, rpc::GetChainIdResult};
 
 #[derive(Debug, thiserror::Error)]
 pub enum ChainIdError {
@@ -17,5 +14,5 @@ pub async fn chain_id(global_ctx: Arc<GlobalContext>) -> Result<GetChainIdResult
         .get_chain_id()
         .await
         .map_err(|e| ChainIdError::FailedToGetChainId(e.to_string()))?;
-    Ok(GetChainIdResult { chain_id: chain_id })
+    Ok(GetChainIdResult { chain_id })
 }

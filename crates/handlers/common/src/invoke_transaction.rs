@@ -1,9 +1,5 @@
 use std::sync::Arc;
 
-use starknet::core::types::{
-    BroadcastedInvokeTransaction, BroadcastedInvokeTransactionV3, InvokeTransactionResult,
-};
-use starknet::providers::{Provider, ProviderError};
 use units_primitives::context::{ChainHandlerError, GlobalContext};
 use units_primitives::rpc::{SendTransactionParams, SendTransactionResult};
 

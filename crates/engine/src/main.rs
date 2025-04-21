@@ -4,15 +4,8 @@ mod service;
 use std::sync::Arc;
 
 use crate::cli::CliArgs;
-use anyhow::Context;
 use clap::Parser;
 use service::rpc::RpcService;
-use starknet::{
-    accounts::{ExecutionEncoding, SingleOwnerAccount},
-    core::types::Felt,
-    providers::{jsonrpc::HttpTransport, JsonRpcClient, Provider},
-    signers::{LocalWallet, SigningKey},
-};
 use tracing::info;
 use units_handlers_starknet::StarknetContext;
 use units_primitives::context::GlobalContext;

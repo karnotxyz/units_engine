@@ -1,44 +1,24 @@
 use assert_matches::assert_matches;
 use rstest::*;
-use starknet::{
-    accounts::{Account, ExecutionEncoding},
-    core::types::{BlockId, BlockTag, InvokeTransactionResult},
-};
+use starknet::accounts::Account;
 
-use crate::utils::WaitForReceipt;
-use crate::{
-    tests::utils::{
-        madara::{
-            madara_node, madara_node_with_accounts, MadaraRunner, StarknetWalletWithPrivateKey,
-        },
-        scarb::{scarb_build, ArtifactsMap},
-    },
-    utils::encode_calls,
+use crate::tests::utils::{
+    madara::{madara_node_with_accounts, MadaraRunner, StarknetWalletWithPrivateKey},
+    scarb::{scarb_build, ArtifactsMap},
 };
-use crate::{StarknetProvider, StarknetWallet};
-use starknet::core::types::ExecutionResult;
+use crate::utils::WaitForReceipt;
+use crate::StarknetProvider;
 use starknet::macros::selector;
 use std::sync::Arc;
 #[cfg(feature = "testing")]
 use units_primitives::read_data::{
     sign_read_data, ReadData, ReadDataVersion, ReadType, ReadValidity,
 };
-use units_primitives::{
-    read_data::{ReadVerifier, VerifierAccount},
-    rpc::SendTransactionParams,
-};
+use units_primitives::read_data::{ReadVerifier, VerifierAccount};
 
 use starknet::core::types::Call;
 use starknet::core::types::Felt;
 use starknet::providers::Provider;
-use units_handlers_common::{
-    invoke_transaction::send_transaction, transaction_receipt::get_transaction_receipt,
-};
-use units_primitives::rpc::GetTransactionReceiptParams;
-
-use crate::tests::utils::starknet::ProviderToDummyGlobalContext;
-use units_handlers_common::transaction_receipt::TransactionReceiptError;
-use units_primitives::rpc::ExecutionStatus;
 
 #[rstest]
 #[tokio::test]
@@ -81,7 +61,7 @@ async fn test_get_class(
     let starknet_ctx = StarknetContext::new_with_provider(
         provider.clone(),
         declare_acl_address.into(),
-        owner_account_with_private_key.private_key.clone().into(),
+        owner_account_with_private_key.private_key.into(),
         owner_account_with_private_key.account.address().into(),
     )
     .await
@@ -173,7 +153,7 @@ async fn test_get_class(
             singer_address: accounts_with_private_key[1].account.address(),
         }),
         vec![ReadType::Class {
-            class_hash: dummy_contract_class_hash.into(),
+            class_hash: dummy_contract_class_hash,
         }],
         ReadValidity::Block { block: 100 },
         chain_id,
@@ -238,7 +218,7 @@ async fn test_get_class(
             singer_address: accounts_with_private_key[1].account.address(),
         }),
         vec![ReadType::Class {
-            class_hash: different_class_hash.into(),
+            class_hash: different_class_hash,
         }],
         ReadValidity::Block { block: 100 },
         chain_id,

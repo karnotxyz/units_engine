@@ -7,8 +7,7 @@ use crate::tests::utils::{
     scarb::{scarb_build, ArtifactsMap},
 };
 use crate::utils::WaitForReceipt;
-use crate::{StarknetProvider, StarknetWallet};
-use starknet::core::types::ExecutionResult;
+use crate::StarknetProvider;
 use starknet::macros::selector;
 use std::sync::Arc;
 #[cfg(feature = "testing")]
@@ -77,7 +76,7 @@ async fn test_get_receipt_fails_with_different_sender(
             singer_address: account2_with_private_key.account.address(),
         }),
         vec![ReadType::TransactionReceipt {
-            transaction_hash: result.transaction_hash.into(),
+            transaction_hash: result.transaction_hash,
         }],
         ReadValidity::Block { block: 1000000 },
         provider.chain_id().await.unwrap(),
@@ -148,7 +147,7 @@ async fn test_get_receipt_fails_with_invalid_read_signature(
             singer_address: account1.address(),
         }),
         vec![ReadType::TransactionReceipt {
-            transaction_hash: result.transaction_hash.into(),
+            transaction_hash: result.transaction_hash,
         }],
         ReadValidity::Block { block: 1000000 },
         provider.chain_id().await.unwrap(),
@@ -192,7 +191,6 @@ async fn test_get_receipt_without_can_read_event(
         Vec<StarknetWalletWithPrivateKey>,
     ),
 ) {
-    use starknet::core::types::ExecutionResult;
     use units_primitives::rpc::ExecutionStatus;
 
     let (_runner, provider, accounts_with_private_key) = madara_node_with_accounts.await;
@@ -235,7 +233,7 @@ async fn test_get_receipt_without_can_read_event(
             singer_address: account_with_private_key.account.address(),
         }),
         vec![ReadType::TransactionReceipt {
-            transaction_hash: result.transaction_hash.into(),
+            transaction_hash: result.transaction_hash,
         }],
         ReadValidity::Block { block: 1000000 },
         provider.chain_id().await.unwrap(),
@@ -316,7 +314,7 @@ async fn test_get_receipt_with_can_read_event(
             singer_address: account_with_private_key.account.address(),
         }),
         vec![ReadType::TransactionReceipt {
-            transaction_hash: emit_one_result.transaction_hash.into(),
+            transaction_hash: emit_one_result.transaction_hash,
         }],
         ReadValidity::Block { block: 1000000 },
         provider.chain_id().await.unwrap(),
@@ -400,7 +398,7 @@ async fn test_get_receipt_with_can_read_event(
             singer_address: account_with_private_key.account.address(),
         }),
         vec![ReadType::TransactionReceipt {
-            transaction_hash: emit_one_and_two_result.transaction_hash.into(),
+            transaction_hash: emit_one_and_two_result.transaction_hash,
         }],
         ReadValidity::Block { block: 1000000 },
         provider.chain_id().await.unwrap(),
@@ -478,7 +476,6 @@ async fn test_get_receipt_reverted_transaction(
         Vec<StarknetWalletWithPrivateKey>,
     ),
 ) {
-    use starknet::core::types::ExecutionResult;
     use units_primitives::rpc::ExecutionStatus;
 
     let (_runner, provider, accounts_with_private_key) = madara_node_with_accounts.await;
@@ -521,7 +518,7 @@ async fn test_get_receipt_reverted_transaction(
             singer_address: account_with_private_key.account.address(),
         }),
         vec![ReadType::TransactionReceipt {
-            transaction_hash: result.transaction_hash.into(),
+            transaction_hash: result.transaction_hash,
         }],
         ReadValidity::Block { block: 1000000 },
         provider.chain_id().await.unwrap(),
@@ -580,7 +577,7 @@ async fn test_get_receipt_declare_transaction(
             singer_address: account_with_private_key.account.address(),
         }),
         vec![ReadType::TransactionReceipt {
-            transaction_hash: declare_result.transaction_hash.into(),
+            transaction_hash: declare_result.transaction_hash,
         }],
         ReadValidity::Block { block: 1000000 },
         provider.chain_id().await.unwrap(),
@@ -640,7 +637,7 @@ async fn test_get_receipt_deploy_account_transaction(
             singer_address: deploy_account_result.contract_address,
         }),
         vec![ReadType::TransactionReceipt {
-            transaction_hash: deploy_account_result.transaction_hash.into(),
+            transaction_hash: deploy_account_result.transaction_hash,
         }],
         ReadValidity::Block { block: 1000000 },
         provider.chain_id().await.unwrap(),
@@ -719,9 +716,7 @@ async fn test_get_receipt_missing_required_read_type(
         ReadVerifier::Account(VerifierAccount {
             singer_address: account_with_private_key.account.address(),
         }),
-        vec![ReadType::Nonce {
-            nonce: Felt::ZERO.into(),
-        }], // Wrong read type
+        vec![ReadType::Nonce { nonce: Felt::ZERO }], // Wrong read type
         ReadValidity::Block { block: 1000000 },
         provider.chain_id().await.unwrap(),
         ReadDataVersion::One,

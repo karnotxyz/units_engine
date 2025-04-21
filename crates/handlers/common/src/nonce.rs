@@ -1,13 +1,9 @@
 use std::sync::Arc;
 
-use starknet::{
-    core::types::{BlockId, Call, Felt, StarknetError},
-    providers::{Provider, ProviderError},
-};
 use units_primitives::{
     context::{ChainHandlerError, GlobalContext},
-    read_data::{ReadDataError, ReadType, SignedReadData},
-    rpc::{GetNonceParams, GetNonceResult, HexBytes32, HexBytes32Error},
+    read_data::{ReadDataError, ReadType},
+    rpc::{GetNonceParams, GetNonceResult, HexBytes32Error},
 };
 
 const CAN_READ_NONCE_FUNCTION_NAME: &str = "can_read_nonce";
@@ -72,7 +68,7 @@ pub async fn get_nonce(
         // If the account has access, the simulation will succeed and the result will be 0x1 (true)
         let can_read_nonce = handler
             .simulate_read_access_check(
-                signed_read_data.read_data().read_address().clone().into(),
+                (*signed_read_data.read_data().read_address()).into(),
                 params.account_address,
                 CAN_READ_NONCE_FUNCTION_NAME.to_string(),
                 vec![],
