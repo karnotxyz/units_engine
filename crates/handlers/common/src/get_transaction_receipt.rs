@@ -8,7 +8,7 @@ use units_primitives::{
 };
 
 #[derive(Debug, thiserror::Error, Serialize, PartialEq, Eq)]
-pub enum TransactionReceiptError {
+pub enum GetTransactionReceiptError {
     #[error("More events than expected")]
     MoreEventsThanExpected,
     #[error("Invalid read signature")]
@@ -30,7 +30,7 @@ const CAN_READ_EVENT_FUNCTION_NAME: &str = "can_read_event";
 pub async fn get_transaction_receipt(
     global_ctx: Arc<GlobalContext>,
     params: GetTransactionReceiptParams,
-) -> Result<GetTransactionReceiptResult, TransactionReceiptError> {
+) -> Result<GetTransactionReceiptResult, GetTransactionReceiptError> {
     let handler = global_ctx.handler();
 
     // Verify signature and ensure it has the required read type
@@ -44,7 +44,7 @@ pub async fn get_transaction_receipt(
         )
         .await?
     {
-        return Err(TransactionReceiptError::InvalidReadSignature);
+        return Err(GetTransactionReceiptError::InvalidReadSignature);
     }
 
     // Check if reader is the transaction originator
@@ -53,7 +53,7 @@ pub async fn get_transaction_receipt(
         .await?;
     let sender_address = raw_txn.sender_address;
     if sender_address != (*params.signed_read_data.read_data().read_address()).into() {
-        return Err(TransactionReceiptError::InvalidSenderAddress);
+        return Err(GetTransactionReceiptError::InvalidSenderAddress);
     }
 
     // Get the receipt
@@ -86,7 +86,7 @@ pub async fn get_transaction_receipt(
                     vec![event.keys[0]],
                 )
                 .await
-                .map_err(TransactionReceiptError::ChainHandlerError)?
+                .map_err(GetTransactionReceiptError::ChainHandlerError)?
         } else {
             true
         };

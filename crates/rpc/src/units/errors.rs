@@ -1,15 +1,15 @@
 use serde_json::json;
 use units_handlers_common::{
-    chain_id::ChainIdError, declare_program::DeclareProgramError,
-    deploy_account::DeployAccountError, get_program::GetProgramError, nonce::NonceError,
-    send_transaction::SendTransactionError, transaction_receipt::TransactionReceiptError,
+    declare_program::DeclareProgramError, deploy_account::DeployAccountError,
+    get_chain_id::GetChainIdError, get_nonce::GetNonceError, get_program::GetProgramError,
+    get_transaction_receipt::GetTransactionReceiptError, send_transaction::SendTransactionError,
 };
 
 #[cfg_attr(test, derive(PartialEq, Eq))]
 #[derive(thiserror::Error, Debug)]
 pub enum UnitsRpcApiError {
     #[error("Failed to get chain id")]
-    GetChainId(#[from] ChainIdError),
+    GetChainId(#[from] GetChainIdError),
     #[error("Failed to declare program")]
     DeclareProgram(#[from] DeclareProgramError),
     #[error("Failed to send transaction")]
@@ -19,9 +19,9 @@ pub enum UnitsRpcApiError {
     #[error("Failed to get program")]
     GetProgram(#[from] GetProgramError),
     #[error("Failed to get nonce")]
-    GetNonce(#[from] NonceError),
+    GetNonce(#[from] GetNonceError),
     #[error("Failed to get transaction receipt")]
-    GetTransactionReceipt(#[from] TransactionReceiptError),
+    GetTransactionReceipt(#[from] GetTransactionReceiptError),
 }
 
 // TODO: How should we decide the error codes?

@@ -19,7 +19,7 @@ impl UnitsReadRpcApiV0_1_0Server for RpcContext {
     }
 
     async fn get_nonce(&self, get_nonce: GetNonceParams) -> RpcResult<GetNonceResult> {
-        let result = units_handlers_common::nonce::get_nonce(self.global_ctx.clone(), get_nonce)
+        let result = units_handlers_common::get_nonce::get_nonce(self.global_ctx.clone(), get_nonce)
             .await
             .map_err(UnitsRpcApiError::from)?;
         Ok(result)
@@ -29,7 +29,7 @@ impl UnitsReadRpcApiV0_1_0Server for RpcContext {
         &self,
         get_transaction_receipt: GetTransactionReceiptParams,
     ) -> RpcResult<GetTransactionReceiptResult> {
-        let result = units_handlers_common::transaction_receipt::get_transaction_receipt(
+        let result = units_handlers_common::get_transaction_receipt::get_transaction_receipt(
             self.global_ctx.clone(),
             get_transaction_receipt,
         )
@@ -39,7 +39,7 @@ impl UnitsReadRpcApiV0_1_0Server for RpcContext {
     }
 
     async fn get_chain_id(&self) -> RpcResult<GetChainIdResult> {
-        let chain_id = units_handlers_common::chain_id::chain_id(self.global_ctx.clone())
+        let chain_id = units_handlers_common::get_chain_id::get_chain_id(self.global_ctx.clone())
             .await
             .map_err(UnitsRpcApiError::from)?;
         Ok(chain_id)

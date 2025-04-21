@@ -19,7 +19,7 @@ use units_primitives::{
 
 use starknet::core::types::Felt;
 use starknet::providers::Provider;
-use units_handlers_common::nonce::{get_nonce, NonceError};
+use units_handlers_common::get_nonce::{get_nonce, GetNonceError};
 
 use crate::tests::utils::starknet::ProviderToDummyGlobalContext;
 
@@ -27,7 +27,7 @@ use crate::tests::utils::starknet::ProviderToDummyGlobalContext;
 #[tokio::test]
 async fn test_can_read_nonce_does_not_exist(
     #[future]
-    #[with("src/tests/nonce/test_contracts")]
+    #[with("src/tests/get_nonce/test_contracts")]
     scarb_build: ArtifactsMap,
     #[future] madara_node_with_accounts: (
         MadaraRunner,
@@ -61,7 +61,7 @@ async fn test_can_read_nonce_does_not_exist(
 #[tokio::test]
 async fn test_can_read_nonce_returns_without_read_data(
     #[future]
-    #[with("src/tests/nonce/test_contracts")]
+    #[with("src/tests/get_nonce/test_contracts")]
     scarb_build: ArtifactsMap,
     #[future] madara_node_with_accounts: (
         MadaraRunner,
@@ -88,7 +88,7 @@ async fn test_can_read_nonce_returns_without_read_data(
         },
     )
     .await;
-    assert_matches!(nonce, Err(NonceError::ReadSignatureNotProvided));
+    assert_matches!(nonce, Err(GetNonceError::ReadSignatureNotProvided));
 }
 
 #[rstest]
@@ -96,7 +96,7 @@ async fn test_can_read_nonce_returns_without_read_data(
 #[cfg(feature = "testing")]
 async fn test_can_read_nonce_returns_invalid_read_signature(
     #[future]
-    #[with("src/tests/nonce/test_contracts")]
+    #[with("src/tests/get_nonce/test_contracts")]
     scarb_build: ArtifactsMap,
     #[future] madara_node_with_accounts: (
         MadaraRunner,
@@ -137,7 +137,7 @@ async fn test_can_read_nonce_returns_invalid_read_signature(
         },
     )
     .await;
-    assert_matches!(nonce, Err(NonceError::InvalidReadSignature));
+    assert_matches!(nonce, Err(GetNonceError::InvalidReadSignature));
 }
 
 #[rstest]
@@ -145,7 +145,7 @@ async fn test_can_read_nonce_returns_invalid_read_signature(
 #[cfg(feature = "testing")]
 async fn test_can_read_nonce_returns_false(
     #[future]
-    #[with("src/tests/nonce/test_contracts")]
+    #[with("src/tests/get_nonce/test_contracts")]
     scarb_build: ArtifactsMap,
     #[future] madara_node_with_accounts: (
         MadaraRunner,
@@ -190,7 +190,7 @@ async fn test_can_read_nonce_returns_false(
         },
     )
     .await;
-    assert_matches!(nonce, Err(NonceError::NonceReadNotAllowed));
+    assert_matches!(nonce, Err(GetNonceError::NonceReadNotAllowed));
 }
 
 #[rstest]
@@ -198,7 +198,7 @@ async fn test_can_read_nonce_returns_false(
 #[cfg(feature = "testing")]
 async fn test_can_read_nonce_only_owner(
     #[future]
-    #[with("src/tests/nonce/test_contracts")]
+    #[with("src/tests/get_nonce/test_contracts")]
     scarb_build: ArtifactsMap,
     #[future]
     #[with(2)]
@@ -279,7 +279,7 @@ async fn test_can_read_nonce_only_owner(
         },
     )
     .await;
-    assert_matches!(nonce, Err(NonceError::NonceReadNotAllowed));
+    assert_matches!(nonce, Err(GetNonceError::NonceReadNotAllowed));
 }
 
 #[rstest]
@@ -287,7 +287,7 @@ async fn test_can_read_nonce_only_owner(
 #[cfg(feature = "testing")]
 async fn test_get_nonce_missing_required_read_type(
     #[future]
-    #[with("src/tests/nonce/test_contracts")]
+    #[with("src/tests/get_nonce/test_contracts")]
     scarb_build: ArtifactsMap,
     #[future] madara_node_with_accounts: (
         MadaraRunner,
@@ -343,7 +343,7 @@ async fn test_get_nonce_missing_required_read_type(
 
     assert_matches!(
         nonce,
-        Err(NonceError::ReadSignatureError(
+        Err(GetNonceError::ReadSignatureError(
             ReadDataError::MissingRequiredReadTypes
         ))
     );

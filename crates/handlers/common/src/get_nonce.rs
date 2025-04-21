@@ -10,7 +10,7 @@ use units_primitives::{
 const CAN_READ_NONCE_FUNCTION_NAME: &str = "can_read_nonce";
 
 #[derive(Debug, thiserror::Error, Serialize, PartialEq, Eq)]
-pub enum NonceError {
+pub enum GetNonceError {
     #[error("Read signature not provided")]
     ReadSignatureNotProvided,
     #[error("Empty can get nonce read result")]
@@ -30,7 +30,7 @@ pub enum NonceError {
 pub async fn get_nonce(
     global_ctx: Arc<GlobalContext>,
     params: GetNonceParams,
-) -> Result<GetNonceResult, NonceError> {
+) -> Result<GetNonceResult, GetNonceError> {
     let handler = global_ctx.handler();
 
     // Get contract ABI to check for `can_read_nonce` method
@@ -40,13 +40,13 @@ pub async fn get_nonce(
             CAN_READ_NONCE_FUNCTION_NAME.to_string(),
         )
         .await
-        .map_err(NonceError::ChainHandlerError)?;
+        .map_err(GetNonceError::ChainHandlerError)?;
 
     if has_selector {
         // Check if the read signature is valid by calling `is_valid_signature`
         let signed_read_data = params
             .signed_read_data
-            .ok_or(NonceError::ReadSignatureNotProvided)?;
+            .ok_or(GetNonceError::ReadSignatureNotProvided)?;
 
         // Verify the signature and check that it has the required read type
         if !signed_read_data
@@ -58,7 +58,7 @@ pub async fn get_nonce(
             )
             .await?
         {
-            return Err(NonceError::InvalidReadSignature);
+            return Err(GetNonceError::InvalidReadSignature);
         }
 
         // If the signature is valid, we can now check if the account has access to read the nonce
@@ -75,7 +75,7 @@ pub async fn get_nonce(
             .await?;
 
         if !can_read_nonce {
-            return Err(NonceError::NonceReadNotAllowed);
+            return Err(GetNonceError::NonceReadNotAllowed);
         }
     }
 

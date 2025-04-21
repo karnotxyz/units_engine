@@ -19,11 +19,11 @@ use units_primitives::read_data::{ReadVerifier, VerifierAccount};
 use starknet::core::types::Call;
 use starknet::core::types::Felt;
 use starknet::providers::Provider;
-use units_handlers_common::transaction_receipt::get_transaction_receipt;
+use units_handlers_common::get_transaction_receipt::get_transaction_receipt;
 use units_primitives::rpc::GetTransactionReceiptParams;
 
 use crate::tests::utils::starknet::ProviderToDummyGlobalContext;
-use units_handlers_common::transaction_receipt::TransactionReceiptError;
+use units_handlers_common::get_transaction_receipt::GetTransactionReceiptError;
 use units_primitives::rpc::ExecutionStatus;
 
 #[rstest]
@@ -31,7 +31,7 @@ use units_primitives::rpc::ExecutionStatus;
 #[cfg(feature = "testing")]
 async fn test_get_receipt_fails_with_different_sender(
     #[future]
-    #[with("src/tests/transaction_receipt/test_contracts")]
+    #[with("src/tests/get_transaction_receipt/test_contracts")]
     scarb_build: ArtifactsMap,
     #[future]
     #[with(2)]
@@ -94,7 +94,10 @@ async fn test_get_receipt_fails_with_different_sender(
         },
     )
     .await;
-    assert_matches!(receipt, Err(TransactionReceiptError::InvalidSenderAddress));
+    assert_matches!(
+        receipt,
+        Err(GetTransactionReceiptError::InvalidSenderAddress)
+    );
 }
 
 #[rstest]
@@ -102,7 +105,7 @@ async fn test_get_receipt_fails_with_different_sender(
 #[cfg(feature = "testing")]
 async fn test_get_receipt_fails_with_invalid_read_signature(
     #[future]
-    #[with("src/tests/transaction_receipt/test_contracts")]
+    #[with("src/tests/get_transaction_receipt/test_contracts")]
     scarb_build: ArtifactsMap,
     #[future]
     #[with(2)]
@@ -165,7 +168,10 @@ async fn test_get_receipt_fails_with_invalid_read_signature(
         },
     )
     .await;
-    assert_matches!(receipt, Err(TransactionReceiptError::InvalidReadSignature));
+    assert_matches!(
+        receipt,
+        Err(GetTransactionReceiptError::InvalidReadSignature)
+    );
 }
 
 #[rstest]
@@ -183,7 +189,7 @@ async fn test_get_receipt_l1_handler_todo() {
 #[cfg(feature = "testing")]
 async fn test_get_receipt_without_can_read_event(
     #[future]
-    #[with("src/tests/transaction_receipt/test_contracts")]
+    #[with("src/tests/get_transaction_receipt/test_contracts")]
     scarb_build: ArtifactsMap,
     #[future] madara_node_with_accounts: (
         MadaraRunner,
@@ -266,7 +272,7 @@ async fn test_get_receipt_without_can_read_event(
 #[cfg(feature = "testing")]
 async fn test_get_receipt_with_can_read_event(
     #[future]
-    #[with("src/tests/transaction_receipt/test_contracts")]
+    #[with("src/tests/get_transaction_receipt/test_contracts")]
     scarb_build: ArtifactsMap,
     #[future] madara_node_with_accounts: (
         MadaraRunner,
@@ -468,7 +474,7 @@ async fn test_get_receipt_with_can_read_event(
 #[cfg(feature = "testing")]
 async fn test_get_receipt_reverted_transaction(
     #[future]
-    #[with("src/tests/transaction_receipt/test_contracts")]
+    #[with("src/tests/get_transaction_receipt/test_contracts")]
     scarb_build: ArtifactsMap,
     #[future] madara_node_with_accounts: (
         MadaraRunner,
@@ -548,7 +554,7 @@ async fn test_get_receipt_reverted_transaction(
 #[cfg(feature = "testing")]
 async fn test_get_receipt_declare_transaction(
     #[future]
-    #[with("src/tests/transaction_receipt/test_contracts")]
+    #[with("src/tests/get_transaction_receipt/test_contracts")]
     scarb_build: ArtifactsMap,
     #[future] madara_node_with_accounts: (
         MadaraRunner,
@@ -667,7 +673,7 @@ async fn test_get_receipt_deploy_account_transaction(
 #[cfg(feature = "testing")]
 async fn test_get_receipt_missing_required_read_type(
     #[future]
-    #[with("src/tests/transaction_receipt/test_contracts")]
+    #[with("src/tests/get_transaction_receipt/test_contracts")]
     scarb_build: ArtifactsMap,
     #[future] madara_node_with_accounts: (
         MadaraRunner,
@@ -739,7 +745,7 @@ async fn test_get_receipt_missing_required_read_type(
     .await;
     assert_matches!(
         receipt,
-        Err(TransactionReceiptError::ReadSignatureError(
+        Err(GetTransactionReceiptError::ReadSignatureError(
             ReadDataError::MissingRequiredReadTypes
         ))
     );
