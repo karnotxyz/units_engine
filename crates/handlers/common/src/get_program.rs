@@ -3,7 +3,7 @@ use std::sync::Arc;
 use serde::Serialize;
 use units_primitives::context::{ChainHandlerError, GlobalContext};
 use units_primitives::read_data::{ReadDataError, ReadType};
-use units_primitives::rpc::{GetProgramParams, GetProgramResult, HexBytes32Error};
+use units_primitives::rpc::{Bytes32Error, GetProgramParams, GetProgramResult};
 use units_primitives::types::{ClassVisibility, ClassVisibilityError};
 
 pub const HAS_READ_ACCESS_FUNCTION_NAME: &str = "has_read_access";
@@ -20,8 +20,8 @@ pub enum GetProgramError {
     ReadDataError(#[from] ReadDataError),
     #[error("Chain handler error: {0}")]
     ChainHandlerError(#[from] ChainHandlerError),
-    #[error("HexBytes32 error: {0}")]
-    HexBytes32Error(#[from] HexBytes32Error),
+    #[error("Bytes32 error: {0}")]
+    Bytes32Error(#[from] Bytes32Error),
 }
 
 pub async fn get_program(

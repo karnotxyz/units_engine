@@ -8,9 +8,9 @@ use starknet_crypto::Felt;
 
 /// A 32-byte value encoded as a hex string with 0x prefix
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub struct HexBytes32([u8; 32]);
+pub struct Bytes32([u8; 32]);
 #[derive(Debug, thiserror::Error, Serialize, PartialEq, Eq)]
-pub enum HexBytes32Error {
+pub enum Bytes32Error {
     #[error("hex string exceeds 32 bytes")]
     TooLong,
     #[error("invalid hex string: {0}")]
@@ -19,8 +19,8 @@ pub enum HexBytes32Error {
     ConversionError(String),
 }
 
-impl HexBytes32 {
-    pub fn from_hex(hex_str: &str) -> Result<Self, HexBytes32Error> {
+impl Bytes32 {
+    pub fn from_hex(hex_str: &str) -> Result<Self, Bytes32Error> {
         let hex_str = hex_str.strip_prefix("0x").unwrap_or(hex_str);
         // If hex string has odd length, prefix with '0' to make it even
         let hex_str = if hex_str.len() % 2 != 0 {
@@ -28,10 +28,10 @@ impl HexBytes32 {
         } else {
             hex_str.to_string()
         };
-        let bytes = hex::decode(hex_str).map_err(|e| HexBytes32Error::InvalidHex(e.to_string()))?;
+        let bytes = hex::decode(hex_str).map_err(|e| Bytes32Error::InvalidHex(e.to_string()))?;
 
         if bytes.len() > 32 {
-            return Err(HexBytes32Error::TooLong);
+            return Err(Bytes32Error::TooLong);
         }
 
         let mut array = [0u8; 32];
@@ -49,13 +49,13 @@ impl HexBytes32 {
 }
 
 // TODO: move this to Starknet utils or behind a feature flag
-impl TryFrom<HexBytes32> for Felt {
-    type Error = HexBytes32Error;
+impl TryFrom<Bytes32> for Felt {
+    type Error = Bytes32Error;
 
-    fn try_from(value: HexBytes32) -> Result<Self, Self::Error> {
+    fn try_from(value: Bytes32) -> Result<Self, Self::Error> {
         // Check if first byte is greater than 0x08 (meaning > 252 bits)
         if value.0[0] > 0x08 {
-            return Err(HexBytes32Error::ConversionError(
+            return Err(Bytes32Error::ConversionError(
                 "value exceeds 2^251 and cannot be converted to Felt".to_string(),
             ));
         }
@@ -63,14 +63,14 @@ impl TryFrom<HexBytes32> for Felt {
     }
 }
 
-impl From<Felt> for HexBytes32 {
+impl From<Felt> for Bytes32 {
     fn from(value: Felt) -> Self {
-        HexBytes32(value.to_bytes_be())
+        Bytes32(value.to_bytes_be())
     }
 }
 
 /// A 32-byte account address
-pub type AccountAddress = HexBytes32;
+pub type AccountAddress = Bytes32;
 
 /// A 32-bit unsigned integer used as nonce
 pub type Nonce = u32;
@@ -78,9 +78,9 @@ pub type Nonce = u32;
 /// Event emitted by a contract
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Event {
-    pub from_address: HexBytes32,
-    pub keys: Vec<HexBytes32>,
-    pub data: Vec<HexBytes32>,
+    pub from_address: Bytes32,
+    pub keys: Vec<Bytes32>,
+    pub data: Vec<Bytes32>,
 }
 
 /// Status of transaction finality
@@ -107,48 +107,48 @@ pub enum ExecutionStatus {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DeclareProgramParams {
     pub account_address: AccountAddress,
-    pub signature: Vec<HexBytes32>,
+    pub signature: Vec<Bytes32>,
     pub nonce: Nonce,
     pub program: serde_json::Value,
-    pub compiled_program_hash: Option<HexBytes32>,
+    pub compiled_program_hash: Option<Bytes32>,
     pub class_visibility: ClassVisibility,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DeclareTransactionResult {
-    pub transaction_hash: Option<HexBytes32>,
-    pub class_hash: HexBytes32,
+    pub transaction_hash: Option<Bytes32>,
+    pub class_hash: Bytes32,
     pub acl_updated: bool,
 }
 
 /// Parameters and result for deploying an account
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DeployAccountParams {
-    pub signature: Vec<HexBytes32>,
+    pub signature: Vec<Bytes32>,
     pub nonce: Nonce,
-    pub constructor_calldata: Vec<HexBytes32>,
-    pub program_hash: HexBytes32,
-    pub account_address_salt: HexBytes32,
+    pub constructor_calldata: Vec<Bytes32>,
+    pub program_hash: Bytes32,
+    pub account_address_salt: Bytes32,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DeployAccountResult {
-    pub transaction_hash: HexBytes32,
-    pub account_address: HexBytes32,
+    pub transaction_hash: Bytes32,
+    pub account_address: Bytes32,
 }
 
 /// Parameters and result for sending a transaction
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SendTransactionParams {
     pub account_address: AccountAddress,
-    pub signature: Vec<HexBytes32>,
+    pub signature: Vec<Bytes32>,
     pub nonce: Nonce,
-    pub calldata: Vec<HexBytes32>,
+    pub calldata: Vec<Bytes32>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SendTransactionResult {
-    pub transaction_hash: HexBytes32,
+    pub transaction_hash: Bytes32,
 }
 
 /// Parameters and result for getting a nonce
@@ -166,13 +166,13 @@ pub struct GetNonceResult {
 /// Parameters and result for getting a transaction receipt
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct GetTransactionReceiptParams {
-    pub transaction_hash: HexBytes32,
+    pub transaction_hash: Bytes32,
     pub signed_read_data: SignedReadData,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct GetTransactionReceiptResult {
-    pub transaction_hash: HexBytes32,
+    pub transaction_hash: Bytes32,
     pub events: Vec<Event>,
     pub finality_status: FinalityStatus,
     pub execution_status: ExecutionStatus,
@@ -181,7 +181,7 @@ pub struct GetTransactionReceiptResult {
 /// Parameters and result for getting a class
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct GetProgramParams {
-    pub class_hash: HexBytes32,
+    pub class_hash: Bytes32,
     pub signed_read_data: Option<SignedReadData>,
 }
 
@@ -193,13 +193,13 @@ pub struct GetProgramResult {
 /// Result for getting chain ID (no parameters required)
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct GetChainIdResult {
-    pub chain_id: HexBytes32,
+    pub chain_id: Bytes32,
 }
 
 /// Result for getting a transaction by hash
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct GetTransactionByHashResult {
-    pub sender_address: HexBytes32,
+    pub sender_address: Bytes32,
 }
 
 #[cfg(test)]
@@ -225,26 +225,23 @@ mod tests {
         bytes.extend_from_slice(&[0xde, 0xad, 0xbe, 0xef]);
         bytes
     })]
-    fn test_hexbytes32_from_hex_valid(#[case] input: &str, #[case] expected: Vec<u8>) {
-        let result = HexBytes32::from_hex(input).unwrap();
+    fn test_bytes32_from_hex_valid(#[case] input: &str, #[case] expected: Vec<u8>) {
+        let result = Bytes32::from_hex(input).unwrap();
         assert_eq!(result.0.to_vec(), expected);
     }
 
     #[rstest]
-    #[case("0xzz", HexBytes32Error::InvalidHex("invalid character 'z' at position 2".to_string()))]
+    #[case("0xzz", Bytes32Error::InvalidHex("invalid character 'z' at position 2".to_string()))]
     #[case(
         "0x000000000000000000000000000000000000000000000000000000000000000001",
-        HexBytes32Error::TooLong
+        Bytes32Error::TooLong
     )]
-    #[case("0xgh", HexBytes32Error::InvalidHex("invalid character 'g' at position 2".to_string()))]
-    fn test_hexbytes32_from_hex_invalid(
-        #[case] input: &str,
-        #[case] expected_error: HexBytes32Error,
-    ) {
-        match HexBytes32::from_hex(input) {
+    #[case("0xgh", Bytes32Error::InvalidHex("invalid character 'g' at position 2".to_string()))]
+    fn test_bytes32_from_hex_invalid(#[case] input: &str, #[case] expected_error: Bytes32Error) {
+        match Bytes32::from_hex(input) {
             Err(error) => match (error, expected_error) {
-                (HexBytes32Error::TooLong, HexBytes32Error::TooLong) => (),
-                (HexBytes32Error::InvalidHex(e1), HexBytes32Error::InvalidHex(e2)) => {
+                (Bytes32Error::TooLong, Bytes32Error::TooLong) => (),
+                (Bytes32Error::InvalidHex(e1), Bytes32Error::InvalidHex(e2)) => {
                     assert_eq!(format!("{:?}", e1), format!("{:?}", e2))
                 }
                 _ => panic!("Unexpected error"),
@@ -265,25 +262,25 @@ mod tests {
         bytes[28..].copy_from_slice(&[0xde, 0xad, 0xbe, 0xef]);
         bytes
     }, "00000000000000000000000000000000000000000000000000000000deadbeef")]
-    fn test_hexbytes32_to_hex(#[case] input: [u8; 32], #[case] expected: &str) {
-        let hex_bytes = HexBytes32(input);
-        assert_eq!(hex_bytes.to_hex(), expected);
+    fn test_bytes32_to_hex(#[case] input: [u8; 32], #[case] expected: &str) {
+        let bytes = Bytes32(input);
+        assert_eq!(bytes.to_hex(), expected);
     }
 
     #[test]
-    fn test_hexbytes32_to_bytes_be() {
+    fn test_bytes32_to_bytes_be() {
         let bytes = [42u8; 32];
-        let hex_bytes = HexBytes32(bytes);
-        assert_eq!(hex_bytes.to_bytes_be(), &bytes);
+        let bytes32 = Bytes32(bytes);
+        assert_eq!(bytes32.to_bytes_be(), &bytes);
     }
 
     #[rstest]
     #[case("0x0")]
     #[case("0xdeadbeef")]
     #[case("0x0000000000000000000000000000000000000000000000000000000000000001")]
-    fn test_hexbytes32_roundtrip(#[case] input: &str) {
-        let hex_bytes = HexBytes32::from_hex(input).unwrap();
-        let hex_str = hex_bytes.to_hex();
+    fn test_bytes32_roundtrip(#[case] input: &str) {
+        let bytes = Bytes32::from_hex(input).unwrap();
+        let hex_str = bytes.to_hex();
 
         // Remove leading zeros and compare
         let normalized_input = input.strip_prefix("0x").unwrap_or(input);
@@ -296,9 +293,9 @@ mod tests {
     #[case("0x0")]
     #[case("0x1234567890abcdef")]
     #[case("0x800000000000000000000000000000000000000000000000000000000000000")] // Max valid Felt (252 bits set)
-    fn test_hexbytes32_to_felt_valid(#[case] input: &str) {
-        let hex_bytes = HexBytes32::from_hex(input).unwrap();
-        let result = Felt::try_from(hex_bytes);
+    fn test_bytes32_to_felt_valid(#[case] input: &str) {
+        let bytes = Bytes32::from_hex(input).unwrap();
+        let result = Felt::try_from(bytes);
         assert!(result.is_ok());
     }
 
@@ -306,23 +303,23 @@ mod tests {
     #[case("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")] // All bits set
     #[case("0x8000000000000000000000000000000000000000000000000000000000000000")] // MSB set
     #[case("0xf000000000000000000000000000000000000000000000000000000000000000")] // Top 4 bits set
-    fn test_hexbytes32_to_felt_invalid(#[case] input: &str) {
-        let hex_bytes = HexBytes32::from_hex(input).unwrap();
-        let result = Felt::try_from(hex_bytes);
-        assert_matches::assert_matches!(result, Err(HexBytes32Error::ConversionError(_)));
+    fn test_bytes32_to_felt_invalid(#[case] input: &str) {
+        let bytes = Bytes32::from_hex(input).unwrap();
+        let result = Felt::try_from(bytes);
+        assert_matches::assert_matches!(result, Err(Bytes32Error::ConversionError(_)));
     }
 
     #[rstest]
     #[case("0x0")]
     #[case("0x1234567890abcdef")]
     #[case("0x800000000000000000000000000000000000000000000000000000000000000")]
-    fn test_hexbytes32_to_felt_roundtrip(#[case] input: &str) {
-        let hex_bytes = HexBytes32::from_hex(input).unwrap();
-        let felt = Felt::try_from(hex_bytes).unwrap();
+    fn test_bytes32_to_felt_roundtrip(#[case] input: &str) {
+        let bytes = Bytes32::from_hex(input).unwrap();
+        let felt = Felt::try_from(bytes).unwrap();
         println!("felt: {:?}", felt);
         println!("felt max: {:?}", Felt::ELEMENT_UPPER_BOUND);
-        let hex_bytes_from_felt: HexBytes32 = HexBytes32::from(felt);
+        let bytes_from_felt: Bytes32 = Bytes32::from(felt);
 
-        assert_eq!(hex_bytes_from_felt, hex_bytes);
+        assert_eq!(bytes_from_felt, bytes);
     }
 }

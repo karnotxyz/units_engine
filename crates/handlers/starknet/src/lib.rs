@@ -26,7 +26,7 @@ use units_primitives::{
 use units_primitives::{
     rpc::{
         DeclareProgramParams, DeployAccountParams, DeployAccountResult, GetProgramResult,
-        GetTransactionReceiptResult, HexBytes32, SendTransactionParams, SendTransactionResult,
+        GetTransactionReceiptResult, Bytes32, SendTransactionParams, SendTransactionResult,
     },
     types::ClassVisibility,
 };
@@ -53,9 +53,9 @@ pub struct StarknetContext {
 impl StarknetContext {
     pub async fn new(
         madara_rpc_url: Url,
-        declare_acl_address: HexBytes32,
-        owner_private_key: HexBytes32,
-        account_address: HexBytes32,
+        declare_acl_address: Bytes32,
+        owner_private_key: Bytes32,
+        account_address: Bytes32,
     ) -> anyhow::Result<Self> {
         let starknet_provider = JsonRpcClient::new(HttpTransport::new(madara_rpc_url));
         Self::new_with_provider(
@@ -69,9 +69,9 @@ impl StarknetContext {
 
     pub async fn new_with_provider(
         starknet_provider: Arc<StarknetProvider>,
-        declare_acl_address: HexBytes32,
-        owner_private_key: HexBytes32,
-        account_address: HexBytes32,
+        declare_acl_address: Bytes32,
+        owner_private_key: Bytes32,
+        account_address: Bytes32,
     ) -> anyhow::Result<Self> {
         let signer = SigningKey::from_secret_scalar(
             Felt::from_hex(owner_private_key.to_hex().as_str())
@@ -116,7 +116,7 @@ impl ChainHandler for StarknetContext {
     async fn declare_program(
         &self,
         params: DeclareProgramParams,
-    ) -> Result<HexBytes32, ChainHandlerError> {
+    ) -> Result<Bytes32, ChainHandlerError> {
         let class: FlattenedSierraClass = serde_json::from_value(params.program.clone())
             .map_err(|e| ChainHandlerError::InvalidProgram(e.to_string()))?;
         let declare_class_transaction = BroadcastedDeclareTransactionV3 {
@@ -237,7 +237,7 @@ impl ChainHandler for StarknetContext {
 
     async fn get_program(
         &self,
-        class_hash: HexBytes32,
+        class_hash: Bytes32,
     ) -> Result<GetProgramResult, ChainHandlerError> {
         match self
             .starknet_provider
@@ -253,7 +253,7 @@ impl ChainHandler for StarknetContext {
         }
     }
 
-    async fn get_nonce(&self, address: HexBytes32) -> Result<u32, ChainHandlerError> {
+    async fn get_nonce(&self, address: Bytes32) -> Result<u32, ChainHandlerError> {
         let nonce = self
             .starknet_provider
             .get_nonce(BlockId::Tag(BlockTag::Pending), address.to_felt()?)
@@ -266,7 +266,7 @@ impl ChainHandler for StarknetContext {
 
     async fn get_transaction_receipt(
         &self,
-        transaction_hash: HexBytes32,
+        transaction_hash: Bytes32,
     ) -> Result<GetTransactionReceiptResult, ChainHandlerError> {
         let receipt = self
             .starknet_provider
@@ -305,7 +305,7 @@ impl ChainHandler for StarknetContext {
         })
     }
 
-    async fn get_chain_id(&self) -> Result<HexBytes32, ChainHandlerError> {
+    async fn get_chain_id(&self) -> Result<Bytes32, ChainHandlerError> {
         self.starknet_provider
             .chain_id()
             .await
@@ -322,9 +322,9 @@ impl ChainHandler for StarknetContext {
 
     async fn is_valid_signature(
         &self,
-        account_address: HexBytes32,
-        signature: Vec<HexBytes32>,
-        message_hash: HexBytes32,
+        account_address: Bytes32,
+        signature: Vec<Bytes32>,
+        message_hash: Bytes32,
     ) -> Result<bool, ChainHandlerError> {
         let is_signature_valid = self
             .starknet_provider
@@ -355,8 +355,8 @@ impl ChainHandler for StarknetContext {
 
     async fn identity_contains_signer(
         &self,
-        identity_address: HexBytes32,
-        account_address: HexBytes32,
+        identity_address: Bytes32,
+        account_address: Bytes32,
     ) -> Result<bool, ChainHandlerError> {
         let key_result = self
             .starknet_provider
@@ -389,7 +389,7 @@ impl ChainHandler for StarknetContext {
 
     async fn get_transaction_by_hash(
         &self,
-        transaction_hash: HexBytes32,
+        transaction_hash: Bytes32,
     ) -> Result<GetTransactionByHashResult, ChainHandlerError> {
         let transaction = self
             .starknet_provider
@@ -406,7 +406,7 @@ impl ChainHandler for StarknetContext {
 
     async fn contract_has_function(
         &self,
-        contract_address: HexBytes32,
+        contract_address: Bytes32,
         function_name: String,
     ) -> Result<bool, ChainHandlerError> {
         let has_selector = contract_address_has_selector(
@@ -423,10 +423,10 @@ impl ChainHandler for StarknetContext {
 
     async fn simulate_read_access_check(
         &self,
-        caller_address: HexBytes32,
-        contract_address: HexBytes32,
+        caller_address: Bytes32,
+        contract_address: Bytes32,
         function_name: String,
-        calldata: Vec<HexBytes32>,
+        calldata: Vec<Bytes32>,
     ) -> Result<bool, ChainHandlerError> {
         simulate_boolean_read(
             vec![Call {
@@ -445,7 +445,7 @@ impl ChainHandler for StarknetContext {
     async fn compute_class_hash(
         &self,
         program: &serde_json::Value,
-    ) -> Result<HexBytes32, ChainHandlerError> {
+    ) -> Result<Bytes32, ChainHandlerError> {
         // TODO: Can we avoid cloning the program?
         let class: FlattenedSierraClass = serde_json::from_value(program.clone())
             .map_err(|e| ChainHandlerError::InvalidProgram(e.to_string()))?;
@@ -455,10 +455,10 @@ impl ChainHandler for StarknetContext {
 
     async fn set_class_visibility(
         &self,
-        class_hash: HexBytes32,
+        class_hash: Bytes32,
         visibility: ClassVisibility,
-        sender_address: HexBytes32,
-    ) -> Result<HexBytes32, ChainHandlerError> {
+        sender_address: Bytes32,
+    ) -> Result<Bytes32, ChainHandlerError> {
         self.owner_wallet()
             .execute_v3(vec![Call {
                 to: self.declare_acl_address(),
@@ -482,7 +482,7 @@ impl ChainHandler for StarknetContext {
 
     async fn get_class_visibility(
         &self,
-        class_hash: HexBytes32,
+        class_hash: Bytes32,
     ) -> Result<ClassVisibility, ChainHandlerError> {
         let visibility = self
             .starknet_provider
@@ -504,7 +504,7 @@ impl ChainHandler for StarknetContext {
         Ok(visibility)
     }
 
-    fn get_declare_acl_address(&self) -> HexBytes32 {
+    fn get_declare_acl_address(&self) -> Bytes32 {
         self.declare_acl_address().into()
     }
 }

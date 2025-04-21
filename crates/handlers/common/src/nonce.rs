@@ -4,7 +4,7 @@ use serde::Serialize;
 use units_primitives::{
     context::{ChainHandlerError, GlobalContext},
     read_data::{ReadDataError, ReadType},
-    rpc::{GetNonceParams, GetNonceResult, HexBytes32Error},
+    rpc::{Bytes32Error, GetNonceParams, GetNonceResult},
 };
 
 const CAN_READ_NONCE_FUNCTION_NAME: &str = "can_read_nonce";
@@ -23,8 +23,8 @@ pub enum NonceError {
     InvalidReadSignature,
     #[error("Chain handler error: {0}")]
     ChainHandlerError(#[from] ChainHandlerError),
-    #[error("HexBytes32 error: {0}")]
-    HexBytes32Error(#[from] HexBytes32Error),
+    #[error("Bytes32 error: {0}")]
+    Bytes32Error(#[from] Bytes32Error),
 }
 
 pub async fn get_nonce(

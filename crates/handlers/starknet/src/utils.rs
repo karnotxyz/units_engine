@@ -25,7 +25,7 @@ use starknet::{
 };
 use units_primitives::{
     context::ChainHandlerError,
-    rpc::{HexBytes32, HexBytes32Error, SendTransactionResult},
+    rpc::{Bytes32, Bytes32Error, SendTransactionResult},
 };
 
 use crate::{StarknetProvider, StarknetWallet};
@@ -98,7 +98,7 @@ pub enum WaitForReceiptError {
     #[error("Starknet error: {0}")]
     StarknetError(#[from] ProviderError),
     #[error("Failed to convert transaction hash to Felt: {0}")]
-    TransactionHashConversionError(#[from] HexBytes32Error),
+    TransactionHashConversionError(#[from] Bytes32Error),
 }
 
 impl From<WaitForReceiptError> for ChainHandlerError {
@@ -505,18 +505,18 @@ pub trait ToFelt<T, E> {
     fn to_felt(self) -> Result<T, E>;
 }
 
-impl ToFelt<Felt, ChainHandlerError> for HexBytes32 {
+impl ToFelt<Felt, ChainHandlerError> for Bytes32 {
     fn to_felt(self) -> Result<Felt, ChainHandlerError> {
         self.try_into()
-            .map_err(|e: HexBytes32Error| ChainHandlerError::BadRequest(e.to_string()))
+            .map_err(|e: Bytes32Error| ChainHandlerError::BadRequest(e.to_string()))
     }
 }
 
-impl ToFelt<Vec<Felt>, ChainHandlerError> for Vec<HexBytes32> {
+impl ToFelt<Vec<Felt>, ChainHandlerError> for Vec<Bytes32> {
     fn to_felt(self) -> Result<Vec<Felt>, ChainHandlerError> {
         let mut result = Vec::with_capacity(self.len());
-        for hex_bytes32 in self {
-            result.push(hex_bytes32.to_felt()?);
+        for bytes32 in self {
+            result.push(bytes32.to_felt()?);
         }
         Ok(result)
     }

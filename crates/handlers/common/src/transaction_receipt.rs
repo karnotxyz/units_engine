@@ -4,7 +4,7 @@ use serde::Serialize;
 use units_primitives::{
     context::{ChainHandlerError, GlobalContext},
     read_data::ReadDataError,
-    rpc::{GetTransactionReceiptParams, GetTransactionReceiptResult, HexBytes32Error},
+    rpc::{Bytes32Error, GetTransactionReceiptParams, GetTransactionReceiptResult},
 };
 
 #[derive(Debug, thiserror::Error, Serialize, PartialEq, Eq)]
@@ -21,8 +21,8 @@ pub enum TransactionReceiptError {
     InvalidSenderAddress,
     #[error("Chain handler error: {0}")]
     ChainHandlerError(#[from] ChainHandlerError),
-    #[error("HexBytes32 error: {0}")]
-    HexBytes32Error(#[from] HexBytes32Error),
+    #[error("Bytes32 error: {0}")]
+    Bytes32Error(#[from] Bytes32Error),
 }
 
 const CAN_READ_EVENT_FUNCTION_NAME: &str = "can_read_event";

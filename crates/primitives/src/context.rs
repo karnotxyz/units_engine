@@ -5,7 +5,7 @@ use serde::Serialize;
 use crate::{
     rpc::{
         DeclareProgramParams, DeployAccountParams, DeployAccountResult, GetProgramResult,
-        GetTransactionByHashResult, GetTransactionReceiptResult, HexBytes32, SendTransactionParams,
+        GetTransactionByHashResult, GetTransactionReceiptResult, Bytes32, SendTransactionParams,
         SendTransactionResult,
     },
     types::ClassVisibility,
@@ -52,7 +52,7 @@ pub trait ChainHandler: Send + Sync {
     async fn declare_program(
         &self,
         params: DeclareProgramParams,
-    ) -> Result<HexBytes32, ChainHandlerError>;
+    ) -> Result<Bytes32, ChainHandlerError>;
 
     /// Send a transaction to the chain
     async fn send_transaction(
@@ -69,20 +69,20 @@ pub trait ChainHandler: Send + Sync {
     /// Get a program by its hash
     async fn get_program(
         &self,
-        class_hash: HexBytes32,
+        class_hash: Bytes32,
     ) -> Result<GetProgramResult, ChainHandlerError>;
 
     /// Get the nonce for an account
-    async fn get_nonce(&self, address: HexBytes32) -> Result<u32, ChainHandlerError>;
+    async fn get_nonce(&self, address: Bytes32) -> Result<u32, ChainHandlerError>;
 
     /// Get a transaction receipt
     async fn get_transaction_receipt(
         &self,
-        transaction_hash: HexBytes32,
+        transaction_hash: Bytes32,
     ) -> Result<GetTransactionReceiptResult, ChainHandlerError>;
 
     /// Get the chain ID
-    async fn get_chain_id(&self) -> Result<HexBytes32, ChainHandlerError>;
+    async fn get_chain_id(&self) -> Result<Bytes32, ChainHandlerError>;
 
     /// Get latest block number
     async fn get_latest_block_number(&self) -> Result<u64, ChainHandlerError>;
@@ -90,62 +90,62 @@ pub trait ChainHandler: Send + Sync {
     /// Is valid signature
     async fn is_valid_signature(
         &self,
-        account_address: HexBytes32,
-        signature: Vec<HexBytes32>,
-        message_hash: HexBytes32,
+        account_address: Bytes32,
+        signature: Vec<Bytes32>,
+        message_hash: Bytes32,
     ) -> Result<bool, ChainHandlerError>;
 
     /// Identity contains signer
     async fn identity_contains_signer(
         &self,
-        identity_address: HexBytes32,
-        account_address: HexBytes32,
+        identity_address: Bytes32,
+        account_address: Bytes32,
     ) -> Result<bool, ChainHandlerError>;
 
     /// Get transaction by hash
     async fn get_transaction_by_hash(
         &self,
-        transaction_hash: HexBytes32,
+        transaction_hash: Bytes32,
     ) -> Result<GetTransactionByHashResult, ChainHandlerError>;
 
     /// Contract has function
     async fn contract_has_function(
         &self,
-        contract_address: HexBytes32,
+        contract_address: Bytes32,
         function_name: String,
     ) -> Result<bool, ChainHandlerError>;
 
     /// Simulate read access check
     async fn simulate_read_access_check(
         &self,
-        caller_address: HexBytes32,
-        contract_address: HexBytes32,
+        caller_address: Bytes32,
+        contract_address: Bytes32,
         function_name: String,
-        calldata: Vec<HexBytes32>,
+        calldata: Vec<Bytes32>,
     ) -> Result<bool, ChainHandlerError>;
 
     /// Compute class hash
     async fn compute_class_hash(
         &self,
         program: &serde_json::Value,
-    ) -> Result<HexBytes32, ChainHandlerError>;
+    ) -> Result<Bytes32, ChainHandlerError>;
 
     /// Set class visibility
     async fn set_class_visibility(
         &self,
-        class_hash: HexBytes32,
+        class_hash: Bytes32,
         visibility: ClassVisibility,
-        sender_address: HexBytes32,
-    ) -> Result<HexBytes32, ChainHandlerError>;
+        sender_address: Bytes32,
+    ) -> Result<Bytes32, ChainHandlerError>;
 
     /// Get class visibility
     async fn get_class_visibility(
         &self,
-        class_hash: HexBytes32,
+        class_hash: Bytes32,
     ) -> Result<ClassVisibility, ChainHandlerError>;
 
     /// Get contract address of declare ACL contract
-    fn get_declare_acl_address(&self) -> HexBytes32;
+    fn get_declare_acl_address(&self) -> Bytes32;
 }
 
 pub struct GlobalContext {

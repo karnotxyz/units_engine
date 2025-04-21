@@ -6,7 +6,7 @@ use units_handlers_starknet::{
     tests::utils::madara::{madara_node, MadaraRunner},
     StarknetProvider,
 };
-use units_primitives::rpc::{GetChainIdResult, HexBytes32};
+use units_primitives::rpc::{Bytes32, GetChainIdResult};
 use units_tests_utils::units::UnitsRunner;
 
 #[tokio::test]
@@ -41,7 +41,7 @@ async fn test_chain_id(
     // Verify the chain ID is MADARA_DEVNET
     assert_eq!(
         parsed_response.chain_id,
-        HexBytes32::from_hex("0x4d41444152415f4445564e4554").unwrap()
+        Bytes32::from_hex("0x4d41444152415f4445564e4554").unwrap()
     );
 
     Ok(())

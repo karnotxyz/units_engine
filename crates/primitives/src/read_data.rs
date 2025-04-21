@@ -85,7 +85,7 @@ impl ReadVerifier {
     }
 }
 
-// TODO: Make ReadData generic in terms of the hasher used and the type should be HexBytes32 instead of Felt
+// TODO: Make ReadData generic in terms of the hasher used and the type should be Bytes32 instead of Felt
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ReadData {
     verifier: ReadVerifier,
