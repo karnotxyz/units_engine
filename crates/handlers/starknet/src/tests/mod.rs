@@ -7,11 +7,11 @@ mod deploy_account;
 #[cfg(test)]
 mod get_program;
 #[cfg(test)]
-mod send_transaction;
-#[cfg(test)]
 mod nonce;
 #[cfg(test)]
 mod read_data;
+#[cfg(test)]
+mod send_transaction;
 #[cfg(test)]
 mod transaction_receipt;
 

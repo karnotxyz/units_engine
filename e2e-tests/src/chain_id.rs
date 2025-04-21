@@ -2,10 +2,6 @@ use std::sync::Arc;
 
 use rstest::*;
 use serde_json::{json, Value};
-use starknet::{
-    accounts::Account,
-    providers::Provider,
-};
 use units_handlers_starknet::{
     tests::utils::madara::{madara_node, MadaraRunner},
     StarknetProvider,

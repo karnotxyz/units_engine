@@ -176,10 +176,12 @@ impl TestDefault for StarknetWallet {
     }
 }
 
+#[async_trait::async_trait]
 pub trait ProviderToDummyGlobalContext {
     async fn provider_to_dummy_global_context(&self) -> Arc<GlobalContext>;
 }
 
+#[async_trait::async_trait]
 impl ProviderToDummyGlobalContext for Arc<StarknetProvider> {
     async fn provider_to_dummy_global_context(&self) -> Arc<GlobalContext> {
         let starknet_ctx: Arc<Box<dyn ChainHandler>> = Arc::new(Box::new(
