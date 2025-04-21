@@ -2,16 +2,8 @@ use std::sync::Arc;
 
 use crate::context::{ChainHandler, ChainHandlerError};
 use serde::{Deserialize, Serialize};
-use starknet::{
-    accounts::SingleOwnerAccount,
-    core::types::Felt,
-    providers::{jsonrpc::HttpTransport, JsonRpcClient},
-    signers::LocalWallet,
-};
 use starknet_crypto::poseidon_hash_many;
-
-pub type StarknetProvider = JsonRpcClient<HttpTransport>;
-pub type StarknetWallet = SingleOwnerAccount<Arc<StarknetProvider>, Arc<LocalWallet>>;
+use starknet_crypto::Felt;
 
 // TODO: Add extensive testing for verify
 // TODO: Add version checks

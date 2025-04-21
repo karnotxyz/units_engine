@@ -23,7 +23,7 @@ members = [
   "crates/utils",
   "crates/proc-macros",
   "crates/primitives",
-  "e2e-tests",
+  "e2e-starknet-tests",
   "test-utils",
 ]
 resolver = "2"

@@ -1,16 +1,12 @@
 use std::sync::Arc;
 
 use serde::Serialize;
-use starknet::core::types::Felt;
 use units_primitives::context::{ChainHandlerError, GlobalContext};
 use units_primitives::read_data::{ReadDataError, ReadType};
 use units_primitives::rpc::{GetProgramParams, GetProgramResult, HexBytes32Error};
 use units_primitives::types::{ClassVisibility, ClassVisibilityError};
 
 pub const HAS_READ_ACCESS_FUNCTION_NAME: &str = "has_read_access";
-/// If the public address has access then it's assumed that the contract is public
-/// and any address can read it
-pub const PUBLIC_ACCESS_ADDRESS: Felt = Felt::ZERO;
 
 #[derive(Debug, thiserror::Error, Serialize, PartialEq, Eq)]
 pub enum GetProgramError {

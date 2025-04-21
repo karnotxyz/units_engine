@@ -13,7 +13,6 @@ once_cell.workspace = true
 reqwest.workspace = true
 rstest.workspace = true
 serde_json.workspace = true
-starknet.workspace = true
 tokio.workspace = true
 units-handlers-common.workspace = true
 units-primitives.workspace = true
