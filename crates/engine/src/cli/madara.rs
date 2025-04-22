@@ -1,4 +1,5 @@
 use clap::Args;
+use units_primitives::rpc::Bytes32;
 use units_utils::url::parse_url;
 use url::Url;
 
@@ -13,14 +14,14 @@ pub struct MadaraParams {
     )]
     pub madara_rpc_url: Url,
     /// Contract address of the declare ACL.
-    #[arg(env = "UNITS_ENGINE_DECLARE_ACL_ADDRESS", long)]
-    pub declare_acl_address: String,
+    #[arg(env = "UNITS_ENGINE_DECLARE_ACL_ADDRESS", long, value_parser = Bytes32::from_hex)]
+    pub declare_acl_address: Bytes32,
     /// Private key of the owner wallet.
     /// TODO: HACKY SOLUTION FOR NOW, NEED TO IDEALLY USE KMS
     /// OR SIMIALR SOLUTION FOR STORAGE OF PRIVATE KEYS
-    #[arg(env = "UNITS_ENGINE_OWNER_PRIVATE_KEY", long)]
-    pub owner_private_key: String,
+    #[arg(env = "UNITS_ENGINE_OWNER_PRIVATE_KEY", long, value_parser = Bytes32::from_hex)]
+    pub owner_private_key: Bytes32,
     /// Account address corresponding to the private key.
-    #[arg(env = "UNITS_ENGINE_ACCOUNT_ADDRESS", long)]
-    pub account_address: String,
+    #[arg(env = "UNITS_ENGINE_ACCOUNT_ADDRESS", long, value_parser = Bytes32::from_hex)]
+    pub account_address: Bytes32,
 }

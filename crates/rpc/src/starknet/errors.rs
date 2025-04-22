@@ -1,6 +1,7 @@
 use jsonrpsee::core::Cow;
 use serde_json::json;
 use starknet::providers::ProviderError;
+use units_primitives::context::ChainHandlerError;
 
 // Comes from the RPC Spec:
 // https://github.com/starkware-libs/starknet-specs/blob/0e859ff905795f789f1dfd6f7340cdaf5015acc8/api/starknet_write_api.json#L227
@@ -193,6 +194,15 @@ impl From<ProviderError> for StarknetRpcApiError {
             ProviderError::Other(err) => StarknetRpcApiError::ErrUnexpectedError {
                 data: err.to_string(),
             },
+        }
+    }
+}
+
+// Not optimising for this at the moment as the plan is to deprecate Starknet RPC anyways
+impl From<ChainHandlerError> for StarknetRpcApiError {
+    fn from(err: ChainHandlerError) -> Self {
+        StarknetRpcApiError::ErrUnexpectedError {
+            data: err.to_string(),
         }
     }
 }

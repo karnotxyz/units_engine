@@ -1,12 +1,15 @@
+use serde::{Deserialize, Serialize};
 use starknet_crypto::Felt;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "UPPERCASE")]
 pub enum ClassVisibility {
     Acl,
     Public,
 }
 
-#[derive(Debug, thiserror::Error)]
+// TODO: Move behind a feature flag?
+#[derive(Debug, thiserror::Error, Serialize, PartialEq, Eq)]
 pub enum ClassVisibilityError {
     #[error("Invalid class visibility")]
     InvalidClassVisibility,

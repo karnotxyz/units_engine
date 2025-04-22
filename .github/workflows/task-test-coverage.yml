@@ -49,8 +49,8 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: madara-binary-${{ inputs.madara-binary-hash }}
-          path: test-utils/build/
-      - run: chmod +x test-utils/build/madara
+          path: crates/handlers/starknet/src/tests/build/
+      - run: chmod +x crates/handlers/starknet/src/tests/build/madara
 
       - name: Run tests with coverage
         run: |

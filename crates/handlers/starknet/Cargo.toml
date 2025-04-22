@@ -1,0 +1,50 @@
+[package]
+name = "units-handlers-starknet"
+description = "Units Handlers Starknet"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+version.workspace = true
+homepage.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+async-trait.workspace = true
+futures.workspace = true
+hex.workspace = true
+serde_json.workspace = true
+starknet.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+units-handlers-common.workspace = true
+units-primitives = { workspace = true }
+units-utils.workspace = true
+
+# Used only in tests at the moment
+once_cell = { workspace = true, optional = true }
+reqwest = { workspace = true, optional = true }
+rstest = { workspace = true, optional = true }
+units-tests-utils = { workspace = true, optional = true }
+url = { workspace = true, optional = true }
+uuid = { workspace = true, optional = true }
+
+[dev-dependencies]
+rstest.workspace = true
+units-tests-utils.workspace = true
+assert_matches.workspace = true
+reqwest.workspace = true
+url.workspace = true
+uuid.workspace = true
+once_cell.workspace = true
+
+[features]
+testing = [
+  "units-primitives/testing",
+  "rstest",
+  "reqwest",
+  "url",
+  "uuid",
+  "once_cell",
+  "units-tests-utils",
+]

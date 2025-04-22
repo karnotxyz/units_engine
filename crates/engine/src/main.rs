@@ -4,18 +4,13 @@ mod service;
 use std::sync::Arc;
 
 use crate::cli::CliArgs;
-use anyhow::Context;
 use clap::Parser;
 use service::rpc::RpcService;
-use starknet::{
-    accounts::{ExecutionEncoding, SingleOwnerAccount},
-    core::types::Felt,
-    providers::{jsonrpc::HttpTransport, JsonRpcClient, Provider},
-    signers::{LocalWallet, SigningKey},
-};
 use tracing::info;
+use units_handlers_starknet::StarknetContext;
+use units_primitives::context::GlobalContext;
 use units_telemetery::Telemetery;
-use units_utils::{context::GlobalContext, service::ServiceManager};
+use units_utils::service::ServiceManager;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -28,34 +23,14 @@ async fn main() -> anyhow::Result<()> {
     info!("Starting UNITS Engine");
 
     // Create the global context
-    let starknet_provider = Arc::new(JsonRpcClient::new(HttpTransport::new(
+    let starknet_ctx = StarknetContext::new(
         args.madara.madara_rpc_url,
-    )));
-    let declare_acl_address = Felt::from_hex(args.madara.declare_acl_address.as_str())
-        .context("Declare ACL address is not valid")?;
-    let signer = SigningKey::from_secret_scalar(
-        Felt::from_hex(args.madara.owner_private_key.as_str())
-            .context("Owner private key is not valid")?,
-    );
-    let local_wallet = Arc::new(LocalWallet::from(signer));
-    let chain_id = starknet_provider
-        .chain_id()
-        .await
-        .context("Failed to get chain id")?;
-    let account_address = Felt::from_hex(args.madara.account_address.as_str())
-        .context("Account address is not valid")?;
-    let account = SingleOwnerAccount::new(
-        starknet_provider.clone(),
-        local_wallet,
-        account_address,
-        chain_id,
-        ExecutionEncoding::New,
-    );
-    let global_ctx = Arc::new(GlobalContext::new_with_provider(
-        starknet_provider.clone(),
-        declare_acl_address,
-        Arc::new(account),
-    ));
+        args.madara.declare_acl_address,
+        args.madara.owner_private_key,
+        args.madara.account_address,
+    )
+    .await?;
+    let global_ctx = Arc::new(GlobalContext::new(Arc::new(Box::new(starknet_ctx))));
 
     // Create the service manager
     let service_manager = ServiceManager::new();

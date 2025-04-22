@@ -4,11 +4,12 @@ use tokio::sync::{broadcast, Mutex};
 
 use jsonrpsee::server::ServerHandle;
 
+use crate::GlobalContext;
 use metrics::RpcMetrics;
 use rpc_version::RpcVersion;
 use server::{start_server, ServerConfig};
 use units_rpc::{rpc_api_admin, rpc_api_user, RpcContext};
-use units_utils::{context::GlobalContext, service::Service};
+use units_utils::service::Service;
 
 use crate::cli::rpc::RpcParams;
 

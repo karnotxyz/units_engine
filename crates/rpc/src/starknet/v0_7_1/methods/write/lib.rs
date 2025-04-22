@@ -1,17 +1,10 @@
-use crate::{
-    starknet::{errors::StarknetRpcApiError, v0_7_1::StarknetWriteRpcApiV0_7_1Server},
-    RpcContext,
-};
+use crate::{starknet::v0_7_1::StarknetWriteRpcApiV0_7_1Server, RpcContext};
 use jsonrpsee::core::{async_trait, RpcResult};
-use starknet::{
-    core::types::{
-        BroadcastedDeclareTransaction, BroadcastedDeployAccountTransaction,
-        BroadcastedInvokeTransaction, DeclareTransactionResult, DeployAccountTransactionResult,
-        Felt, InvokeTransactionResult,
-    },
-    providers::ProviderError,
+use starknet::core::types::{
+    BroadcastedDeclareTransaction, BroadcastedDeployAccountTransaction,
+    BroadcastedInvokeTransaction, DeclareTransactionResult, DeployAccountTransactionResult, Felt,
+    InvokeTransactionResult,
 };
-use units_primitives::types::ClassVisibility;
 
 #[async_trait]
 impl StarknetWriteRpcApiV0_7_1Server for RpcContext {
@@ -26,47 +19,51 @@ impl StarknetWriteRpcApiV0_7_1Server for RpcContext {
     /// * `declare_transaction_result` - the result of the declare transaction
     async fn add_declare_transaction(
         &self,
-        declare_transaction: BroadcastedDeclareTransaction,
+        _declare_transaction: BroadcastedDeclareTransaction,
     ) -> RpcResult<DeclareTransactionResult> {
-        let declare_transaction = match declare_transaction {
-            BroadcastedDeclareTransaction::V3(declare_transaction) => declare_transaction,
-            _ => {
-                return Err(StarknetRpcApiError::UnsupportedTxnVersion.into());
-            }
-        };
-        let result = units_handlers::declare_class::add_declare_class_transaction(
-            self.global_ctx.clone(),
-            declare_transaction,
-            ClassVisibility::Public,
-        )
-        .await
-        .map_err(ProviderError::from)
-        .map_err(StarknetRpcApiError::from)?;
+        todo!()
+        // let declare_transaction = match declare_transaction {
+        //     BroadcastedDeclareTransaction::V3(declare_transaction) => declare_transaction,
+        //     _ => {
+        //         return Err(StarknetRpcApiError::UnsupportedTxnVersion.into());
+        //     }
+        // };
+        // let result = units_handlers_common::declare_class::declare_class(
+        //     self.global_ctx.clone(),
+        //     declare_transaction,
+        //     ClassVisibility::Public,
+        // )
+        // .await
+        // .map_err(ProviderError::from)
+        // .map_err(StarknetRpcApiError::from)?;
 
-        // It's possible that the transaction hash is not available as the class
-        // was already declared.
-        let transaction_hash = if let Some(transaction_hash) = result.transaction_hash {
-            transaction_hash
-        } else {
-            return Err(StarknetRpcApiError::ClassAlreadyDeclared.into());
-        };
+        // // It's possible that the transaction hash is not available as the class
+        // // was already declared.
+        // let transaction_hash = if let Some(transaction_hash) = result.transaction_hash {
+        //     transaction_hash
+        // } else {
+        //     return Err(StarknetRpcApiError::ClassAlreadyDeclared.into());
+        // };
 
-        // Convert Strings to Felts
-        let class_hash = Felt::from_hex(result.class_hash.as_str()).map_err(|e| {
-            StarknetRpcApiError::ErrUnexpectedError {
-                data: format!("Failed to convert class hash to felt: {}", e),
-            }
-        })?;
-        let transaction_hash = Felt::from_hex(transaction_hash.as_str()).map_err(|e| {
-            StarknetRpcApiError::ErrUnexpectedError {
-                data: format!("Failed to convert transaction hash to felt: {}", e),
-            }
-        })?;
+        // // Convert Strings to Felts
+        // let class_hash =
+        //     result
+        //         .class_hash
+        //         .try_into()
+        //         .map_err(|e| StarknetRpcApiError::ErrUnexpectedError {
+        //             data: format!("Failed to convert class hash to felt: {}", e),
+        //         })?;
+        // let transaction_hash =
+        //     transaction_hash
+        //         .try_into()
+        //         .map_err(|e| StarknetRpcApiError::ErrUnexpectedError {
+        //             data: format!("Failed to convert transaction hash to felt: {}", e),
+        //         })?;
 
-        Ok(DeclareTransactionResult {
-            class_hash,
-            transaction_hash,
-        })
+        // Ok(DeclareTransactionResult {
+        //     class_hash,
+        //     transaction_hash,
+        // })
     }
 
     /// Add an Deploy Account Transaction
@@ -81,24 +78,25 @@ impl StarknetWriteRpcApiV0_7_1Server for RpcContext {
     /// * `contract_address` - address of the deployed contract account
     async fn add_deploy_account_transaction(
         &self,
-        deploy_account_transaction: BroadcastedDeployAccountTransaction,
+        _deploy_account_transaction: BroadcastedDeployAccountTransaction,
     ) -> RpcResult<DeployAccountTransactionResult> {
-        let deploy_account_transaction = match deploy_account_transaction {
-            BroadcastedDeployAccountTransaction::V3(deploy_account_transaction) => {
-                deploy_account_transaction
-            }
-            _ => {
-                return Err(StarknetRpcApiError::UnsupportedTxnVersion.into());
-            }
-        };
-        Ok(
-            units_handlers::deploy_account::add_deploy_account_transaction(
-                self.global_ctx.clone(),
-                deploy_account_transaction,
-            )
-            .await
-            .map_err(StarknetRpcApiError::from)?,
-        )
+        todo!()
+        // let deploy_account_transaction = match deploy_account_transaction {
+        //     BroadcastedDeployAccountTransaction::V3(deploy_account_transaction) => {
+        //         deploy_account_transaction
+        //     }
+        //     _ => {
+        //         return Err(StarknetRpcApiError::UnsupportedTxnVersion.into());
+        //     }
+        // };
+        // Ok(
+        //     units_handlers_common::deploy_account::add_deploy_account_transaction(
+        //         self.global_ctx.clone(),
+        //         deploy_account_transaction,
+        //     )
+        //     .await
+        //     .map_err(StarknetRpcApiError::from)?,
+        // )
     }
 
     /// Add an Invoke Transaction to invoke a contract function

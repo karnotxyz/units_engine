@@ -3648,15 +3648,19 @@ name = "units-db"
 version = "0.1.0"
 
 [[package]]
-name = "units-e2e-tests"
+name = "units-e2e-starknet-tests"
 version = "0.1.0"
 dependencies = [
  "anyhow",
  "once_cell",
  "reqwest 0.12.15",
  "rstest",
+ "serde_json",
  "starknet",
  "tokio",
+ "units-handlers-common",
+ "units-handlers-starknet",
+ "units-primitives",
  "units-tests-utils",
  "units-utils",
  "url",
@@ -3682,6 +3686,9 @@ dependencies = [
  "tower 0.4.13",
  "tower-http",
  "tracing",
+ "units-handlers-common",
+ "units-handlers-starknet",
+ "units-primitives",
  "units-rpc",
  "units-telemetery",
  "units-utils",
@@ -3689,16 +3696,18 @@ dependencies = [
 ]
 
 [[package]]
-name = "units-handlers"
+name = "units-handlers-common"
 version = "0.1.0"
 dependencies = [
  "anyhow",
  "assert_matches",
+ "async-trait",
  "futures",
  "hex",
+ "jsonrpsee",
  "rstest",
+ "serde",
  "serde_json",
- "starknet",
  "thiserror 2.0.12",
  "tokio",
  "units-primitives",
@@ -3707,13 +3716,41 @@ dependencies = [
 ]
 
 [[package]]
+name = "units-handlers-starknet"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "assert_matches",
+ "async-trait",
+ "futures",
+ "hex",
+ "once_cell",
+ "reqwest 0.12.15",
+ "rstest",
+ "serde_json",
+ "starknet",
+ "thiserror 2.0.12",
+ "tokio",
+ "units-handlers-common",
+ "units-primitives",
+ "units-tests-utils",
+ "units-utils",
+ "url",
+ "uuid 1.16.0",
+]
+
+[[package]]
 name = "units-primitives"
 version = "0.1.0"
 dependencies = [
  "anyhow",
  "assert_matches",
+ "async-trait",
  "hex",
+ "jsonrpsee",
  "rstest",
+ "serde",
+ "serde_json",
  "starknet",
  "starknet-crypto",
  "thiserror 2.0.12",
@@ -3742,7 +3779,7 @@ dependencies = [
  "serde_json",
  "starknet",
  "thiserror 2.0.12",
- "units-handlers",
+ "units-handlers-common",
  "units-primitives",
  "units-proc-macros",
  "units-utils",
@@ -3776,8 +3813,8 @@ dependencies = [
  "reqwest 0.12.15",
  "rstest",
  "serde_json",
- "starknet",
  "tokio",
+ "units-handlers-common",
  "units-primitives",
  "units-utils",
  "url",
@@ -3793,7 +3830,6 @@ dependencies = [
  "async-trait",
  "futures",
  "rstest",
- "starknet",
  "thiserror 2.0.12",
  "tokio",
  "tracing",

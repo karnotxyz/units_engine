@@ -17,12 +17,13 @@ members = [
   "crates/engine",
   "crates/rpc",
   "crates/db",
-  "crates/handlers",
+  "crates/handlers/common",
+  "crates/handlers/starknet",
   "crates/telemetery",
   "crates/utils",
   "crates/proc-macros",
   "crates/primitives",
-  "e2e-tests",
+  "e2e-starknet-tests",
   "test-utils",
 ]
 resolver = "2"
@@ -30,7 +31,8 @@ default-members = [
   "crates/engine",
   "crates/rpc",
   "crates/db",
-  "crates/handlers",
+  "crates/handlers/common",
+  "crates/handlers/starknet",
   "crates/telemetery",
   "crates/utils",
   "crates/proc-macros",
@@ -80,7 +82,8 @@ hex = "0.4.3"
 
 units-telemetery = { path = "crates/telemetery" }
 units-utils = { path = "crates/utils" }
-units-handlers = { path = "crates/handlers" }
+units-handlers-common = { path = "crates/handlers/common" }
+units-handlers-starknet = { path = "crates/handlers/starknet" }
 units-rpc = { path = "crates/rpc" }
 units-db = { path = "crates/db" }
 units-proc-macros = { path = "crates/proc-macros" }

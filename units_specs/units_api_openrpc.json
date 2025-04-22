@@ -1,0 +1,578 @@
+{
+  "openrpc": "1.2.6",
+  "info": {
+    "title": "Units API",
+    "version": "0.1.0",
+    "description": "Units API OpenRPC specification"
+  },
+  "methods": [
+    {
+      "name": "units_declareProgram",
+      "description": "Declare a new program",
+      "params": [
+        {
+          "name": "account_address",
+          "description": "The account that contains the verification logic against which the signature has been provided",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/ACCOUNT_ADDRESS"
+          }
+        },
+        {
+          "name": "signature",
+          "description": "The signature for the transaction",
+          "required": true,
+          "schema": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BYTES32"
+            }
+          }
+        },
+        {
+          "name": "nonce",
+          "description": "The nonce of the transaction",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/NONCE"
+          }
+        },
+        {
+          "name": "program",
+          "description": "The program to declare",
+          "required": true,
+          "schema": {
+            "type": "object"
+          }
+        },
+        {
+          "name": "compiled_program_hash",
+          "description": "Optional compiled program hash",
+          "required": false,
+          "schema": {
+            "type": "object",
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BYTES32"
+              }
+            ]
+          }
+        }
+      ],
+      "result": {
+        "name": "transaction_hash",
+        "description": "The hash of the transaction",
+        "required": false,
+        "schema": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/components/schemas/BYTES32"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "units_getProgram",
+      "description": "Get a program by its hash",
+      "params": [
+        {
+          "name": "program_hash",
+          "description": "The hash of the program to retrieve",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/BYTES32"
+          }
+        }
+      ],
+      "result": {
+        "name": "program",
+        "description": "The program data",
+        "required": true,
+        "schema": {
+          "type": "object"
+        }
+      }
+    },
+    {
+      "name": "units_sendTransaction",
+      "description": "Send a transaction",
+      "params": [
+        {
+          "name": "account_address",
+          "description": "The account that contains the verification logic against which the signature has been provided",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/ACCOUNT_ADDRESS"
+          }
+        },
+        {
+          "name": "signature",
+          "description": "The signature for the transaction",
+          "required": true,
+          "schema": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BYTES32"
+            }
+          }
+        },
+        {
+          "name": "nonce",
+          "description": "The nonce of the transaction",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/NONCE"
+          }
+        },
+        {
+          "name": "calldata",
+          "description": "The calldata for the transaction",
+          "required": true,
+          "schema": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BYTES32"
+            }
+          }
+        }
+      ],
+      "result": {
+        "name": "transaction_hash",
+        "description": "The hash of the transaction",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/BYTES32"
+        }
+      }
+    },
+    {
+      "name": "units_getNonce",
+      "description": "Get the nonce for an account",
+      "params": [
+        {
+          "name": "account_address",
+          "description": "The account address to get the nonce for",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/ACCOUNT_ADDRESS"
+          }
+        },
+        {
+          "name": "signed_read_data",
+          "description": "Optional signed read data",
+          "required": false,
+          "schema": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/SIGNED_READ_DATA"
+              }
+            ]
+          }
+        }
+      ],
+      "result": {
+        "name": "nonce",
+        "description": "The current nonce",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "format": "uint32"
+        }
+      }
+    },
+    {
+      "name": "units_getTransactionReceipt",
+      "description": "Get a transaction receipt",
+      "params": [
+        {
+          "name": "transaction_hash",
+          "description": "The hash of the transaction",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/BYTES32"
+          }
+        },
+        {
+          "name": "signed_read_data",
+          "description": "Signed read data",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/SIGNED_READ_DATA"
+          }
+        }
+      ],
+      "result": {
+        "name": "receipt",
+        "description": "The transaction receipt",
+        "required": true,
+        "schema": {
+          "type": "object",
+          "properties": {
+            "transaction_hash": {
+              "$ref": "#/components/schemas/BYTES32"
+            },
+            "events": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/EVENT"
+              }
+            },
+            "finality_status": {
+              "$ref": "#/components/schemas/FINALITY_STATUS"
+            },
+            "execution_status": {
+              "$ref": "#/components/schemas/EXECUTION_STATUS"
+            }
+          },
+          "required": [
+            "transaction_hash",
+            "events",
+            "finality_status",
+            "execution_status"
+          ]
+        }
+      }
+    },
+    {
+      "name": "units_getChainId",
+      "description": "Get the chain ID",
+      "params": [],
+      "result": {
+        "name": "chain_id",
+        "description": "The chain ID",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/BYTES32"
+        }
+      }
+    },
+    {
+      "name": "units_deployAccount",
+      "description": "Deploy a new account",
+      "params": [
+        {
+          "name": "signature",
+          "description": "The signature for the deployment",
+          "required": true,
+          "schema": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BYTES32"
+            }
+          }
+        },
+        {
+          "name": "nonce",
+          "description": "The nonce for the deployment",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/NONCE"
+          }
+        },
+        {
+          "name": "constructor_calldata",
+          "description": "The constructor calldata",
+          "required": true,
+          "schema": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BYTES32"
+            }
+          }
+        },
+        {
+          "name": "program_hash",
+          "description": "The program hash",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/BYTES32"
+          }
+        },
+        {
+          "name": "account_address_salt",
+          "description": "The salt for the account address",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/BYTES32"
+          }
+        }
+      ],
+      "result": {
+        "name": "transaction_hash",
+        "description": "The hash of the deployment transaction",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/BYTES32"
+        }
+      }
+    }
+  ],
+  "components": {
+    "schemas": {
+      "BYTES32": {
+        "title": "32 bytes in hex",
+        "type": "string",
+        "description": "A 32-byte value encoded as a hex string with 0x prefix",
+        "pattern": "^0x[a-fA-F0-9]{64}$"
+      },
+      "ACCOUNT_ADDRESS": {
+        "title": "Account Address",
+        "description": "A 32-byte account address",
+        "$ref": "#/components/schemas/BYTES32"
+      },
+      "NONCE": {
+        "title": "Nonce",
+        "type": "integer",
+        "description": "A 32-bit unsigned integer",
+        "minimum": 0,
+        "maximum": 4294967295
+      },
+      "READ_DATA_VERSION": {
+        "type": "string",
+        "enum": ["ONE"],
+        "description": "Version of the read data"
+      },
+      "READ_VALIDITY": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["BLOCK", "TIMESTAMP"]
+          }
+        },
+        "required": ["type"],
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "type": { "const": "BLOCK" },
+              "block": {
+                "type": "integer",
+                "format": "uint64"
+              }
+            },
+            "required": ["type", "block"]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": { "const": "TIMESTAMP" },
+              "timestamp": {
+                "type": "integer",
+                "format": "uint64"
+              }
+            },
+            "required": ["type", "timestamp"]
+          }
+        ]
+      },
+      "READ_TYPE": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["NONCE", "TRANSACTION_RECEIPT", "CLASS"]
+          }
+        },
+        "required": ["type"],
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "type": { "const": "NONCE" },
+              "nonce": {
+                "$ref": "#/components/schemas/BYTES32"
+              }
+            },
+            "required": ["type", "nonce"]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": { "const": "TRANSACTION_RECEIPT" },
+              "transaction_receipt": {
+                "$ref": "#/components/schemas/BYTES32"
+              }
+            },
+            "required": ["type", "transaction_receipt"]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": { "const": "CLASS" },
+              "class": {
+                "$ref": "#/components/schemas/BYTES32"
+              }
+            },
+            "required": ["type", "class"]
+          }
+        ]
+      },
+      "VERIFIER_ACCOUNT": {
+        "type": "object",
+        "properties": {
+          "signer_address": {
+            "type": "string"
+          }
+        },
+        "required": ["signer_address"]
+      },
+      "VERIFIER_IDENTITY": {
+        "type": "object",
+        "properties": {
+          "signer_address": {
+            "type": "string"
+          },
+          "identity_address": {
+            "type": "string"
+          }
+        },
+        "required": ["signer_address", "identity_address"]
+      },
+      "READ_VERIFIER": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["ACCOUNT", "IDENTITY"]
+          }
+        },
+        "required": ["type"],
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "type": { "const": "ACCOUNT" },
+              "signer_address": {
+                "$ref": "#/components/schemas/BYTES32"
+              }
+            },
+            "required": ["type", "signer_address"]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": { "const": "IDENTITY" },
+              "signer_address": {
+                "$ref": "#/components/schemas/BYTES32"
+              },
+              "identity_address": {
+                "$ref": "#/components/schemas/BYTES32"
+              }
+            },
+            "required": ["type", "signer_address", "identity_address"]
+          }
+        ]
+      },
+      "READ_DATA": {
+        "type": "object",
+        "properties": {
+          "verifier": {
+            "$ref": "#/components/schemas/READ_VERIFIER"
+          },
+          "read_type": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/READ_TYPE"
+            }
+          },
+          "read_validity": {
+            "$ref": "#/components/schemas/READ_VALIDITY"
+          },
+          "chain_id": {
+            "$ref": "#/components/schemas/BYTES32"
+          },
+          "version": {
+            "$ref": "#/components/schemas/READ_DATA_VERSION"
+          }
+        },
+        "required": [
+          "verifier",
+          "read_type",
+          "read_validity",
+          "chain_id",
+          "version"
+        ]
+      },
+      "SIGNED_READ_DATA": {
+        "type": "object",
+        "properties": {
+          "read_data": {
+            "$ref": "#/components/schemas/READ_DATA"
+          },
+          "signature": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BYTES32"
+            }
+          }
+        },
+        "required": ["read_data", "signature"]
+      },
+      "EVENT": {
+        "type": "object",
+        "properties": {
+          "from_address": {
+            "$ref": "#/components/schemas/BYTES32"
+          },
+          "keys": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BYTES32"
+            }
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BYTES32"
+            }
+          }
+        },
+        "required": ["from_address", "keys", "data"]
+      },
+      "FINALITY_STATUS": {
+        "type": "string",
+        "enum": ["ACCEPTED_ON_UNITS", "ACCEPTED_ON_PROOF_STORE"]
+      },
+      "EXECUTION_STATUS": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["SUCCEEDED", "REVERTED"]
+          }
+        },
+        "required": ["type"],
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "type": { "const": "SUCCEEDED" }
+            },
+            "required": ["type"]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": { "const": "REVERTED" },
+              "error": {
+                "type": "string"
+              }
+            },
+            "required": ["type", "error"]
+          }
+        ]
+      }
+    }
+  }
+}
