@@ -231,12 +231,12 @@ mod tests {
     }
 
     #[rstest]
-    #[case("0xzz", Bytes32Error::InvalidHex("invalid character 'z' at position 2".to_string()))]
+    #[case("0xzz", Bytes32Error::InvalidHex("invalid character 'z' at position 0".to_string()))]
     #[case(
         "0x000000000000000000000000000000000000000000000000000000000000000001",
         Bytes32Error::TooLong
     )]
-    #[case("0xgh", Bytes32Error::InvalidHex("invalid character 'g' at position 2".to_string()))]
+    #[case("0xgh", Bytes32Error::InvalidHex("invalid character 'g' at position 0".to_string()))]
     fn test_bytes32_from_hex_invalid(#[case] input: &str, #[case] expected_error: Bytes32Error) {
         match Bytes32::from_hex(input) {
             Err(error) => match (error, expected_error) {
