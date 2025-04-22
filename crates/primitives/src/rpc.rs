@@ -2,6 +2,13 @@ use crate::{read_data::SignedReadData, types::ClassVisibility};
 use serde::{Deserialize, Serialize};
 use starknet_crypto::Felt;
 
+// TODO: Move away from using Felt and standardize on Bytes32 throughout the codebase.
+// The current use of Felt is tightly coupled to Starknet's implementation.
+// Additionally, the hashing function (Poseidon) should not be hardcoded - instead
+// we should define a generic Hasher trait that allows users to specify their
+// preferred hashing algorithm for signatures. This would make the codebase more
+// flexible and chain-agnostic.
+
 //------------------------------------------------------------------------------
 // Base Types
 //------------------------------------------------------------------------------
@@ -48,7 +55,6 @@ impl Bytes32 {
     }
 }
 
-// TODO: move this to Starknet utils or behind a feature flag
 impl TryFrom<Bytes32> for Felt {
     type Error = Bytes32Error;
 
