@@ -40,12 +40,6 @@ pub enum ChainHandlerError {
 ///
 /// This trait is designed to allow easy integration of new blockchain stacks into the UNITS ecosystem.
 /// Each chain implementation must provide these core functionalities to be compatible with UNITS.
-///
-/// Note: The current design abstracts the entire method implementation for each chain. However,
-/// this is a temporary solution until we integrate more chains. A better design would identify
-/// which parts of each method's implementation are chain-specific and which parts are common,
-/// allowing us to share code between different chain implementations. We accept this over-abstraction
-/// to avoid over-engineering until we have new chains integrating and to bounce back designs with.
 #[async_trait::async_trait]
 pub trait ChainHandler: Send + Sync {
     /// Declare a new program on the chain and return the transaction hash
