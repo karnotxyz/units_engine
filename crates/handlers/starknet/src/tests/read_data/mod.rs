@@ -46,7 +46,7 @@ mod tests {
 
         let read_data = ReadData::new(
             ReadVerifier::Account(VerifierAccount {
-                singer_address: account_with_private_key.account.address(),
+                signer_address: account_with_private_key.account.address(),
             }),
             vec![ReadType::Nonce {
                 nonce: Felt::from_hex_unchecked("0x0"),
@@ -79,7 +79,7 @@ mod tests {
 
         let read_data = ReadData::new(
             ReadVerifier::Account(VerifierAccount {
-                singer_address: account_with_private_key.account.address(),
+                signer_address: account_with_private_key.account.address(),
             }),
             vec![ReadType::Nonce {
                 nonce: Felt::from_hex_unchecked("0x0"),
@@ -118,7 +118,7 @@ mod tests {
 
         let read_data = ReadData::new(
             ReadVerifier::Account(VerifierAccount {
-                singer_address: account_with_private_key.account.address(),
+                signer_address: account_with_private_key.account.address(),
             }),
             vec![ReadType::Nonce {
                 nonce: Felt::from_hex_unchecked("0x0"),
@@ -153,7 +153,7 @@ mod tests {
 
         let read_data = ReadData::new(
             ReadVerifier::Account(VerifierAccount {
-                singer_address: account_with_private_key.account.address(),
+                signer_address: account_with_private_key.account.address(),
             }),
             vec![ReadType::Nonce {
                 nonce: Felt::from_hex_unchecked("0x0"),
@@ -313,7 +313,7 @@ mod tests {
         // Create read data with two read types
         let read_data = ReadData::new(
             ReadVerifier::Account(VerifierAccount {
-                singer_address: account_with_private_key.account.address(),
+                signer_address: account_with_private_key.account.address(),
             }),
             vec![
                 ReadType::Nonce {
@@ -377,7 +377,7 @@ mod tests {
         // Create read data with one read type
         let read_data = ReadData::new(
             ReadVerifier::Account(VerifierAccount {
-                singer_address: account_with_private_key.account.address(),
+                signer_address: account_with_private_key.account.address(),
             }),
             vec![ReadType::Nonce {
                 nonce: Felt::from_hex_unchecked("0x0"),
@@ -420,7 +420,7 @@ mod tests {
         // Create read data with a nonce read type for address ZERO
         let read_data = ReadData::new(
             ReadVerifier::Account(VerifierAccount {
-                singer_address: account_with_private_key.account.address(),
+                signer_address: account_with_private_key.account.address(),
             }),
             vec![ReadType::Nonce {
                 nonce: Felt::from_hex_unchecked("0x0"),

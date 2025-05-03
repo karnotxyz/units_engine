@@ -136,6 +136,14 @@ pub trait ChainHandler: Send + Sync {
         class_hash: Bytes32,
     ) -> Result<ClassVisibility, ChainHandlerError>;
 
+    /// Call a contract
+    async fn call(
+        &self,
+        contract_address: Bytes32,
+        function_name: Bytes32,
+        calldata: Vec<Bytes32>,
+    ) -> Result<Vec<Bytes32>, ChainHandlerError>;
+
     /// Get contract address of declare ACL contract
     fn get_declare_acl_address(&self) -> Bytes32;
 }

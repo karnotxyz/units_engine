@@ -116,7 +116,7 @@ async fn test_can_read_nonce_returns_invalid_read_signature(
 
     let read_data = ReadData::new(
         ReadVerifier::Account(VerifierAccount {
-            singer_address: account.address(),
+            signer_address: account.address(),
         }),
         vec![ReadType::Nonce {
             nonce: contract_address,
@@ -171,7 +171,7 @@ async fn test_can_read_nonce_returns_false(
     let global_ctx = provider.provider_to_dummy_global_context().await;
     let read_data = ReadData::new(
         ReadVerifier::Account(VerifierAccount {
-            singer_address: account_with_private_key.account.address(),
+            signer_address: account_with_private_key.account.address(),
         }),
         vec![ReadType::Nonce { nonce: address }],
         ReadValidity::Block { block: 1000000 },
@@ -227,7 +227,7 @@ async fn test_can_read_nonce_only_owner(
     let global_ctx = provider.provider_to_dummy_global_context().await;
     let read_data = ReadData::new(
         ReadVerifier::Account(VerifierAccount {
-            singer_address: owner_account_with_private_key.account.address(),
+            signer_address: owner_account_with_private_key.account.address(),
         }),
         vec![ReadType::Nonce {
             nonce: contract_address,
@@ -259,7 +259,7 @@ async fn test_can_read_nonce_only_owner(
     let other_account_with_private_key = &accounts_with_private_key[1];
     let read_data = ReadData::new(
         ReadVerifier::Account(VerifierAccount {
-            singer_address: other_account_with_private_key.account.address(),
+            signer_address: other_account_with_private_key.account.address(),
         }),
         vec![ReadType::Nonce {
             nonce: contract_address,
@@ -316,7 +316,7 @@ async fn test_get_nonce_missing_required_read_type(
     // Create a read data without nonce read type (use transaction receipt instead)
     let read_data = ReadData::new(
         ReadVerifier::Account(VerifierAccount {
-            singer_address: account_with_private_key.account.address(),
+            signer_address: account_with_private_key.account.address(),
         }),
         vec![ReadType::TransactionReceipt {
             transaction_hash: Felt::ONE,

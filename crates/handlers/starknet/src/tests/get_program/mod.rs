@@ -150,7 +150,7 @@ async fn test_get_program(
     let chain_id = provider.chain_id().await.unwrap();
     let read_data = ReadData::new(
         ReadVerifier::Account(VerifierAccount {
-            singer_address: accounts_with_private_key[1].account.address(),
+            signer_address: accounts_with_private_key[1].account.address(),
         }),
         vec![ReadType::Class {
             class_hash: dummy_contract_class_hash,
@@ -215,7 +215,7 @@ async fn test_get_program(
     let different_class_hash = Felt::from_hex_unchecked("0x123");
     let read_data_with_different_class = ReadData::new(
         ReadVerifier::Account(VerifierAccount {
-            singer_address: accounts_with_private_key[1].account.address(),
+            signer_address: accounts_with_private_key[1].account.address(),
         }),
         vec![ReadType::Class {
             class_hash: different_class_hash,

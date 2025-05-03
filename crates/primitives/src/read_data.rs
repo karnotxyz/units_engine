@@ -30,7 +30,7 @@ pub enum ReadDataError {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct VerifierAccount {
-    pub singer_address: Felt,
+    pub signer_address: Felt,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -50,7 +50,7 @@ impl ReadVerifier {
     // Returns the address that signed the read data
     pub fn signer_address(&self) -> &Felt {
         match self {
-            ReadVerifier::Account(account) => &account.singer_address,
+            ReadVerifier::Account(account) => &account.signer_address,
             ReadVerifier::Identity(identity) => &identity.signer_address,
         }
     }
@@ -58,7 +58,7 @@ impl ReadVerifier {
     // Returns the address of the contract that has the read access
     pub fn read_address(&self) -> &Felt {
         match self {
-            ReadVerifier::Account(account) => &account.singer_address,
+            ReadVerifier::Account(account) => &account.signer_address,
             ReadVerifier::Identity(identity) => &identity.identity_address,
         }
     }
@@ -70,7 +70,7 @@ impl ReadVerifier {
                 // For account, hash the type and address
                 poseidon_hash_many(vec![
                     &Felt::from_hex_unchecked(hex::encode("account").as_str()),
-                    &account.singer_address,
+                    &account.signer_address,
                 ])
             }
             ReadVerifier::Identity(identity) => {
@@ -120,7 +120,7 @@ impl ReadData {
         self.verifier.read_address()
     }
 
-    pub fn singer_address(&self) -> &Felt {
+    pub fn signer_address(&self) -> &Felt {
         self.verifier.signer_address()
     }
 
@@ -130,14 +130,26 @@ impl ReadData {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(tag = "type", rename_all = "UPPERCASE")]
+#[serde(tag = "type", rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum ReadType {
     // stores contract address
-    Nonce { nonce: Felt },
+    Nonce {
+        nonce: Felt,
+    },
     // stores transaction hash
-    TransactionReceipt { transaction_hash: Felt },
+    TransactionReceipt {
+        transaction_hash: Felt,
+    },
     // stores class hash
-    Class { class_hash: Felt },
+    Class {
+        class_hash: Felt,
+    },
+    // stores call parameters
+    Call {
+        contract_address: Felt,
+        function_selector: Felt,
+        calldata: Vec<Felt>,
+    },
 }
 
 impl ReadType {
@@ -156,6 +168,16 @@ impl ReadType {
             ReadType::Class { class_hash: class } => poseidon_hash_many(vec![
                 &Felt::from_hex_unchecked(hex::encode("class").as_str()),
                 &Felt::from_bytes_be(&class.to_bytes_be()),
+            ]),
+            ReadType::Call {
+                contract_address,
+                function_selector: function_name,
+                calldata,
+            } => poseidon_hash_many(vec![
+                &Felt::from_hex_unchecked(hex::encode("call").as_str()),
+                &Felt::from_bytes_be(&contract_address.to_bytes_be()),
+                &Felt::from_bytes_be(&function_name.to_bytes_be()),
+                &poseidon_hash_many(calldata),
             ]),
         }
     }
@@ -354,7 +376,7 @@ mod tests {
 
         let read_signature = ReadData::new(
             ReadVerifier::Account(VerifierAccount {
-                singer_address: address,
+                signer_address: address,
             }),
             vec![ReadType::Nonce {
                 nonce: Felt::from_hex_unchecked("0x1"),
@@ -400,7 +422,7 @@ mod tests {
 
         let read_signature = ReadData::new(
             ReadVerifier::Account(VerifierAccount {
-                singer_address: address,
+                signer_address: address,
             }),
             vec![ReadType::Nonce {
                 nonce: Felt::from_hex_unchecked("0x1"),
@@ -446,7 +468,7 @@ mod tests {
 
         let read_signature = ReadData::new(
             ReadVerifier::Account(VerifierAccount {
-                singer_address: address,
+                signer_address: address,
             }),
             vec![ReadType::TransactionReceipt {
                 transaction_hash: Felt::from_hex_unchecked("0x123"),
@@ -492,7 +514,7 @@ mod tests {
 
         let read_signature = ReadData::new(
             ReadVerifier::Account(VerifierAccount {
-                singer_address: address,
+                signer_address: address,
             }),
             vec![ReadType::Class {
                 class_hash: Felt::from_hex_unchecked("0x123"),

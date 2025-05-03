@@ -1,4 +1,6 @@
 #[cfg(test)]
+mod call;
+#[cfg(test)]
 mod declare_program;
 #[cfg(test)]
 mod deploy_account;

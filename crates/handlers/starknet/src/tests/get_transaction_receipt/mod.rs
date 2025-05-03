@@ -73,7 +73,7 @@ async fn test_get_receipt_fails_with_different_sender(
     let global_ctx = provider.provider_to_dummy_global_context().await;
     let read_data = ReadData::new(
         ReadVerifier::Account(VerifierAccount {
-            singer_address: account2_with_private_key.account.address(),
+            signer_address: account2_with_private_key.account.address(),
         }),
         vec![ReadType::TransactionReceipt {
             transaction_hash: result.transaction_hash,
@@ -147,7 +147,7 @@ async fn test_get_receipt_fails_with_invalid_read_signature(
     let global_ctx = provider.provider_to_dummy_global_context().await;
     let read_data = ReadData::new(
         ReadVerifier::Account(VerifierAccount {
-            singer_address: account1.address(),
+            signer_address: account1.address(),
         }),
         vec![ReadType::TransactionReceipt {
             transaction_hash: result.transaction_hash,
@@ -236,7 +236,7 @@ async fn test_get_receipt_without_can_read_event(
     let global_ctx = provider.provider_to_dummy_global_context().await;
     let read_data = ReadData::new(
         ReadVerifier::Account(VerifierAccount {
-            singer_address: account_with_private_key.account.address(),
+            signer_address: account_with_private_key.account.address(),
         }),
         vec![ReadType::TransactionReceipt {
             transaction_hash: result.transaction_hash,
@@ -317,7 +317,7 @@ async fn test_get_receipt_with_can_read_event(
     let global_ctx = provider.provider_to_dummy_global_context().await;
     let read_data = ReadData::new(
         ReadVerifier::Account(VerifierAccount {
-            singer_address: account_with_private_key.account.address(),
+            signer_address: account_with_private_key.account.address(),
         }),
         vec![ReadType::TransactionReceipt {
             transaction_hash: emit_one_result.transaction_hash,
@@ -401,7 +401,7 @@ async fn test_get_receipt_with_can_read_event(
     // Create new signed read data with new transaction hash
     let read_data = ReadData::new(
         ReadVerifier::Account(VerifierAccount {
-            singer_address: account_with_private_key.account.address(),
+            signer_address: account_with_private_key.account.address(),
         }),
         vec![ReadType::TransactionReceipt {
             transaction_hash: emit_one_and_two_result.transaction_hash,
@@ -521,7 +521,7 @@ async fn test_get_receipt_reverted_transaction(
     let global_ctx = provider.provider_to_dummy_global_context().await;
     let read_data = ReadData::new(
         ReadVerifier::Account(VerifierAccount {
-            singer_address: account_with_private_key.account.address(),
+            signer_address: account_with_private_key.account.address(),
         }),
         vec![ReadType::TransactionReceipt {
             transaction_hash: result.transaction_hash,
@@ -580,7 +580,7 @@ async fn test_get_receipt_declare_transaction(
     let global_ctx = provider.provider_to_dummy_global_context().await;
     let read_data = ReadData::new(
         ReadVerifier::Account(VerifierAccount {
-            singer_address: account_with_private_key.account.address(),
+            signer_address: account_with_private_key.account.address(),
         }),
         vec![ReadType::TransactionReceipt {
             transaction_hash: declare_result.transaction_hash,
@@ -640,7 +640,7 @@ async fn test_get_receipt_deploy_account_transaction(
     let global_ctx = provider.provider_to_dummy_global_context().await;
     let read_data = ReadData::new(
         ReadVerifier::Account(VerifierAccount {
-            singer_address: deploy_account_result.contract_address,
+            signer_address: deploy_account_result.contract_address,
         }),
         vec![ReadType::TransactionReceipt {
             transaction_hash: deploy_account_result.transaction_hash,
@@ -720,7 +720,7 @@ async fn test_get_receipt_missing_required_read_type(
     // Create read data with the wrong read type (Nonce instead of TransactionReceipt)
     let read_data = ReadData::new(
         ReadVerifier::Account(VerifierAccount {
-            singer_address: account_with_private_key.account.address(),
+            signer_address: account_with_private_key.account.address(),
         }),
         vec![ReadType::Nonce { nonce: Felt::ZERO }], // Wrong read type
         ReadValidity::Block { block: 1000000 },

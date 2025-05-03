@@ -1,6 +1,6 @@
 use serde_json::json;
 use units_handlers_common::{
-    declare_program::DeclareProgramError, deploy_account::DeployAccountError,
+    call::CallError, declare_program::DeclareProgramError, deploy_account::DeployAccountError,
     get_chain_id::GetChainIdError, get_nonce::GetNonceError, get_program::GetProgramError,
     get_transaction_receipt::GetTransactionReceiptError, send_transaction::SendTransactionError,
 };
@@ -22,6 +22,8 @@ pub enum UnitsRpcApiError {
     GetNonce(#[from] GetNonceError),
     #[error("Failed to get transaction receipt")]
     GetTransactionReceipt(#[from] GetTransactionReceiptError),
+    #[error("Failed to call")]
+    Call(#[from] CallError),
 }
 
 // TODO: How should we decide the error codes?
@@ -35,6 +37,7 @@ impl From<&UnitsRpcApiError> for i32 {
             UnitsRpcApiError::GetProgram(_) => 5,
             UnitsRpcApiError::GetNonce(_) => 6,
             UnitsRpcApiError::GetTransactionReceipt(_) => 7,
+            UnitsRpcApiError::Call(_) => 8,
         }
     }
 }
@@ -49,6 +52,7 @@ impl UnitsRpcApiError {
             UnitsRpcApiError::GetProgram(data) => Some(json!(data)),
             UnitsRpcApiError::GetNonce(data) => Some(json!(data)),
             UnitsRpcApiError::GetTransactionReceipt(data) => Some(json!(data)),
+            UnitsRpcApiError::Call(data) => Some(json!(data)),
         }
     }
 }

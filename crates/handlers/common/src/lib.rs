@@ -1,3 +1,4 @@
+pub mod call;
 pub mod declare_program;
 pub mod deploy_account;
 pub mod get_chain_id;

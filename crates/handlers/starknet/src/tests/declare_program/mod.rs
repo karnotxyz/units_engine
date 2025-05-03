@@ -28,6 +28,7 @@ use units_handlers_common::declare_program::declare_program;
 
 #[cfg(feature = "testing")]
 mod tests {
+
     use starknet::accounts::ConnectedAccount;
 
     use crate::tests::utils::scarb::Artifacts;
@@ -127,6 +128,21 @@ mod tests {
             .unwrap();
 
         assert_eq!(visibility, vec![ClassVisibility::Acl.into()]);
+
+        // Wait for a new block to be sure the ACL transaction from previous
+        // declare is on chain (otherwise we get a nonce issue)
+        let current_block = provider.block_number().await.unwrap();
+        let start_time = std::time::Instant::now();
+        let timeout = std::time::Duration::from_secs(10);
+        let retry_delay = std::time::Duration::from_millis(200);
+
+        while start_time.elapsed() < timeout {
+            let block = provider.block_number().await.unwrap();
+            if block > current_block {
+                break;
+            }
+            tokio::time::sleep(retry_delay).await;
+        }
 
         // Declare again with new ACL
         let declare_txn = build_declare_txn(
