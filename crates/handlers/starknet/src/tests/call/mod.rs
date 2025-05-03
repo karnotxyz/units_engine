@@ -124,7 +124,7 @@ async fn test_counter_increment(
             contract_address: counter_address.into(),
             function_selector: selector!("get_counter").into(),
             calldata: vec![],
-            signed_read_data: signed_read_data,
+            signed_read_data,
         },
     )
     .await
@@ -140,7 +140,7 @@ async fn test_counter_increment(
             contract_address: counter_address.into(),
             function_selector: selector!("get_counter").into(),
             calldata: vec![],
-            signed_read_data: signed_read_data,
+            signed_read_data,
         },
     )
     .await;

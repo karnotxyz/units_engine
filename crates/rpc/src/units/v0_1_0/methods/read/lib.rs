@@ -4,7 +4,8 @@ use crate::{
 };
 use jsonrpsee::core::{async_trait, RpcResult};
 use units_primitives::rpc::{
-    CallParams, CallResult, GetChainIdResult, GetNonceParams, GetNonceResult, GetProgramParams, GetProgramResult, GetTransactionReceiptParams, GetTransactionReceiptResult
+    CallParams, CallResult, GetChainIdResult, GetNonceParams, GetNonceResult, GetProgramParams,
+    GetProgramResult, GetTransactionReceiptParams, GetTransactionReceiptResult,
 };
 
 #[async_trait]

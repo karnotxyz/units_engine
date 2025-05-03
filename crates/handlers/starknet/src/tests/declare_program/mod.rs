@@ -28,10 +28,8 @@ use units_handlers_common::declare_program::declare_program;
 
 #[cfg(feature = "testing")]
 mod tests {
-    use std::time::Duration;
 
     use starknet::accounts::ConnectedAccount;
-    use tokio::time::sleep;
 
     use crate::tests::utils::scarb::Artifacts;
 

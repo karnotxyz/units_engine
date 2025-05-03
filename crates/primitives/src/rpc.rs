@@ -1,4 +1,5 @@
-use std::str::FromStr;
+use core::fmt;
+use std::{fmt::Display, str::FromStr};
 
 use crate::{read_data::SignedReadData, types::ClassVisibility};
 use serde::{Deserialize, Serialize};
@@ -84,9 +85,9 @@ impl FromStr for Bytes32 {
     }
 }
 
-impl ToString for Bytes32 {
-    fn to_string(&self) -> String {
-        self.to_hex()
+impl Display for Bytes32 {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.to_hex())
     }
 }
 
