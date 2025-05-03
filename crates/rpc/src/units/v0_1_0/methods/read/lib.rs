@@ -4,8 +4,7 @@ use crate::{
 };
 use jsonrpsee::core::{async_trait, RpcResult};
 use units_primitives::rpc::{
-    GetChainIdResult, GetNonceParams, GetNonceResult, GetProgramParams, GetProgramResult,
-    GetTransactionReceiptParams, GetTransactionReceiptResult,
+    CallParams, CallResult, GetChainIdResult, GetNonceParams, GetNonceResult, GetProgramParams, GetProgramResult, GetTransactionReceiptParams, GetTransactionReceiptResult
 };
 
 #[async_trait]
@@ -44,5 +43,12 @@ impl UnitsReadRpcApiV0_1_0Server for RpcContext {
             .await
             .map_err(UnitsRpcApiError::from)?;
         Ok(chain_id)
+    }
+
+    async fn call(&self, call: CallParams) -> RpcResult<CallResult> {
+        let result = units_handlers_common::call::call(self.global_ctx.clone(), call)
+            .await
+            .map_err(UnitsRpcApiError::from)?;
+        Ok(result)
     }
 }

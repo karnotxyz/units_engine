@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use crate::{read_data::SignedReadData, types::ClassVisibility};
 use serde::{Deserialize, Serialize};
 use starknet_crypto::Felt;
@@ -14,7 +16,7 @@ use starknet_crypto::Felt;
 //------------------------------------------------------------------------------
 
 /// A 32-byte value encoded as a hex string with 0x prefix
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Bytes32([u8; 32]);
 #[derive(Debug, thiserror::Error, Serialize, PartialEq, Eq)]
 pub enum Bytes32Error {
@@ -47,11 +49,44 @@ impl Bytes32 {
     }
 
     pub fn to_hex(&self) -> String {
-        hex::encode(self.0)
+        format!("0x{}", hex::encode(self.0))
     }
 
     pub fn to_bytes_be(&self) -> &[u8; 32] {
         &self.0
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for Bytes32 {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        Bytes32::from_hex(&s).map_err(serde::de::Error::custom)
+    }
+}
+
+impl serde::Serialize for Bytes32 {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(&self.to_hex())
+    }
+}
+
+impl FromStr for Bytes32 {
+    type Err = Bytes32Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Self::from_hex(s)
+    }
+}
+
+impl ToString for Bytes32 {
+    fn to_string(&self) -> String {
+        self.to_hex()
     }
 }
 
@@ -66,6 +101,20 @@ impl TryFrom<Bytes32> for Felt {
             ));
         }
         Ok(Felt::from_bytes_be(value.to_bytes_be()))
+    }
+}
+
+pub struct FeltVec(pub Vec<Felt>);
+
+impl TryFrom<Vec<Bytes32>> for FeltVec {
+    type Error = Bytes32Error;
+
+    fn try_from(value: Vec<Bytes32>) -> Result<Self, Self::Error> {
+        value
+            .into_iter()
+            .map(|b| b.try_into())
+            .collect::<Result<Vec<_>, _>>()
+            .map(FeltVec)
     }
 }
 
@@ -208,6 +257,20 @@ pub struct GetTransactionByHashResult {
     pub sender_address: Bytes32,
 }
 
+/// Parameters and result for calling a contract
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CallParams {
+    pub contract_address: Bytes32,
+    pub function_selector: Bytes32,
+    pub calldata: Vec<Bytes32>,
+    pub signed_read_data: SignedReadData,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CallResult {
+    pub result: Vec<Bytes32>,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -257,17 +320,17 @@ mod tests {
     }
 
     #[rstest]
-    #[case([0u8; 32], "0000000000000000000000000000000000000000000000000000000000000000")]
+    #[case([0u8; 32], "0x0000000000000000000000000000000000000000000000000000000000000000")]
     #[case({
         let mut bytes = [0u8; 32];
         bytes[31] = 1;
         bytes
-    }, "0000000000000000000000000000000000000000000000000000000000000001")]
+    }, "0x0000000000000000000000000000000000000000000000000000000000000001")]
     #[case({
         let mut bytes = [0u8; 32];
         bytes[28..].copy_from_slice(&[0xde, 0xad, 0xbe, 0xef]);
         bytes
-    }, "00000000000000000000000000000000000000000000000000000000deadbeef")]
+    }, "0x00000000000000000000000000000000000000000000000000000000deadbeef")]
     fn test_bytes32_to_hex(#[case] input: [u8; 32], #[case] expected: &str) {
         let bytes = Bytes32(input);
         assert_eq!(bytes.to_hex(), expected);
@@ -291,7 +354,8 @@ mod tests {
         // Remove leading zeros and compare
         let normalized_input = input.strip_prefix("0x").unwrap_or(input);
         let normalized_input = normalized_input.trim_start_matches('0');
-        let normalized_output = hex_str.trim_start_matches('0');
+        let normalized_output = hex_str.strip_prefix("0x").unwrap();
+        let normalized_output = normalized_output.trim_start_matches('0');
         assert_eq!(normalized_input, normalized_output);
     }
 
@@ -322,8 +386,6 @@ mod tests {
     fn test_bytes32_to_felt_roundtrip(#[case] input: &str) {
         let bytes = Bytes32::from_hex(input).unwrap();
         let felt = Felt::try_from(bytes).unwrap();
-        println!("felt: {:?}", felt);
-        println!("felt max: {:?}", Felt::ELEMENT_UPPER_BOUND);
         let bytes_from_felt: Bytes32 = Bytes32::from(felt);
 
         assert_eq!(bytes_from_felt, bytes);

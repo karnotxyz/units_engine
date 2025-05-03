@@ -5,3 +5,4 @@ pub mod get_nonce;
 pub mod get_program;
 pub mod get_transaction_receipt;
 pub mod send_transaction;
+pub mod call;

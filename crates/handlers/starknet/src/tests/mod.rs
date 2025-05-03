@@ -14,6 +14,8 @@ mod get_transaction_receipt;
 mod read_data;
 #[cfg(test)]
 mod send_transaction;
+#[cfg(test)]
+mod call;
 
 #[cfg(any(test, feature = "testing"))]
 pub mod utils;

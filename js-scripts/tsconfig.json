@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "noEmit": false,
+    "noEmitOnError": false,
+    "module": "esnext",
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "moduleResolution": "node"
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules"]
+}

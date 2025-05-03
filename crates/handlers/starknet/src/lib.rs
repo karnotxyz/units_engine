@@ -504,6 +504,27 @@ impl ChainHandler for StarknetContext {
         Ok(visibility)
     }
 
+    async fn call(
+        &self,
+        contract_address: Bytes32,
+        function_name: Bytes32,
+        calldata: Vec<Bytes32>,
+    ) -> Result<Vec<Bytes32>, ChainHandlerError> {
+        let result = self
+            .starknet_provider
+            .call(
+                FunctionCall {
+                    contract_address: contract_address.to_felt()?,
+                    entry_point_selector: function_name.to_felt()?,
+                    calldata: calldata.to_felt()?,
+                },
+                BlockId::Tag(BlockTag::Pending),
+            )
+            .await
+            .map_err(|e| ChainHandlerError::ProviderError(e.to_string()))?;
+        Ok(result.into_iter().map(|b| b.into()).collect())
+    }
+
     fn get_declare_acl_address(&self) -> Bytes32 {
         self.declare_acl_address().into()
     }
