@@ -315,6 +315,58 @@
           "$ref": "#/components/schemas/BYTES32"
         }
       }
+    },
+    {
+      "name": "units_call",
+      "description": "Call a contract",
+      "params": [
+        {
+          "name": "contract_address",
+          "description": "The address of the contract to call",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/BYTES32"
+          }
+        },
+        {
+          "name": "function_selector",
+          "description": "The function selector to call",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/BYTES32"
+          }
+        },
+        {
+          "name": "calldata",
+          "description": "The calldata for the function call",
+          "required": true,
+          "schema": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BYTES32"
+            }
+          }
+        },
+        {
+          "name": "signed_read_data",
+          "description": "Signed read data",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/SIGNED_READ_DATA"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "description": "The result of the function call",
+        "required": true,
+        "schema": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/BYTES32"
+          }
+        }
+      }
     }
   ],
   "components": {
