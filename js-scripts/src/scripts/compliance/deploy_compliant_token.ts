@@ -51,7 +51,6 @@ if (process.argv.length < 6) {
 }
 
 const owner = process.argv[2];
-const identity_registry = process.argv[3];
 const initial_supply = process.argv[4];
 const name = process.argv[5];
 const symbol = process.argv[6];

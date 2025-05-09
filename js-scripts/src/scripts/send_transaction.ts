@@ -26,6 +26,25 @@ async function send_transaction(
   ]);
 
   console.log("✅ Send transaction response: ", tx);
+
+  // Wait for receipt
+  let receipt = null;
+  for (let i = 0; i < 10; i++) {
+    try {
+      receipt = await unitsAccount.getTransactionReceipt(tx.transaction_hash);
+      if (receipt) {
+        console.log("✅ Transaction receipt: ", receipt);
+        break;
+      }
+    } catch (error) {
+      console.log(`Failed to get receipt, retrying... (${i + 1}/10)`);
+    }
+    await new Promise((resolve) => setTimeout(resolve, 200));
+  }
+
+  if (!receipt) {
+    console.log("❌ Failed to get transaction receipt after 10 attempts");
+  }
 }
 
 /// CLI HELPERS
