@@ -2,13 +2,15 @@ import { Signer } from "starknet";
 import { UnitsAccount } from "../account";
 import { UnitsProvider } from "../provider";
 import dotenv from "dotenv";
+import crypto from "crypto";
 
 dotenv.config();
 
 async function deploy_account() {
   const unitsProvider = new UnitsProvider(process.env.UNITS_RPC);
 
-  const privateKey = "0x125";
+  const privateKey = "0x" + crypto.randomBytes(31).toString("hex");
+  console.log("🔑 Private key: ", privateKey);
   const signer = new Signer(privateKey);
   const unitsAccount = UnitsAccount.newUndeployedAccount(
     unitsProvider,
@@ -17,6 +19,7 @@ async function deploy_account() {
     [await signer.getPubKey()],
     privateKey,
   );
+
 
   const deployAccountResponse = await unitsAccount.deploySelf();
 

@@ -30,6 +30,7 @@ async function transfer(token: string, amount: string, to: string) {
   console.log("✅ Initiated transfer:", transaction_hash);
 
   const receipt = await unitsAccount.getTransactionReceipt(transaction_hash);
+  console.log(receipt);
   assert(receipt.execution_status.type == "SUCCEEDED")
 }
 

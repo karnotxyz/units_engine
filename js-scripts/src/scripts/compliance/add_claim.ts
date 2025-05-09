@@ -6,7 +6,7 @@ import { sleep } from "./utils";
 
 dotenv.config();
 
-async function register_new_identity() {
+async function add_claim(token: string, topic: string) {
   console.log(process.env.UNITS_RPC);
   const unitsProvider = new UnitsProvider(process.env.UNITS_RPC);
   const unitsAccount = new UnitsAccount(
@@ -15,19 +15,18 @@ async function register_new_identity() {
     process.env.PRIVATE_KEY,
   );
 
-
   let { transaction_hash } = await unitsAccount.sendTransaction(
     [
       {
-        contractAddress: process.env.IDENTITY_REGISTRY,
-        entrypoint: "get_new_identity",
-        calldata: [process.env.ACCOUNT_ADDRESS]
+        contractAddress: token,
+        entrypoint: "add_claim",
+        calldata: [topic]
       }
     ]
   );
 
   await sleep(5000);
-  console.log("✅ Initiated getting identity:", transaction_hash);
+  console.log("✅ Initiated adding claim check:", transaction_hash);
 
   const receipt = await unitsAccount.getTransactionReceipt(transaction_hash);
   assert(receipt.execution_status.type == "SUCCEEDED")
@@ -35,10 +34,12 @@ async function register_new_identity() {
 
 /// CLI HELPERS
 
-if (process.argv.length < 2) {
-  console.error("Usage: ts-node register_new_identity.ts");
+if (process.argv.length < 3) {
+  console.error("Usage: ts-node add_claim.ts <token> <topic>");
   process.exit(1);
 }
 
+const token = process.argv[2];
+const topic = process.argv[3];
 
-register_new_identity();
+add_claim(token, topic);
