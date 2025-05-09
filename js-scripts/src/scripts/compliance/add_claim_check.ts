@@ -15,22 +15,20 @@ async function add_claim_check(token: string, topic: string, issuer: string) {
     process.env.PRIVATE_KEY,
   );
 
-
-  let { transaction_hash } = await unitsAccount.sendTransaction(
-    [
-      {
-        contractAddress: token,
-        entrypoint: "add_claim_check",
-        calldata: [topic, issuer]
-      }
-    ]
-  );
+  let { transaction_hash } = await unitsAccount.sendTransaction([
+    {
+      contractAddress: token,
+      entrypoint: "add_claim_check",
+      calldata: [topic, issuer],
+    },
+  ]);
 
   await sleep(5000);
   console.log("✅ Initiated adding claim check:", transaction_hash);
 
   const receipt = await unitsAccount.getTransactionReceipt(transaction_hash);
-  assert(receipt.execution_status.type == "SUCCEEDED")
+  console.log(receipt);
+  assert(receipt.execution_status.type == "SUCCEEDED");
 }
 
 /// CLI HELPERS
