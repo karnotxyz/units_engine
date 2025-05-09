@@ -39,6 +39,8 @@ async function deploy_compliance_token(classHash: string, owner: string, identit
 
     const receipt = await unitsAccount.getTransactionReceipt(deployProgramResponse.transaction_hash);
     assert(receipt.execution_status.type == "SUCCEEDED")
+
+    console.log("Compliant token address", receipt.events[0].data[0]);
 }
 
 /// CLI HELPERS

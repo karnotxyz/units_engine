@@ -6,7 +6,7 @@ import { sleep } from "./utils";
 
 dotenv.config();
 
-async function transfer(token: string, amount: string, to: string) {
+async function register_new_identity(identity_address: string, user: string) {
   console.log(process.env.UNITS_RPC);
   const unitsProvider = new UnitsProvider(process.env.UNITS_RPC);
   const unitsAccount = new UnitsAccount(
@@ -19,9 +19,9 @@ async function transfer(token: string, amount: string, to: string) {
   let { transaction_hash } = await unitsAccount.sendTransaction(
     [
       {
-        contractAddress: token,
-        entrypoint: "transfer",
-        calldata: [to, amount]
+        contractAddress: identity_address,
+        entrypoint: "get_new_identity",
+        calldata: [user]
       }
     ]
   );
@@ -36,12 +36,10 @@ async function transfer(token: string, amount: string, to: string) {
 /// CLI HELPERS
 
 if (process.argv.length < 4) {
-  console.error("Usage: ts-node transfer.ts <token> <amount> <to>");
+  console.error("Usage: ts-node register_new_identity.ts <identity_addres> <user>");
   process.exit(1);
 }
 
-const token = process.argv[2];
-const amount = process.argv[3];
-const to = process.argv[4];
-
-transfer(token, amount, to);
+const identity_address = process.argv[2];
+const user = process.argv[3];
+register_new_identity(identity_address, user);
