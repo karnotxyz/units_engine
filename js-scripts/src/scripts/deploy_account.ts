@@ -8,7 +8,7 @@ dotenv.config();
 async function deploy_account() {
   const unitsProvider = new UnitsProvider(process.env.UNITS_RPC);
 
-  const privateKey = "0x124";
+  const privateKey = "0x125";
   const signer = new Signer(privateKey);
   const unitsAccount = UnitsAccount.newUndeployedAccount(
     unitsProvider,
