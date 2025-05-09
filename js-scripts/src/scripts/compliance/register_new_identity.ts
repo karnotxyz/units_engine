@@ -19,9 +19,9 @@ async function transfer(token: string, amount: string, to: string) {
   let { transaction_hash } = await unitsAccount.sendTransaction(
     [
       {
-        contractAddress: identity_address,
-        entrypoint: "get_new_identity",
-        calldata: [user]
+        contractAddress: token,
+        entrypoint: "transfer",
+        calldata: [to, amount]
       }
     ]
   );
