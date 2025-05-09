@@ -23,7 +23,7 @@ async function add_claim_check(token: string, topic: string, issuer: string) {
     },
   ]);
 
-  await sleep(5000);
+  await sleep(2000);
   console.log("✅ Initiated adding claim check:", transaction_hash);
 
   const receipt = await unitsAccount.getTransactionReceipt(transaction_hash);

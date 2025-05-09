@@ -7,40 +7,45 @@ import { sleep } from "./utils";
 dotenv.config();
 
 async function deploy_compliance_contract(classHash: string, fee: string) {
-    console.log(process.env.UNITS_RPC);
-    const unitsProvider = new UnitsProvider(process.env.UNITS_RPC);
-    const unitsAccount = new UnitsAccount(
-        unitsProvider,
-        process.env.ACCOUNT_ADDRESS,
-        process.env.PRIVATE_KEY,
-    );
+  console.log(process.env.UNITS_RPC);
+  const unitsProvider = new UnitsProvider(process.env.UNITS_RPC);
+  const unitsAccount = new UnitsAccount(
+    unitsProvider,
+    process.env.ACCOUNT_ADDRESS,
+    process.env.PRIVATE_KEY,
+  );
 
-    console.log("Deploying Compliance fee module...")
+  console.log("Deploying Compliance fee module...");
 
-    let unixTime = new Date().getTime();
-    // Then deploy the program
-    const deployProgramResponse = await unitsAccount.deployProgram(
-        classHash,
-        [fee],
-        unixTime.toString()
-    );
+  let unixTime = new Date().getTime();
+  // Then deploy the program
+  const deployProgramResponse = await unitsAccount.deployProgram(
+    classHash,
+    [fee],
+    unixTime.toString(),
+  );
 
-    await sleep(5000);
+  await sleep(2000);
 
-    console.log("✅ Deploy program response: ", deployProgramResponse);
+  console.log("✅ Deploy program response: ", deployProgramResponse);
 
-    const receipt = await unitsAccount.getTransactionReceipt(deployProgramResponse.transaction_hash);
-    assert(receipt.execution_status.type == "SUCCEEDED");
+  const receipt = await unitsAccount.getTransactionReceipt(
+    deployProgramResponse.transaction_hash,
+  );
+  assert(receipt.execution_status.type == "SUCCEEDED");
 
-    console.log("Compliance token address: ", receipt.events[0].data[0]);
+  console.log("Compliance token address: ", receipt.events[0].data[0]);
 }
 
 /// CLI HELPERS
 
 if (process.argv.length < 2) {
-    console.error("Usage: ts-node deploy_compliance_contract.ts <fee>");
-    process.exit(1);
+  console.error("Usage: ts-node deploy_compliance_contract.ts <fee>");
+  process.exit(1);
 }
-const fee = process.argv[2]
+const fee = process.argv[2];
 
-deploy_compliance_contract("0x042f2a472daae05481b88ada14be4c9c180b9d96b07874842c8d70cec28ff320", fee);
+deploy_compliance_contract(
+  "0x042f2a472daae05481b88ada14be4c9c180b9d96b07874842c8d70cec28ff320",
+  fee,
+);

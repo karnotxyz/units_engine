@@ -39,7 +39,7 @@ async function deploy_compliance_token(
     unixTime.toString(),
   );
 
-  await sleep(5000);
+  await sleep(2000);
 
   console.log("✅ Deploy program response: ", deployProgramResponse);
 
@@ -66,7 +66,7 @@ const name = process.argv[4];
 const symbol = process.argv[5];
 
 deploy_compliance_token(
-  "0x052ca4b2d3b211bd64f7fa3080f69d02b78f293cb330e9ffec165c76f5203628",
+  "0x0323fdaa75a3a8125e155cc82c1bae03a2dabb17e63168a5d3a8c3498d2f9e49",
   owner,
   initial_supply,
   name,

@@ -15,23 +15,20 @@ async function transfer(token: string, amount: string, to: string) {
     process.env.PRIVATE_KEY,
   );
 
+  let { transaction_hash } = await unitsAccount.sendTransaction([
+    {
+      contractAddress: token,
+      entrypoint: "transfer",
+      calldata: [to, amount, 0],
+    },
+  ]);
 
-  let { transaction_hash } = await unitsAccount.sendTransaction(
-    [
-      {
-        contractAddress: token,
-        entrypoint: "transfer",
-        calldata: [to, amount, 0]
-      }
-    ]
-  );
-
-  await sleep(5000);
+  await sleep(2000);
   console.log("✅ Initiated transfer:", transaction_hash);
 
   const receipt = await unitsAccount.getTransactionReceipt(transaction_hash);
   console.log(receipt);
-  assert(receipt.execution_status.type == "SUCCEEDED")
+  assert(receipt.execution_status.type == "SUCCEEDED");
 }
 
 /// CLI HELPERS
