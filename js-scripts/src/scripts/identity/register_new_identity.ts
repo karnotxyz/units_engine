@@ -2,12 +2,10 @@ import assert from "assert";
 import { UnitsAccount } from "../../account";
 import { UnitsProvider } from "../../provider";
 import dotenv from "dotenv";
-import { sleep } from "./utils";
 
 dotenv.config();
 
 async function register_new_identity() {
-  console.log(process.env.UNITS_RPC);
   const unitsProvider = new UnitsProvider(process.env.UNITS_RPC);
   const unitsAccount = new UnitsAccount(
     unitsProvider,
@@ -23,10 +21,9 @@ async function register_new_identity() {
     },
   ]);
 
-  await sleep(2000);
   console.log("✅ Initiated getting identity:", transaction_hash);
 
-  const receipt = await unitsAccount.getTransactionReceipt(transaction_hash);
+  const receipt = await unitsAccount.waitForTransaction(transaction_hash);
   assert(receipt.execution_status.type == "SUCCEEDED");
 }
 

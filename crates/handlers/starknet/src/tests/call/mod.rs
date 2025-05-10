@@ -90,7 +90,7 @@ async fn test_counter_increment(
         global_ctx.clone(),
         CallParams {
             contract_address: counter_address.into(),
-            function_selector: selector!("get_counter").into(),
+            function_name: "get_counter".to_string(),
             calldata: vec![],
             signed_read_data: signed_read_data.clone(),
         },
@@ -122,7 +122,7 @@ async fn test_counter_increment(
         global_ctx.clone(),
         CallParams {
             contract_address: counter_address.into(),
-            function_selector: selector!("get_counter").into(),
+            function_name: "get_counter".to_string(),
             calldata: vec![],
             signed_read_data,
         },
@@ -138,7 +138,7 @@ async fn test_counter_increment(
         global_ctx,
         CallParams {
             contract_address: counter_address.into(),
-            function_selector: selector!("get_counter").into(),
+            function_name: "get_counter".to_string(),
             calldata: vec![],
             signed_read_data,
         },

@@ -202,7 +202,7 @@ class UnitsProvider {
     return this.makeRequest("call", {
       call: {
         contract_address: contractAddress,
-        function_selector: entrypoint,
+        function_name: entrypoint,
         calldata: calldata,
         signed_read_data: signedReadData,
       },

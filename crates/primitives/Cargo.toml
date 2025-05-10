@@ -15,7 +15,7 @@ hex.workspace = true
 jsonrpsee.workspace = true
 serde.workspace = true
 serde_json.workspace = true
-starknet = { workspace = true, optional = true }
+starknet = { workspace = true }
 starknet-crypto.workspace = true
 thiserror.workspace = true
 units-utils.workspace = true
@@ -27,4 +27,4 @@ units-tests-utils.workspace = true
 assert_matches.workspace = true
 
 [features]
-testing = ["starknet"]
+testing = []

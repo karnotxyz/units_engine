@@ -262,7 +262,7 @@ pub struct GetTransactionByHashResult {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CallParams {
     pub contract_address: Bytes32,
-    pub function_selector: Bytes32,
+    pub function_name: String,
     pub calldata: Vec<Bytes32>,
     pub signed_read_data: SignedReadData,
 }

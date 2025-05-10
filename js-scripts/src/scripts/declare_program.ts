@@ -7,7 +7,6 @@ import fs from "fs";
 dotenv.config();
 
 async function declare_program(programJson: any, compiledProgramJson: any) {
-  console.log(process.env.UNITS_RPC);
   const unitsProvider = new UnitsProvider(process.env.UNITS_RPC);
   const unitsAccount = new UnitsAccount(
     unitsProvider,

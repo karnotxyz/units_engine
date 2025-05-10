@@ -2,7 +2,7 @@ import assert from "assert";
 import { UnitsAccount } from "../../account";
 import { UnitsProvider } from "../../provider";
 import dotenv from "dotenv";
-import { sleep } from "./utils";
+
 import { byteArray, CallData, num } from "starknet";
 
 dotenv.config();
@@ -14,7 +14,6 @@ async function deploy_compliance_token(
   name: string,
   symbol: string,
 ) {
-  console.log(process.env.UNITS_RPC);
   const unitsProvider = new UnitsProvider(process.env.UNITS_RPC);
   const unitsAccount = new UnitsAccount(
     unitsProvider,
@@ -39,16 +38,7 @@ async function deploy_compliance_token(
     unixTime.toString(),
   );
 
-  await sleep(2000);
-
   console.log("✅ Deploy program response: ", deployProgramResponse);
-
-  const receipt = await unitsAccount.getTransactionReceipt(
-    deployProgramResponse.transaction_hash,
-  );
-  assert(receipt.execution_status.type == "SUCCEEDED");
-
-  console.log("Compliant token address", receipt.events[0].data[0]);
 }
 
 /// CLI HELPERS
@@ -66,7 +56,7 @@ const name = process.argv[4];
 const symbol = process.argv[5];
 
 deploy_compliance_token(
-  "0x0323fdaa75a3a8125e155cc82c1bae03a2dabb17e63168a5d3a8c3498d2f9e49",
+  "0x00daa05ad313eac3b6c419a847948eca949b7733c9742e32293ff28885eb803c",
   owner,
   initial_supply,
   name,

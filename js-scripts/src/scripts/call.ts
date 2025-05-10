@@ -9,7 +9,6 @@ async function call(
   entrypoint: string,
   calldata: string[],
 ) {
-  console.log(process.env.UNITS_RPC);
   const unitsProvider = new UnitsProvider(process.env.UNITS_RPC);
   const unitsAccount = new UnitsAccount(
     unitsProvider,

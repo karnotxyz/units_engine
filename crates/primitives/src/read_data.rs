@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use crate::context::{ChainHandler, ChainHandlerError};
 use serde::{Deserialize, Serialize};
+use starknet::core::utils::get_selector_from_name;
 use starknet_crypto::poseidon_hash_many;
 use starknet_crypto::Felt;
 
@@ -26,6 +27,8 @@ pub enum ReadDataError {
     MissingRequiredReadTypes,
     #[error("Chain handler error: {0}")]
     ChainHandlerError(#[from] ChainHandlerError),
+    #[error("Invalid function name")]
+    InvalidFunctionName,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -150,6 +153,24 @@ pub enum ReadType {
         function_selector: Felt,
         calldata: Vec<Felt>,
     },
+}
+
+impl ReadType {
+    pub fn new_call(
+        contract_address: Felt,
+        function_name: String,
+        calldata: Vec<Felt>,
+    ) -> Result<Self, ReadDataError> {
+        // We need to import `starknet` crate to use `get_selector_from_name` which is not generic
+        // TODO: Make this generic
+        let function_selector = get_selector_from_name(&function_name)
+            .map_err(|_| ReadDataError::InvalidFunctionName)?;
+        Ok(Self::Call {
+            contract_address,
+            function_selector,
+            calldata,
+        })
+    }
 }
 
 impl ReadType {
