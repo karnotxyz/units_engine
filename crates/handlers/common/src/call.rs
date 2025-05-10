@@ -30,11 +30,11 @@ pub async fn call(
         .signed_read_data
         .verify(
             handler.clone(),
-            vec![ReadType::Call {
-                contract_address: params.contract_address.try_into()?,
-                function_selector: params.function_selector.try_into()?,
-                calldata: FeltVec::try_from(params.calldata.clone())?.0,
-            }],
+            vec![ReadType::new_call(
+                params.contract_address.try_into()?,
+                params.function_name.clone(),
+                FeltVec::try_from(params.calldata.clone())?.0,
+            )?],
         )
         .await?
     {
@@ -43,9 +43,10 @@ pub async fn call(
 
     // Call the contract
     let result = handler
-        .call(
+        .simulate_call(
+            (*params.signed_read_data.read_data().read_address()).into(),
             params.contract_address,
-            params.function_selector,
+            params.function_name,
             params.calldata,
         )
         .await?;

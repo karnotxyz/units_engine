@@ -26,6 +26,8 @@ pub enum ChainHandlerError {
     InvalidFunctionName(String),
     #[error("Simulation error: {0}")]
     SimulationError(String),
+    #[error("Simulation reverted: {0}")]
+    SimulationReverted(String),
     #[error("Conversion error: {0}")]
     ConversionError(String),
     #[error("Invalid program: {0}")]
@@ -107,14 +109,14 @@ pub trait ChainHandler: Send + Sync {
         function_name: String,
     ) -> Result<bool, ChainHandlerError>;
 
-    /// Simulate read access check
-    async fn simulate_read_access_check(
+    /// Simulate call
+    async fn simulate_call(
         &self,
         caller_address: Bytes32,
         contract_address: Bytes32,
         function_name: String,
         calldata: Vec<Bytes32>,
-    ) -> Result<bool, ChainHandlerError>;
+    ) -> Result<Vec<Bytes32>, ChainHandlerError>;
 
     /// Compute class hash
     async fn compute_program_hash(
@@ -146,6 +148,34 @@ pub trait ChainHandler: Send + Sync {
 
     /// Get contract address of declare ACL contract
     fn get_declare_acl_address(&self) -> Bytes32;
+
+    /// Simulate read access check
+    async fn simulate_read_access_check(
+        &self,
+        caller_address: Bytes32,
+        contract_address: Bytes32,
+        function_name: String,
+        calldata: Vec<Bytes32>,
+    ) -> Result<bool, ChainHandlerError> {
+        match self
+            .simulate_call(caller_address, contract_address, function_name, calldata)
+            .await
+        {
+            Ok(result) => {
+                let can_read = result.get(2).ok_or(ChainHandlerError::SimulationError(
+                    "Invalid result for boolean read".to_string(),
+                ))?;
+                if can_read != &Bytes32::from_hex("0x1").unwrap() {
+                    return Ok(false);
+                }
+                Ok(true)
+            }
+            Err(ChainHandlerError::SimulationReverted(_)) => {
+                return Ok(false);
+            }
+            Err(e) => Err(e),
+        }
+    }
 }
 
 pub struct GlobalContext {

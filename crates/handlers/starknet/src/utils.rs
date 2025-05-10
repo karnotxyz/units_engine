@@ -328,13 +328,15 @@ pub enum SimulationError {
     EmptyBooleanReadResult,
     #[error("Starknet error: {0}")]
     StarknetError(#[from] ProviderError),
+    #[error("Transaction reverted: {0}")]
+    TransactionReverted(String),
 }
 
-pub async fn simulate_boolean_read(
+pub async fn simulate_calls(
     calls: Vec<Call>,
     account_address: Felt,
     provider: Arc<StarknetProvider>,
-) -> Result<bool, SimulationError> {
+) -> Result<Vec<Felt>, SimulationError> {
     let simulation =
         build_invoke_simulate_transaction(calls, account_address, provider.clone()).await?;
 
@@ -350,17 +352,10 @@ pub async fn simulate_boolean_read(
         .get_execution_result()
         .map_err(SimulationError::FailedExecutionResultRead)?
     {
-        ExecuteInvocation::Success(function_invocation) => {
-            let can_read = function_invocation
-                .result
-                .get(2)
-                .ok_or(SimulationError::EmptyBooleanReadResult)?;
-            if can_read != &Felt::ONE {
-                return Ok(false);
-            }
-            Ok(true)
-        }
-        ExecuteInvocation::Reverted(_) => Ok(false),
+        ExecuteInvocation::Success(function_invocation) => Ok(function_invocation.result),
+        ExecuteInvocation::Reverted(reverted_invocation) => Err(
+            SimulationError::TransactionReverted(reverted_invocation.revert_reason),
+        ),
     }
 }
 

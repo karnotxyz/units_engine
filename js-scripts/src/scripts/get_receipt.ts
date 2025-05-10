@@ -5,7 +5,6 @@ import dotenv from "dotenv";
 dotenv.config();
 
 async function get_receipt(transactionHash: string) {
-  console.log(process.env.UNITS_RPC);
   const unitsProvider = new UnitsProvider(process.env.UNITS_RPC);
   const unitsAccount = new UnitsAccount(
     unitsProvider,

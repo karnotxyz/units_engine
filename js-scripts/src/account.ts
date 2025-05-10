@@ -9,6 +9,8 @@ import {
   Signer,
   ec,
   selector,
+  constants,
+  transaction,
 } from "starknet";
 import {
   ClassVisibility,
@@ -158,28 +160,28 @@ class UnitsAccount {
     constructorArgs: string[],
     salt: string,
   ): Promise<{ transaction_hash: string; program_address: string }> {
-    const udcDeployPayload = await this.starknetAccount.buildUDCContractPayload(
+    const unique = true;
+
+    const udcDeployPayload = transaction.buildUDCCall(
       {
         classHash: programHash,
         constructorCalldata: constructorArgs,
         salt,
-        unique: true,
+        unique,
       },
+      this.address,
     );
-    const sendTransactionResponse =
-      await this.sendTransaction(udcDeployPayload);
+    const sendTransactionResponse = await this.sendTransaction(
+      udcDeployPayload.calls,
+    );
 
-    // TODO: Debug why this is not working
-    // const contractAddress = hash.calculateContractAddressFromHash(
-    //   salt,
-    //   programHash,
-    //   constructorArgs,
-    //   this.address,
-    // );
+    const receipt = await this.waitForTransaction(
+      sendTransactionResponse.transaction_hash,
+    );
 
     return {
       transaction_hash: sendTransactionResponse.transaction_hash,
-      program_address: "",
+      program_address: receipt.events[0].data[0],
     };
   }
 
@@ -261,10 +263,36 @@ class UnitsAccount {
     ]);
     return this.unitsProvider.call(
       contractAddress,
-      entrypointSelector,
+      entrypoint,
       calldata,
       signedReadData,
     );
+  }
+
+  async waitForTransaction(
+    transactionHash: string,
+  ): Promise<TransactionReceipt> {
+    const MAX_ATTEMPTS = 10;
+    const SLEEP_TIME_MS = 200;
+
+    let receipt = null;
+    for (let i = 0; i < MAX_ATTEMPTS; i++) {
+      try {
+        receipt = await this.getTransactionReceipt(transactionHash);
+        if (receipt) {
+          break;
+        }
+      } catch (error) {}
+      await new Promise((resolve) => setTimeout(resolve, SLEEP_TIME_MS));
+    }
+
+    if (!receipt) {
+      throw new Error(
+        `Failed to get transaction receipt after ${MAX_ATTEMPTS} attempts`,
+      );
+    }
+
+    return receipt;
   }
 
   async buildSignedReadData(readTypes: ReadType[]): Promise<SignedReadData> {

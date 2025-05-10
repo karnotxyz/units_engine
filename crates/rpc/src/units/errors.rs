@@ -8,21 +8,21 @@ use units_handlers_common::{
 #[cfg_attr(test, derive(PartialEq, Eq))]
 #[derive(thiserror::Error, Debug)]
 pub enum UnitsRpcApiError {
-    #[error("Failed to get chain id")]
+    #[error("Failed to get chain id {0}")]
     GetChainId(#[from] GetChainIdError),
-    #[error("Failed to declare program")]
+    #[error("Failed to declare program {0}")]
     DeclareProgram(#[from] DeclareProgramError),
-    #[error("Failed to send transaction")]
+    #[error("Failed to send transaction {0}")]
     SendTransaction(#[from] SendTransactionError),
-    #[error("Failed to deploy account")]
+    #[error("Failed to deploy account {0}")]
     DeployAccount(#[from] DeployAccountError),
-    #[error("Failed to get program")]
+    #[error("Failed to get program {0}")]
     GetProgram(#[from] GetProgramError),
-    #[error("Failed to get nonce")]
+    #[error("Failed to get nonce {0}")]
     GetNonce(#[from] GetNonceError),
-    #[error("Failed to get transaction receipt")]
+    #[error("Failed to get transaction receipt {0}")]
     GetTransactionReceipt(#[from] GetTransactionReceiptError),
-    #[error("Failed to call")]
+    #[error("Failed to call {0}")]
     Call(#[from] CallError),
 }
 

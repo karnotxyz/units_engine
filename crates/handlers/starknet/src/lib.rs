@@ -31,7 +31,8 @@ use units_primitives::{
     types::ClassVisibility,
 };
 use utils::{
-    contract_address_has_selector, simulate_boolean_read, GetSenderAddress, ToFelt, WaitForReceipt,
+    contract_address_has_selector, simulate_calls, GetSenderAddress, SimulationError, ToFelt,
+    WaitForReceipt,
 };
 
 #[cfg(any(test, feature = "testing"))]
@@ -421,14 +422,14 @@ impl ChainHandler for StarknetContext {
         Ok(has_selector)
     }
 
-    async fn simulate_read_access_check(
+    async fn simulate_call(
         &self,
         caller_address: Bytes32,
         contract_address: Bytes32,
         function_name: String,
         calldata: Vec<Bytes32>,
-    ) -> Result<bool, ChainHandlerError> {
-        simulate_boolean_read(
+    ) -> Result<Vec<Bytes32>, ChainHandlerError> {
+        let result = simulate_calls(
             vec![Call {
                 to: contract_address.to_felt()?,
                 selector: get_selector_from_name(function_name.as_str())
@@ -439,7 +440,16 @@ impl ChainHandler for StarknetContext {
             self.starknet_provider.clone(),
         )
         .await
-        .map_err(|e| ChainHandlerError::SimulationError(e.to_string()))
+        .map_err(|e| match e {
+            SimulationError::TransactionReverted(revert_reason) => {
+                ChainHandlerError::SimulationReverted(revert_reason)
+            }
+            _ => ChainHandlerError::SimulationError(e.to_string()),
+        })?
+        .into_iter()
+        .map(|b| b.into())
+        .collect();
+        Ok(result)
     }
 
     async fn compute_program_hash(

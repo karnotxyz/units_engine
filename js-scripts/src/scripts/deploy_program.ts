@@ -5,7 +5,6 @@ import dotenv from "dotenv";
 dotenv.config();
 
 async function deploy_program(classHash: string) {
-  console.log(process.env.UNITS_RPC);
   const unitsProvider = new UnitsProvider(process.env.UNITS_RPC);
   const unitsAccount = new UnitsAccount(
     unitsProvider,
@@ -17,7 +16,7 @@ async function deploy_program(classHash: string) {
   const deployProgramResponse = await unitsAccount.deployProgram(
     classHash,
     [],
-    "0x0",
+    "0x" + new Date().getTime().toString(16),
   );
 
   console.log("✅ Deploy program response: ", deployProgramResponse);
