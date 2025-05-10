@@ -157,13 +157,14 @@ pub trait ChainHandler: Send + Sync {
         function_name: String,
         calldata: Vec<Bytes32>,
     ) -> Result<bool, ChainHandlerError> {
-        match self.simulate_call(caller_address, contract_address, function_name, calldata).await {
+        match self
+            .simulate_call(caller_address, contract_address, function_name, calldata)
+            .await
+        {
             Ok(result) => {
-                let can_read = result
-                    .get(2)
-                    .ok_or(ChainHandlerError::SimulationError(
-                        "Invalid result for boolean read".to_string(),
-                    ))?;
+                let can_read = result.get(2).ok_or(ChainHandlerError::SimulationError(
+                    "Invalid result for boolean read".to_string(),
+                ))?;
                 if can_read != &Bytes32::from_hex("0x1").unwrap() {
                     return Ok(false);
                 }

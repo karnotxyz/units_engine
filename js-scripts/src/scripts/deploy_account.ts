@@ -20,7 +20,6 @@ async function deploy_account() {
     privateKey,
   );
 
-
   const deployAccountResponse = await unitsAccount.deploySelf();
 
   console.log("✅ Deploy account response: ", deployAccountResponse);

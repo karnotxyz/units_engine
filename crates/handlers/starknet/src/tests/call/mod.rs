@@ -259,7 +259,7 @@ async fn test_read_with_approval(
         .execute_v3(vec![starknet::core::types::Call {
             to: contract_address,
             selector: selector!("add_approved_user"),
-            calldata: vec![user_account.address().into()],
+            calldata: vec![user_account.address()],
         }])
         .gas(0)
         .gas_price(0)
