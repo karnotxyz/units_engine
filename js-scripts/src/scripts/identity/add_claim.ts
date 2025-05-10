@@ -22,16 +22,19 @@ async function add_claim(user: string, topic: string) {
 
   let { transaction_hash } = await unitsAccount.sendTransaction([
     {
-      contractAddress: result[0],
+      contractAddress: result[2],
       entrypoint: "add_claim",
       calldata: [topic],
     },
   ]);
 
-  console.log("✅ Initiated adding claim:", transaction_hash);
-
   const receipt = await unitsAccount.waitForTransaction(transaction_hash);
-  assert(receipt.execution_status.type == "SUCCEEDED");
+  if (receipt.execution_status.type != "SUCCEEDED") {
+    console.error("❌ Add claim failed:", receipt);
+    process.exit(1);
+  }
+
+  console.log("✅ Added claim:", topic);
 }
 
 /// CLI HELPERS

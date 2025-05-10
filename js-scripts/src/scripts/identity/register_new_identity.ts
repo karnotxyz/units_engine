@@ -21,10 +21,10 @@ async function register_new_identity() {
     },
   ]);
 
-  console.log("✅ Initiated getting identity:", transaction_hash);
-
   const receipt = await unitsAccount.waitForTransaction(transaction_hash);
   assert(receipt.execution_status.type == "SUCCEEDED");
+
+  console.log("✅ Created onchain identity");
 }
 
 /// CLI HELPERS
