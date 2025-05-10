@@ -130,7 +130,7 @@ async fn test_counter_increment(
     .await
     .unwrap();
 
-    assert_eq!(counter_value.result[0], Felt::from(0).into());
+    assert_eq!(counter_value.result[2], Felt::from(0).into());
 
     // Read with invalid signature
     let signed_read_data = sign_read_data(read_data, Felt::THREE).await.unwrap();
