@@ -5,7 +5,7 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-async function transfer(token: string, amount: string, to: string) {
+async function transfer(amount: string, to: string) {
   const unitsProvider = new UnitsProvider(process.env.UNITS_RPC);
   const unitsAccount = new UnitsAccount(
     unitsProvider,
@@ -15,28 +15,29 @@ async function transfer(token: string, amount: string, to: string) {
 
   let { transaction_hash } = await unitsAccount.sendTransaction([
     {
-      contractAddress: token,
+      contractAddress: process.env.TOKEN,
       entrypoint: "transfer",
       calldata: [to, amount, 0],
     },
   ]);
 
-  console.log("✅ Initiated transfer:", transaction_hash);
-
   const receipt = await unitsAccount.waitForTransaction(transaction_hash);
-  console.log(receipt);
-  assert(receipt.execution_status.type == "SUCCEEDED");
+  if (receipt.execution_status.type != "SUCCEEDED") {
+    console.error("❌ Transfer failed:", receipt);
+    process.exit(1);
+  }
+
+  console.log("✅ Transferred:", amount, "to:", to);
 }
 
 /// CLI HELPERS
 
 if (process.argv.length < 4) {
-  console.error("Usage: ts-node transfer.ts <token> <amount> <to>");
+  console.error("Usage: ts-node transfer.ts <amount> <to>");
   process.exit(1);
 }
 
-const token = process.argv[2];
-const amount = process.argv[3];
-const to = process.argv[4];
+const amount = process.argv[2];
+const to = process.argv[3];
 
-transfer(token, amount, to);
+transfer(amount, to);

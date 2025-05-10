@@ -5,7 +5,7 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-async function add_compliance_check(token: string, compliance_module: string) {
+async function add_compliance_check() {
   const unitsProvider = new UnitsProvider(process.env.UNITS_RPC);
   const unitsAccount = new UnitsAccount(
     unitsProvider,
@@ -15,27 +15,26 @@ async function add_compliance_check(token: string, compliance_module: string) {
 
   let { transaction_hash } = await unitsAccount.sendTransaction([
     {
-      contractAddress: token,
+      contractAddress: process.env.TOKEN,
       entrypoint: "add_compliance_check",
-      calldata: [compliance_module],
+      calldata: [process.env.COMPLIANCE_MODULE],
     },
   ]);
 
-  console.log("✅ Initiated adding compliance check:", transaction_hash);
-
   const receipt = await unitsAccount.waitForTransaction(transaction_hash);
-  console.log(receipt);
-  assert(receipt.execution_status.type == "SUCCEEDED");
+  if (receipt.execution_status.type != "SUCCEEDED") {
+    console.error("❌ Add compliance check failed:", receipt);
+    process.exit(1);
+  }
+
+  console.log("✅ Added compliance check:", process.env.COMPLIANCE_MODULE);
 }
 
 /// CLI HELPERS
 
-if (process.argv.length < 3) {
-  console.error("Usage: ts-node add_compliance_check.ts <token>");
+if (process.argv.length < 2) {
+  console.error("Usage: ts-node add_compliance_check.ts");
   process.exit(1);
 }
 
-const token = process.argv[2];
-const compliance_module = process.env.COMPLIANCE_MODULE;
-
-add_compliance_check(token, compliance_module);
+add_compliance_check();
