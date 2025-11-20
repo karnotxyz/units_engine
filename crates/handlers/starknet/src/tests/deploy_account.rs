@@ -39,8 +39,6 @@ async fn test_add_deploy_account_transaction(
     let account_address = account_factory.deploy_v3(salt).address();
     let prepared_deployment = account_factory
         .deploy_v3(salt)
-        .gas(0)
-        .gas_price(0)
         .nonce(Felt::ZERO)
         .prepared()
         .unwrap();
@@ -62,7 +60,7 @@ async fn test_add_deploy_account_transaction(
         .await
         .unwrap();
     let class_hash_at = starknet_provider
-        .get_class_hash_at(BlockId::Tag(BlockTag::Pending), account_address)
+        .get_class_hash_at(BlockId::Tag(BlockTag::PreConfirmed), account_address)
         .await
         .unwrap();
     assert_eq!(

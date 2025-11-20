@@ -58,7 +58,7 @@ async fn test_add_invoke_transaction(
     // Sign the message
     let nonce = provider
         .get_nonce(
-            BlockId::Tag(BlockTag::Pending),
+            BlockId::Tag(BlockTag::PreConfirmed),
             accounts[0].account.address(),
         )
         .await
@@ -71,8 +71,6 @@ async fn test_add_invoke_transaction(
     let txn_hash = accounts[0]
         .account
         .execute_v3(calls.clone())
-        .gas(0)
-        .gas_price(0)
         .nonce(nonce)
         .prepared()
         .unwrap()

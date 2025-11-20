@@ -11,7 +11,7 @@ use starknet::{
     core::{
         crypto::compute_hash_on_elements,
         types::{
-            BlockId, BlockTag, BroadcastedInvokeTransaction, BroadcastedInvokeTransactionV3,
+            BlockId, BlockTag, BroadcastedInvokeTransactionV3,
             BroadcastedTransaction, Call, ContractClass, DataAvailabilityMode, DeclareTransaction,
             DeclareTransactionResult, DeployAccountTransaction, DeployAccountTransactionResult,
             ExecuteInvocation, Felt, FlattenedSierraClass, FunctionInvocation, InvokeTransaction,
@@ -83,9 +83,15 @@ impl GetExecutionResult for SimulatedTransaction {
             }
             TransactionTrace::L1Handler(l1_handler_transaction) => {
                 // L1 Handler transactions won't exist on the chain if they failed
-                Ok(ExecuteInvocation::Success(
-                    l1_handler_transaction.function_invocation.clone(),
-                ))
+                // Extract FunctionInvocation from ExecuteInvocation
+                match l1_handler_transaction.function_invocation.clone() {
+                    ExecuteInvocation::Success(function_invocation) => {
+                        Ok(ExecuteInvocation::Success(function_invocation))
+                    }
+                    ExecuteInvocation::Reverted(reverted_invocation) => {
+                        Ok(ExecuteInvocation::Reverted(reverted_invocation))
+                    }
+                }
             }
         }
     }
@@ -161,8 +167,6 @@ pub async fn deploy_account(
     // Create a deploy account transaction
     Ok(account_factory
         .deploy_v3(Felt::ONE)
-        .gas(0)
-        .gas_price(0)
         .send()
         .await?)
 }
@@ -203,7 +207,7 @@ impl BuildAccount for DeployAccountTransactionResult {
             chain_id,
             ExecutionEncoding::New,
         );
-        account.set_block_id(BlockId::Tag(BlockTag::Pending));
+        account.set_block_id(BlockId::Tag(BlockTag::PreConfirmed));
 
         Ok(Arc::new(account))
     }
@@ -216,8 +220,6 @@ pub async fn declare_contract(
 ) -> anyhow::Result<DeclareTransactionResult> {
     Ok(account
         .declare_v3(contract_class, compiled_class_hash)
-        .gas(0)
-        .gas_price(0)
         .send()
         .await?)
 }
@@ -231,9 +233,7 @@ pub async fn deploy_contract(
 ) -> anyhow::Result<(InvokeTransactionResult, Felt)> {
     let contract_factory = ContractFactory::new(class_hash, account.clone());
     let deployment = contract_factory
-        .deploy_v3(constructor_calldata, salt, unique)
-        .gas(0)
-        .gas_price(0);
+        .deploy_v3(constructor_calldata, salt, unique);
     let deployed_address = deployment.deployed_address();
     let invoke_result = deployment.send().await?;
 
@@ -289,7 +289,7 @@ pub async fn build_invoke_simulate_transaction(
     provider: Arc<StarknetProvider>,
 ) -> Result<BroadcastedInvokeTransactionV3, ProviderError> {
     let nonce = provider
-        .get_nonce(BlockId::Tag(BlockTag::Pending), account_address)
+        .get_nonce(BlockId::Tag(BlockTag::PreConfirmed), account_address)
         .await?;
 
     Ok(BroadcastedInvokeTransactionV3 {
@@ -303,6 +303,10 @@ pub async fn build_invoke_simulate_transaction(
                 max_price_per_unit: 0,
             },
             l2_gas: ResourceBounds {
+                max_amount: 0,
+                max_price_per_unit: 0,
+            },
+            l1_data_gas: ResourceBounds {
                 max_amount: 0,
                 max_price_per_unit: 0,
             },
@@ -342,8 +346,8 @@ pub async fn simulate_calls(
 
     let simulated_txn = provider
         .simulate_transaction(
-            BlockId::Tag(BlockTag::Pending),
-            BroadcastedTransaction::Invoke(BroadcastedInvokeTransaction::V3(simulation)),
+            BlockId::Tag(BlockTag::PreConfirmed),
+            BroadcastedTransaction::Invoke(simulation),
             vec![SimulationFlag::SkipFeeCharge, SimulationFlag::SkipValidate],
         )
         .await?;
@@ -550,7 +554,7 @@ mod tests {
         match get_contract_class(
             provider.clone(),
             Felt::from_hex_unchecked(PREDEPLOYED_ACCOUNT_ADDRESS),
-            BlockId::Tag(BlockTag::Latest),
+            BlockId::Tag(BlockTag::PreConfirmed),
         )
         .await
         {
@@ -572,7 +576,7 @@ mod tests {
         let contract_class = get_contract_class(
             provider.clone(),
             Felt::from_hex_unchecked(PREDEPLOYED_ACCOUNT_ADDRESS),
-            BlockId::Tag(BlockTag::Latest),
+            BlockId::Tag(BlockTag::PreConfirmed),
         )
         .await
         .unwrap();
@@ -598,7 +602,7 @@ mod tests {
         assert!(contract_address_has_selector(
             provider.clone(),
             Felt::from_hex_unchecked(PREDEPLOYED_ACCOUNT_ADDRESS),
-            BlockId::Tag(BlockTag::Latest),
+            BlockId::Tag(BlockTag::PreConfirmed),
             execute_selector
         )
         .await
@@ -609,7 +613,7 @@ mod tests {
         assert!(!contract_address_has_selector(
             provider.clone(),
             Felt::from_hex_unchecked(PREDEPLOYED_ACCOUNT_ADDRESS),
-            BlockId::Tag(BlockTag::Latest),
+            BlockId::Tag(BlockTag::PreConfirmed),
             random_selector
         )
         .await
@@ -635,12 +639,13 @@ mod tests {
         let simulated_transaction = SimulatedTransaction {
             transaction_trace: trace,
             fee_estimation: FeeEstimate {
-                gas_consumed: 0.into(),
-                gas_price: 0.into(),
-                data_gas_consumed: 0.into(),
-                data_gas_price: 0.into(),
-                overall_fee: 0.into(),
-                unit: PriceUnit::Wei,
+                l1_gas_consumed: 0,
+                l1_gas_price: 0,
+                l2_gas_consumed: 0,
+                l2_gas_price: 0,
+                l1_data_gas_consumed: 0,
+                l1_data_gas_price: 0,
+                overall_fee: 0,
             },
         };
 
@@ -655,12 +660,13 @@ mod tests {
         let simulated_transaction = SimulatedTransaction {
             transaction_trace: trace,
             fee_estimation: FeeEstimate {
-                gas_consumed: 0.into(),
-                gas_price: 0.into(),
-                data_gas_consumed: 0.into(),
-                data_gas_price: 0.into(),
-                overall_fee: 0.into(),
-                unit: PriceUnit::Wei,
+                l1_gas_consumed: 0,
+                l1_gas_price: 0,
+                l2_gas_consumed: 0,
+                l2_gas_price: 0,
+                l1_data_gas_consumed: 0,
+                l1_data_gas_price: 0,
+                overall_fee: 0,
             },
         };
 
@@ -678,12 +684,13 @@ mod tests {
         let simulated_transaction = SimulatedTransaction {
             transaction_trace: trace,
             fee_estimation: FeeEstimate {
-                gas_consumed: 0.into(),
-                gas_price: 0.into(),
-                data_gas_consumed: 0.into(),
-                data_gas_price: 0.into(),
-                overall_fee: 0.into(),
-                unit: PriceUnit::Wei,
+                l1_gas_consumed: 0,
+                l1_gas_price: 0,
+                l2_gas_consumed: 0,
+                l2_gas_price: 0,
+                l1_data_gas_consumed: 0,
+                l1_data_gas_price: 0,
+                overall_fee: 0,
             },
         };
 
@@ -698,26 +705,25 @@ mod tests {
     #[test]
     fn test_get_execution_result_l1_handler() {
         let l1_handler_trace = build_l1_handler_trace();
-        let function_invocation = l1_handler_trace.function_invocation.clone();
+        let expected_invocation = l1_handler_trace.function_invocation.clone();
         let trace = TransactionTrace::L1Handler(l1_handler_trace);
         let simulated_transaction = SimulatedTransaction {
             transaction_trace: trace,
             fee_estimation: FeeEstimate {
-                gas_consumed: 0.into(),
-                gas_price: 0.into(),
-                data_gas_consumed: 0.into(),
-                data_gas_price: 0.into(),
-                overall_fee: 0.into(),
-                unit: PriceUnit::Wei,
+                l1_gas_consumed: 0,
+                l1_gas_price: 0,
+                l2_gas_consumed: 0,
+                l2_gas_price: 0,
+                l1_data_gas_consumed: 0,
+                l1_data_gas_price: 0,
+                overall_fee: 0,
             },
         };
 
         let result = simulated_transaction.get_execution_result();
         assert!(result.is_ok());
-        assert_eq!(
-            result.unwrap(),
-            ExecuteInvocation::Success(function_invocation)
-        );
+        // The result should match the expected ExecuteInvocation
+        assert_eq!(result.unwrap(), expected_invocation);
     }
 
     #[rstest]
@@ -789,7 +795,7 @@ mod tests {
 
         // Verify the deployment by checking the class hash at the deployed address
         let deployed_class_hash = provider
-            .get_class_hash_at(BlockId::Tag(BlockTag::Pending), account.address())
+            .get_class_hash_at(BlockId::Tag(BlockTag::PreConfirmed), account.address())
             .await
             .expect("Failed to get class hash");
 

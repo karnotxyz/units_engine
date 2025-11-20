@@ -10,7 +10,7 @@ import {
   ec,
   selector,
   constants,
-  transaction,
+  Deployer,
 } from "starknet";
 import {
   ClassVisibility,
@@ -73,13 +73,13 @@ class UnitsAccount {
     let provider = new Provider({
       nodeUrl: "",
     });
-    this.starknetAccount = new Account(
+    this.starknetAccount = new Account({
       provider,
-      this.address,
-      this.privateKey,
-      "1",
-      "0x3",
-    );
+      address: this.address,
+      signer: this.privateKey,
+      cairoVersion: "1",
+      transactionVersion: "0x3",
+    });
   }
 
   getProvider(): UnitsProvider {
@@ -98,13 +98,17 @@ class UnitsAccount {
       nonce: nonce !== undefined ? nonce : await this.getNonce(),
       resourceBounds: {
         l1_gas: {
-          max_amount: "0",
-          max_price_per_unit: "0",
+          max_amount: BigInt(10000),
+          max_price_per_unit: BigInt(1),
+        },
+        l1_data_gas: {
+            max_amount: BigInt(10000),
+            max_price_per_unit: BigInt(1),
         },
         l2_gas: {
-          max_amount: "0",
-          max_price_per_unit: "0",
-        },
+            max_amount: BigInt(10000000),
+            max_price_per_unit: BigInt(2214382549775320),
+        }
       },
       tip: "0",
       paymasterData: [],
@@ -162,7 +166,8 @@ class UnitsAccount {
   ): Promise<{ transaction_hash: string; program_address: string }> {
     const unique = true;
 
-    const udcDeployPayload = transaction.buildUDCCall(
+    const deployer = new Deployer();
+    const udcDeployPayload = deployer.buildDeployerCall(
       {
         classHash: programHash,
         constructorCalldata: constructorArgs,

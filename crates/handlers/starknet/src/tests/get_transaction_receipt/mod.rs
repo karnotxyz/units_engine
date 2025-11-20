@@ -58,8 +58,6 @@ async fn test_get_receipt_fails_with_different_sender(
             selector: selector!("emit_event"),
             calldata: vec![],
         }])
-        .gas(0)
-        .gas_price(0)
         .send()
         .await
         .unwrap();
@@ -132,8 +130,6 @@ async fn test_get_receipt_fails_with_invalid_read_signature(
             selector: selector!("emit_event"),
             calldata: vec![],
         }])
-        .gas(0)
-        .gas_price(0)
         .send()
         .await
         .unwrap();
@@ -221,8 +217,6 @@ async fn test_get_receipt_without_can_read_event(
             selector: selector!("emit_event"),
             calldata: vec![],
         }])
-        .gas(0)
-        .gas_price(0)
         .send()
         .await
         .unwrap();
@@ -302,8 +296,6 @@ async fn test_get_receipt_with_can_read_event(
             selector: selector!("emit_event_one"),
             calldata: vec![],
         }])
-        .gas(0)
-        .gas_price(0)
         .send()
         .await
         .unwrap();
@@ -353,8 +345,6 @@ async fn test_get_receipt_with_can_read_event(
                 account_with_private_key.account.address(),
             ],
         }])
-        .gas(0)
-        .gas_price(0)
         .send()
         .await
         .unwrap();
@@ -387,8 +377,6 @@ async fn test_get_receipt_with_can_read_event(
             selector: selector!("emit_event_one_and_two"),
             calldata: vec![],
         }])
-        .gas(0)
-        .gas_price(0)
         .send()
         .await
         .unwrap();
@@ -440,8 +428,6 @@ async fn test_get_receipt_with_can_read_event(
                 account_with_private_key.account.address(),
             ],
         }])
-        .gas(0)
-        .gas_price(0)
         .send()
         .await
         .unwrap();
@@ -506,8 +492,6 @@ async fn test_get_receipt_reverted_transaction(
             selector: selector!("panic"),
             calldata: vec![],
         }])
-        .gas(0)
-        .gas_price(0)
         .send()
         .await
         .unwrap();
@@ -705,8 +689,6 @@ async fn test_get_receipt_missing_required_read_type(
             selector: selector!("emit_event"),
             calldata: vec![],
         }])
-        .gas(0)
-        .gas_price(0)
         .send()
         .await
         .unwrap();

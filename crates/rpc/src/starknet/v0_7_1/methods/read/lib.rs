@@ -54,12 +54,13 @@ impl StarknetReadRpcApiV0_7_1Server for RpcContext {
         _block_id: BlockId,
     ) -> RpcResult<FeeEstimate> {
         Ok(FeeEstimate {
-            gas_consumed: Felt::from(0),
-            gas_price: Felt::from(0),
-            overall_fee: Felt::from(0),
-            data_gas_consumed: Felt::from(0),
-            data_gas_price: Felt::from(0),
-            unit: starknet::core::types::PriceUnit::Wei,
+            l1_gas_consumed: 0,
+            l1_gas_price: 0,
+            l2_gas_consumed: 0,
+            l2_gas_price: 0,
+            l1_data_gas_consumed: 0,
+            l1_data_gas_price: 0,
+            overall_fee: 0,
         })
     }
 

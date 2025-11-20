@@ -157,7 +157,7 @@ impl Artifacts {
         let class_hash = self.class_hash;
         if account
             .provider()
-            .get_class(BlockId::Tag(BlockTag::Pending), class_hash)
+            .get_class(BlockId::Tag(BlockTag::PreConfirmed), class_hash)
             .await
             .is_ok()
         {

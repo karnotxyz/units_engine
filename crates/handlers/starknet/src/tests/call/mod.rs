@@ -55,8 +55,6 @@ async fn test_counter_increment(
             selector: selector!("increment"),
             calldata: vec![],
         }])
-        .gas(0)
-        .gas_price(0)
         .send()
         .await
         .unwrap();
@@ -107,8 +105,6 @@ async fn test_counter_increment(
             selector: selector!("decrement"),
             calldata: vec![],
         }])
-        .gas(0)
-        .gas_price(0)
         .send()
         .await
         .unwrap();
@@ -261,8 +257,6 @@ async fn test_read_with_approval(
             selector: selector!("add_approved_user"),
             calldata: vec![user_account.address()],
         }])
-        .gas(0)
-        .gas_price(0)
         .send()
         .await
         .unwrap();

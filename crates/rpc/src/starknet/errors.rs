@@ -141,15 +141,15 @@ impl From<ProviderError> for StarknetRpcApiError {
                 StarknetError::ContractNotFound => StarknetRpcApiError::ContractNotFound,
                 StarknetError::BlockNotFound => StarknetRpcApiError::BlockNotFound,
                 StarknetError::ClassHashNotFound => StarknetRpcApiError::ClassHashNotFound,
-                StarknetError::InvalidTransactionNonce => StarknetRpcApiError::InvalidTxnNonce,
-                StarknetError::InsufficientMaxFee => StarknetRpcApiError::InsufficientMaxFee,
+                StarknetError::InvalidTransactionNonce(_) => StarknetRpcApiError::InvalidTxnNonce,
+                StarknetError::InsufficientResourcesForValidate => StarknetRpcApiError::InsufficientMaxFee,
                 StarknetError::InsufficientAccountBalance => {
                     StarknetRpcApiError::InsufficientAccountBalance
                 }
                 StarknetError::ValidationFailure(err) => {
                     StarknetRpcApiError::ValidationFailure { error: err.into() }
                 }
-                StarknetError::CompilationFailed => StarknetRpcApiError::CompilationFailed,
+                StarknetError::CompilationFailed(_) => StarknetRpcApiError::CompilationFailed,
                 StarknetError::NonAccount => StarknetRpcApiError::NonAccount,
                 StarknetError::CompiledClassHashMismatch => {
                     StarknetRpcApiError::CompiledClassHashMismatch
@@ -174,7 +174,7 @@ impl From<ProviderError> for StarknetRpcApiError {
                 StarknetError::TransactionExecutionError(err) => {
                     StarknetRpcApiError::TxnExecutionError {
                         tx_index: err.transaction_index as usize,
-                        error: err.execution_error,
+                        error: format!("{:?}", err.execution_error),
                     }
                 }
                 StarknetError::DuplicateTx => StarknetRpcApiError::DuplicateTxn,
@@ -184,6 +184,21 @@ impl From<ProviderError> for StarknetRpcApiError {
                     StarknetRpcApiError::ContractClassSizeTooLarge
                 }
                 StarknetError::NoTraceAvailable(_) => StarknetRpcApiError::InternalServerError,
+                StarknetError::EntrypointNotFound => StarknetRpcApiError::ContractError,
+                StarknetError::StorageProofNotSupported => StarknetRpcApiError::UnimplementedMethod,
+                StarknetError::ReplacementTransactionUnderpriced => {
+                    StarknetRpcApiError::InsufficientMaxFee
+                }
+                StarknetError::FeeBelowMinimum => StarknetRpcApiError::InsufficientMaxFee,
+                StarknetError::InvalidSubscriptionId => {
+                    StarknetRpcApiError::InvalidContinuationToken
+                }
+                StarknetError::TooManyAddressesInFilter => {
+                    StarknetRpcApiError::TooManyKeysInFilter
+                }
+                StarknetError::TooManyBlocksBack => StarknetRpcApiError::ErrUnexpectedError {
+                    data: "Too many blocks back".to_string(),
+                },
             },
             ProviderError::RateLimited => StarknetRpcApiError::ErrUnexpectedError {
                 data: "Rate limited".to_string(),

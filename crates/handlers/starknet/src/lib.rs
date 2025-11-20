@@ -6,9 +6,9 @@ use starknet::{
     accounts::{Account, ExecutionEncoding, SingleOwnerAccount},
     core::{
         types::{
-            BlockId, BlockTag, BroadcastedDeclareTransaction, BroadcastedDeclareTransactionV3,
-            BroadcastedDeployAccountTransaction, BroadcastedDeployAccountTransactionV3,
-            BroadcastedInvokeTransaction, BroadcastedInvokeTransactionV3, Call,
+            BlockId, BlockTag,             BroadcastedDeclareTransactionV3,
+            BroadcastedDeployAccountTransactionV3,
+            BroadcastedInvokeTransactionV3, Call,
             DataAvailabilityMode, ExecutionResult, Felt, FlattenedSierraClass, FunctionCall,
             ResourceBounds, ResourceBoundsMapping, TransactionFinalityStatus,
         },
@@ -134,12 +134,16 @@ impl ChainHandler for StarknetContext {
             account_deployment_data: vec![],
             resource_bounds: ResourceBoundsMapping {
                 l1_gas: ResourceBounds {
-                    max_amount: 0,
-                    max_price_per_unit: 0,
+                    max_amount: 10000,
+                    max_price_per_unit: 1,
+                },
+                l1_data_gas: ResourceBounds {
+                    max_amount: 10000,
+                    max_price_per_unit: 1,
                 },
                 l2_gas: ResourceBounds {
-                    max_amount: 0,
-                    max_price_per_unit: 0,
+                    max_amount: 10000000,
+                    max_price_per_unit: 2214382549775320,
                 },
             },
             tip: 0,
@@ -151,7 +155,7 @@ impl ChainHandler for StarknetContext {
 
         let result = self
             .starknet_provider
-            .add_declare_transaction(BroadcastedDeclareTransaction::V3(declare_class_transaction))
+            .add_declare_transaction(declare_class_transaction)
             .await
             .map_err(|e| ChainHandlerError::ProviderError(e.to_string()))?;
         Ok(result.transaction_hash.into())
@@ -169,12 +173,16 @@ impl ChainHandler for StarknetContext {
             account_deployment_data: vec![],
             resource_bounds: ResourceBoundsMapping {
                 l1_gas: ResourceBounds {
-                    max_amount: 0,
-                    max_price_per_unit: 0,
+                    max_amount: 10000,
+                    max_price_per_unit: 1,
+                },
+                l1_data_gas: ResourceBounds {
+                    max_amount: 10000,
+                    max_price_per_unit: 1,
                 },
                 l2_gas: ResourceBounds {
-                    max_amount: 0,
-                    max_price_per_unit: 0,
+                    max_amount: 10000000,
+                    max_price_per_unit: 2214382549775320,
                 },
             },
             tip: 0,
@@ -186,9 +194,7 @@ impl ChainHandler for StarknetContext {
 
         let result = self
             .starknet_provider
-            .add_invoke_transaction(BroadcastedInvokeTransaction::V3(
-                send_transaction_transaction,
-            ))
+            .add_invoke_transaction(send_transaction_transaction)
             .await
             .map_err(|e| ChainHandlerError::ProviderError(e.to_string()))?;
 
@@ -209,12 +215,16 @@ impl ChainHandler for StarknetContext {
             class_hash: params.program_hash.to_felt()?,
             resource_bounds: ResourceBoundsMapping {
                 l1_gas: ResourceBounds {
-                    max_amount: 0,
-                    max_price_per_unit: 0,
+                    max_amount: 10000,
+                    max_price_per_unit: 1,
+                },
+                l1_data_gas: ResourceBounds {
+                    max_amount: 10000,
+                    max_price_per_unit: 1,
                 },
                 l2_gas: ResourceBounds {
-                    max_amount: 0,
-                    max_price_per_unit: 0,
+                    max_amount: 10000000,
+                    max_price_per_unit: 2214382549775320,
                 },
             },
             tip: 0,
@@ -225,9 +235,7 @@ impl ChainHandler for StarknetContext {
         };
         let result = self
             .starknet_provider
-            .add_deploy_account_transaction(BroadcastedDeployAccountTransaction::V3(
-                deploy_account_transaction,
-            ))
+            .add_deploy_account_transaction(deploy_account_transaction)
             .await
             .map_err(|e| ChainHandlerError::ProviderError(e.to_string()))?;
         Ok(DeployAccountResult {
@@ -242,7 +250,7 @@ impl ChainHandler for StarknetContext {
     ) -> Result<GetProgramResult, ChainHandlerError> {
         match self
             .starknet_provider
-            .get_class(BlockId::Tag(BlockTag::Pending), class_hash.to_felt()?)
+            .get_class(BlockId::Tag(BlockTag::PreConfirmed), class_hash.to_felt()?)
             .await
             .map_err(|e| ChainHandlerError::ProviderError(e.to_string()))
         {
@@ -257,7 +265,7 @@ impl ChainHandler for StarknetContext {
     async fn get_nonce(&self, address: Bytes32) -> Result<u32, ChainHandlerError> {
         let nonce = self
             .starknet_provider
-            .get_nonce(BlockId::Tag(BlockTag::Pending), address.to_felt()?)
+            .get_nonce(BlockId::Tag(BlockTag::PreConfirmed), address.to_felt()?)
             .await
             .map_err(|e| ChainHandlerError::ProviderError(e.to_string()))?;
         Ok(nonce.try_into().map_err(|_| {
@@ -289,6 +297,7 @@ impl ChainHandler for StarknetContext {
         let finality_status = match receipt.receipt.finality_status() {
             TransactionFinalityStatus::AcceptedOnL2 => FinalityStatus::AcceptedOnUnits,
             TransactionFinalityStatus::AcceptedOnL1 => FinalityStatus::AcceptedOnProofStore,
+            TransactionFinalityStatus::PreConfirmed => FinalityStatus::AcceptedOnUnits,
         };
 
         let execution_status = match receipt.receipt.execution_result() {
@@ -339,7 +348,7 @@ impl ChainHandler for StarknetContext {
                     ]
                     .concat(),
                 },
-                BlockId::Tag(BlockTag::Pending),
+                BlockId::Tag(BlockTag::PreConfirmed),
             )
             .await
             .map_err(|e| ChainHandlerError::ProviderError(e.to_string()))?;
@@ -367,7 +376,7 @@ impl ChainHandler for StarknetContext {
                     entry_point_selector: GET_KEY_SELECTOR,
                     calldata: vec![account_address.to_felt()?],
                 },
-                BlockId::Tag(BlockTag::Pending),
+                BlockId::Tag(BlockTag::PreConfirmed),
             )
             .await
             .map_err(|e| ChainHandlerError::ProviderError(e.to_string()))?;
@@ -413,7 +422,7 @@ impl ChainHandler for StarknetContext {
         let has_selector = contract_address_has_selector(
             self.starknet_provider.clone(),
             contract_address.to_felt()?,
-            BlockId::Tag(BlockTag::Pending),
+            BlockId::Tag(BlockTag::PreConfirmed),
             get_selector_from_name(function_name.as_str())
                 .map_err(|e| ChainHandlerError::InvalidFunctionName(e.to_string()))?,
         )
@@ -479,8 +488,6 @@ impl ChainHandler for StarknetContext {
                     sender_address.to_felt()?,
                 ],
             }])
-            .gas(0)
-            .gas_price(0)
             .send()
             .await
             .map_err(|e| ChainHandlerError::ProviderError(e.to_string()))?
@@ -502,7 +509,7 @@ impl ChainHandler for StarknetContext {
                     entry_point_selector: selector!("get_visibility"),
                     calldata: vec![class_hash.to_felt()?],
                 },
-                BlockId::Tag(BlockTag::Pending),
+                BlockId::Tag(BlockTag::PreConfirmed),
             )
             .await
             .map_err(|e| ChainHandlerError::ProviderError(e.to_string()))?
@@ -528,7 +535,7 @@ impl ChainHandler for StarknetContext {
                     entry_point_selector: function_name.to_felt()?,
                     calldata: calldata.to_felt()?,
                 },
-                BlockId::Tag(BlockTag::Pending),
+                BlockId::Tag(BlockTag::PreConfirmed),
             )
             .await
             .map_err(|e| ChainHandlerError::ProviderError(e.to_string()))?;

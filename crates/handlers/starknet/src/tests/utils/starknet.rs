@@ -3,10 +3,9 @@ use crate::{StarknetContext, StarknetProvider, StarknetWallet};
 use starknet::{
     accounts::{Account, ConnectedAccount, ExecutionEncoding, SingleOwnerAccount},
     core::types::{
-        Call, CallType, ComputationResources, ContractClass, DataAvailabilityResources,
-        DataResources, DeclareTransactionTrace, DeployAccountTransactionTrace, EntryPointType,
+        Call, CallType, ContractClass, DeclareTransactionTrace, DeployAccountTransactionTrace, EntryPointType,
         ExecuteInvocation, ExecutionResources, Felt, FlattenedSierraClass, FunctionInvocation,
-        InvokeTransactionResult, InvokeTransactionTrace, L1HandlerTransactionTrace,
+        InnerCallExecutionResources, InvokeTransactionResult, InvokeTransactionTrace, L1HandlerTransactionTrace,
         TransactionReceiptWithBlockInfo,
     },
     macros::selector,
@@ -52,42 +51,17 @@ pub async fn dummy_transfer(
                 Felt::from_hex_unchecked("0x0"), // amount_high
             ],
         }])
-        .gas(0)
-        .gas_price(0)
         .send()
         .await?;
     let receipt = wait_for_receipt(wallet.provider().clone(), txn.transaction_hash, None).await?;
     Ok((txn, receipt))
 }
 
-pub fn build_computation_resources() -> ComputationResources {
-    ComputationResources {
-        steps: 0,
-        memory_holes: None,
-        range_check_builtin_applications: None,
-        pedersen_builtin_applications: None,
-        poseidon_builtin_applications: None,
-        ec_op_builtin_applications: None,
-        ecdsa_builtin_applications: None,
-        bitwise_builtin_applications: None,
-        keccak_builtin_applications: None,
-        segment_arena_builtin: None,
-    }
-}
-
-pub fn build_data_resources() -> DataResources {
-    DataResources {
-        data_availability: DataAvailabilityResources {
-            l1_gas: 0,
-            l1_data_gas: 0,
-        },
-    }
-}
-
 pub fn build_execution_resources() -> ExecutionResources {
     ExecutionResources {
-        computation_resources: build_computation_resources(),
-        data_resources: build_data_resources(),
+        l1_gas: 0,
+        l1_data_gas: 0,
+        l2_gas: 0,
     }
 }
 
@@ -104,7 +78,11 @@ pub fn build_function_invocation() -> FunctionInvocation {
         calls: vec![],
         events: vec![],
         messages: vec![],
-        execution_resources: build_computation_resources(),
+        execution_resources: InnerCallExecutionResources {
+            l1_gas: 0,
+            l2_gas: 0,
+        },
+        is_reverted: false,
     }
 }
 
@@ -139,7 +117,7 @@ pub fn build_deploy_account_trace() -> DeployAccountTransactionTrace {
 
 pub fn build_l1_handler_trace() -> L1HandlerTransactionTrace {
     L1HandlerTransactionTrace {
-        function_invocation: build_function_invocation(),
+        function_invocation: ExecuteInvocation::Success(build_function_invocation()),
         state_diff: None,
         execution_resources: build_execution_resources(),
     }

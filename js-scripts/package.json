@@ -12,7 +12,7 @@
   "dependencies": {
     "@types/node": "^22.15.3",
     "dotenv": "^16.5.0",
-    "starknet": "^6.24.1"
+    "starknet": "next"
   },
   "type": "module",
   "devDependencies": {

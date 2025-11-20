@@ -1,7 +1,10 @@
 use rstest::*;
 use starknet::{
     accounts::Account,
-    core::types::{BlockId, BlockTag, FunctionCall},
+    core::{
+        types::{BlockId, BlockTag, FunctionCall},
+        utils::get_selector_from_name,
+    },
 };
 
 use crate::utils::WaitForReceipt;
@@ -14,7 +17,6 @@ use crate::{
     },
     StarknetContext,
 };
-use starknet::macros::selector;
 use std::sync::Arc;
 use units_primitives::{
     context::GlobalContext,
@@ -28,6 +30,7 @@ use units_handlers_common::declare_program::declare_program;
 
 #[cfg(feature = "testing")]
 mod tests {
+    #![allow(unsafe_code, unsafe_op_in_unsafe_fn)]
 
     use starknet::accounts::ConnectedAccount;
 
@@ -69,9 +72,9 @@ mod tests {
         // Create a starknet context with the declare ACL contract address and the account
         let starknet_ctx = StarknetContext::new_with_provider(
             provider.clone(),
-            declare_acl_address.into(),
-            declare_acl_owner.private_key.into(),
-            declare_acl_owner.account.address().into(),
+            unsafe { declare_acl_address.into() },
+            unsafe { declare_acl_owner.private_key.into() },
+            unsafe { declare_acl_owner.account.address().into() },
         )
         .await
         .unwrap();
@@ -99,7 +102,7 @@ mod tests {
         // Verify the class was declared by retrieving it
         let declared_class = provider
             .get_class(
-                BlockId::Tag(BlockTag::Pending),
+                BlockId::Tag(BlockTag::PreConfirmed),
                 starknet_declare_txn.class_hash,
             )
             .await
@@ -119,15 +122,15 @@ mod tests {
                         .get_declare_acl_address()
                         .try_into()
                         .unwrap(),
-                    entry_point_selector: selector!("get_visibility"),
+                    entry_point_selector: get_selector_from_name("get_visibility").unwrap(),
                     calldata: vec![starknet_declare_txn.class_hash],
                 },
-                BlockId::Tag(BlockTag::Pending),
+                BlockId::Tag(BlockTag::PreConfirmed),
             )
             .await
             .unwrap();
 
-        assert_eq!(visibility, vec![ClassVisibility::Acl.into()]);
+        assert_eq!(visibility, vec![Felt::from(ClassVisibility::Acl)]);
 
         // Wait for a new block to be sure the ACL transaction from previous
         // declare is on chain (otherwise we get a nonce issue)
@@ -189,14 +192,14 @@ mod tests {
                         .get_declare_acl_address()
                         .try_into()
                         .unwrap(),
-                    entry_point_selector: selector!("get_visibility"),
+                    entry_point_selector: get_selector_from_name("get_visibility").unwrap(),
                     calldata: vec![starknet_declare_txn.class_hash],
                 },
-                BlockId::Tag(BlockTag::Pending),
+                BlockId::Tag(BlockTag::PreConfirmed),
             )
             .await
             .unwrap();
-        assert_eq!(visibility, vec![ClassVisibility::Public.into()]);
+        assert_eq!(visibility, vec![Felt::from(ClassVisibility::Public)]);
     }
 
     async fn build_declare_txn(
@@ -206,7 +209,7 @@ mod tests {
     ) -> DeclareProgramParams {
         let provider = account.account.provider();
         let nonce = provider
-            .get_nonce(BlockId::Tag(BlockTag::Pending), account.account.address())
+            .get_nonce(BlockId::Tag(BlockTag::PreConfirmed), account.account.address())
             .await
             .unwrap();
 
@@ -216,8 +219,6 @@ mod tests {
                 Arc::new(artifact.contract_class.clone().flatten().unwrap()),
                 artifact.compiled_class_hash,
             )
-            .gas(0)
-            .gas_price(0)
             .nonce(nonce)
             .prepared()
             .unwrap();
@@ -227,7 +228,7 @@ mod tests {
         let flattened_contract_class = artifact.contract_class.flatten().unwrap();
         DeclareProgramParams {
             account_address: account.account.address().into(),
-            signature: vec![signature.r.into(), signature.s.into()],
+            signature: vec![unsafe { signature.r.into() }, unsafe { signature.s.into() }],
             nonce: nonce.try_into().unwrap(),
             program: serde_json::to_value(flattened_contract_class.clone()).unwrap(),
             compiled_program_hash: Some(artifact.compiled_class_hash.into()),
