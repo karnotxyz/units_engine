@@ -10,7 +10,7 @@ async function getBalance(address: string) {
   const unitsAccount = new UnitsAccount(
     unitsProvider,
     process.env.ACCOUNT_ADDRESS,
-    process.env.PRIVATE_KEY,
+    process.env.PRIVATE_KEY
   );
 
   let { result } = await unitsAccount.call(process.env.TOKEN, "balance_of", [

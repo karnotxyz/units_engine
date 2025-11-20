@@ -9,7 +9,7 @@ async function get_receipt(transactionHash: string) {
   const unitsAccount = new UnitsAccount(
     unitsProvider,
     process.env.ACCOUNT_ADDRESS,
-    process.env.PRIVATE_KEY,
+    process.env.PRIVATE_KEY
   );
 
   const tx = await unitsAccount.getTransactionReceipt(transactionHash);

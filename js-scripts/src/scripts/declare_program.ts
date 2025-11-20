@@ -11,13 +11,13 @@ async function declare_program(programJson: any, compiledProgramJson: any) {
   const unitsAccount = new UnitsAccount(
     unitsProvider,
     process.env.ACCOUNT_ADDRESS,
-    process.env.PRIVATE_KEY,
+    process.env.PRIVATE_KEY
   );
 
   const declareProgramResponse = await unitsAccount.declareProgram(
     programJson,
     hash.computeCompiledClassHash(compiledProgramJson),
-    "ACL",
+    "ACL"
   );
 
   console.log("ℹ️ Class hash: ", hash.computeContractClassHash(programJson));
@@ -28,7 +28,7 @@ async function declare_program(programJson: any, compiledProgramJson: any) {
 
 if (process.argv.length < 4) {
   console.error(
-    "Usage: ts-node declare_program.ts <program-json-path> <compiled-program-json-path>",
+    "Usage: ts-node declare_program.ts <program-json-path> <compiled-program-json-path>"
   );
   process.exit(1);
 }
@@ -38,6 +38,6 @@ const compiledProgramJsonPath = process.argv[3];
 
 const programJson = JSON.parse(fs.readFileSync(programJsonPath, "utf8"));
 const compiledProgramJson = JSON.parse(
-  fs.readFileSync(compiledProgramJsonPath, "utf8"),
+  fs.readFileSync(compiledProgramJsonPath, "utf8")
 );
 declare_program(programJson, compiledProgramJson);
