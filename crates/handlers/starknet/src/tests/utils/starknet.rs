@@ -3,10 +3,10 @@ use crate::{StarknetContext, StarknetProvider, StarknetWallet};
 use starknet::{
     accounts::{Account, ConnectedAccount, ExecutionEncoding, SingleOwnerAccount},
     core::types::{
-        Call, CallType, ContractClass, DeclareTransactionTrace, DeployAccountTransactionTrace, EntryPointType,
-        ExecuteInvocation, ExecutionResources, Felt, FlattenedSierraClass, FunctionInvocation,
-        InnerCallExecutionResources, InvokeTransactionResult, InvokeTransactionTrace, L1HandlerTransactionTrace,
-        TransactionReceiptWithBlockInfo,
+        Call, CallType, ContractClass, DeclareTransactionTrace, DeployAccountTransactionTrace,
+        EntryPointType, ExecuteInvocation, ExecutionResources, Felt, FlattenedSierraClass,
+        FunctionInvocation, InnerCallExecutionResources, InvokeTransactionResult,
+        InvokeTransactionTrace, L1HandlerTransactionTrace, TransactionReceiptWithBlockInfo,
     },
     macros::selector,
     providers::jsonrpc::HttpTransport,

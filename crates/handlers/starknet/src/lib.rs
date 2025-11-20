@@ -6,9 +6,8 @@ use starknet::{
     accounts::{Account, ExecutionEncoding, SingleOwnerAccount},
     core::{
         types::{
-            BlockId, BlockTag,             BroadcastedDeclareTransactionV3,
-            BroadcastedDeployAccountTransactionV3,
-            BroadcastedInvokeTransactionV3, Call,
+            BlockId, BlockTag, BroadcastedDeclareTransactionV3,
+            BroadcastedDeployAccountTransactionV3, BroadcastedInvokeTransactionV3, Call,
             DataAvailabilityMode, ExecutionResult, Felt, FlattenedSierraClass, FunctionCall,
             ResourceBounds, ResourceBoundsMapping, TransactionFinalityStatus,
         },

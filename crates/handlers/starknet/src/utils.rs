@@ -11,13 +11,12 @@ use starknet::{
     core::{
         crypto::compute_hash_on_elements,
         types::{
-            BlockId, BlockTag, BroadcastedInvokeTransactionV3,
-            BroadcastedTransaction, Call, ContractClass, DataAvailabilityMode, DeclareTransaction,
-            DeclareTransactionResult, DeployAccountTransaction, DeployAccountTransactionResult,
-            ExecuteInvocation, Felt, FlattenedSierraClass, FunctionInvocation, InvokeTransaction,
-            InvokeTransactionResult, NonZeroFelt, OrderedEvent, ResourceBounds,
-            ResourceBoundsMapping, SimulatedTransaction, SimulationFlag, Transaction,
-            TransactionReceiptWithBlockInfo, TransactionTrace,
+            BlockId, BlockTag, BroadcastedInvokeTransactionV3, BroadcastedTransaction, Call,
+            ContractClass, DataAvailabilityMode, DeclareTransaction, DeclareTransactionResult,
+            DeployAccountTransaction, DeployAccountTransactionResult, ExecuteInvocation, Felt,
+            FlattenedSierraClass, FunctionInvocation, InvokeTransaction, InvokeTransactionResult,
+            NonZeroFelt, OrderedEvent, ResourceBounds, ResourceBoundsMapping, SimulatedTransaction,
+            SimulationFlag, Transaction, TransactionReceiptWithBlockInfo, TransactionTrace,
         },
     },
     providers::{Provider, ProviderError},
@@ -165,10 +164,7 @@ pub async fn deploy_account(
             .await?;
 
     // Create a deploy account transaction
-    Ok(account_factory
-        .deploy_v3(Felt::ONE)
-        .send()
-        .await?)
+    Ok(account_factory.deploy_v3(Felt::ONE).send().await?)
 }
 
 #[allow(async_fn_in_trait)]
@@ -232,8 +228,7 @@ pub async fn deploy_contract(
     unique: bool,
 ) -> anyhow::Result<(InvokeTransactionResult, Felt)> {
     let contract_factory = ContractFactory::new(class_hash, account.clone());
-    let deployment = contract_factory
-        .deploy_v3(constructor_calldata, salt, unique);
+    let deployment = contract_factory.deploy_v3(constructor_calldata, salt, unique);
     let deployed_address = deployment.deployed_address();
     let invoke_result = deployment.send().await?;
 

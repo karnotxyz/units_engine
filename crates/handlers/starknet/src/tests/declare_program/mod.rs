@@ -209,7 +209,10 @@ mod tests {
     ) -> DeclareProgramParams {
         let provider = account.account.provider();
         let nonce = provider
-            .get_nonce(BlockId::Tag(BlockTag::PreConfirmed), account.account.address())
+            .get_nonce(
+                BlockId::Tag(BlockTag::PreConfirmed),
+                account.account.address(),
+            )
             .await
             .unwrap();
 

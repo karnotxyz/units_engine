@@ -142,7 +142,9 @@ impl From<ProviderError> for StarknetRpcApiError {
                 StarknetError::BlockNotFound => StarknetRpcApiError::BlockNotFound,
                 StarknetError::ClassHashNotFound => StarknetRpcApiError::ClassHashNotFound,
                 StarknetError::InvalidTransactionNonce(_) => StarknetRpcApiError::InvalidTxnNonce,
-                StarknetError::InsufficientResourcesForValidate => StarknetRpcApiError::InsufficientMaxFee,
+                StarknetError::InsufficientResourcesForValidate => {
+                    StarknetRpcApiError::InsufficientMaxFee
+                }
                 StarknetError::InsufficientAccountBalance => {
                     StarknetRpcApiError::InsufficientAccountBalance
                 }
@@ -193,9 +195,7 @@ impl From<ProviderError> for StarknetRpcApiError {
                 StarknetError::InvalidSubscriptionId => {
                     StarknetRpcApiError::InvalidContinuationToken
                 }
-                StarknetError::TooManyAddressesInFilter => {
-                    StarknetRpcApiError::TooManyKeysInFilter
-                }
+                StarknetError::TooManyAddressesInFilter => StarknetRpcApiError::TooManyKeysInFilter,
                 StarknetError::TooManyBlocksBack => StarknetRpcApiError::ErrUnexpectedError {
                     data: "Too many blocks back".to_string(),
                 },
