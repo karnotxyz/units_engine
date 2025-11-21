@@ -10,10 +10,6 @@ on:
         description: "Hash used to retrieve the artifact"
         required: true
         type: string
-      madara-binary-hash:
-        description: "Hash used to retrieve the artifact"
-        required: true
-        type: string
 
 jobs:
   test-with-coverage:
@@ -45,12 +41,6 @@ jobs:
         with:
           name: units-engine-binary-${{ inputs.units-engine-binary-hash }}
           path: target/release/
-      - name: Download Madara binary
-        uses: actions/download-artifact@v4
-        with:
-          name: madara-binary-${{ inputs.madara-binary-hash }}
-          path: crates/handlers/starknet/src/tests/build/
-      - run: chmod +x crates/handlers/starknet/src/tests/build/madara
 
       - name: Run tests with coverage
         run: |
