@@ -1,10 +1,10 @@
-# ⚠️ DEPRECATED - Please refer to [getting_started.md](./getting_started.md)
+# Event Read ACLs for UNITs on Starknet - DEPRECATED
 
-> **Note**: This document is deprecated and will be removed in a future release. Please refer to [getting_started.md](./getting_started.md) for the most up-to-date and comprehensive documentation on UNITS privacy features.
+> **⚠️ DEPRECATED**: This document is deprecated and will be removed in a future release.
+> Please refer to [getting_started.md](./getting_started.md) for the most up-to-date and comprehensive
+> documentation on UNITS privacy features.
 
 ---
-
-# Event Read ACLs for UNITs on Starknet
 
 By default, events emitted by Starknet contracts are public and readable by any user.
 This follows standard Starknet behavior.

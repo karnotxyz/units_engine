@@ -26,7 +26,9 @@
 
 ## Introduction
 
-UNITS (Universal Information Tokenisation System) is a confidentiality layer built on top of Madara that enables controlled data visibility while maintaining verifiability. Unlike traditional blockchains where all data is publicly readable, UNITS allows you to define fine-grained access controls for reading various types of data including:
+UNITS (Universal Information Tokenisation System) is a confidentiality layer built on top of Madara that enables
+controlled data visibility while maintaining verifiability. Unlike traditional blockchains where all data is publicly
+readable, UNITS allows you to define fine-grained access controls for reading various types of data including:
 
 - Smart contract function calls
 - Declared classes (contract code)
@@ -46,7 +48,8 @@ UNITS operates on a trusted operator model where:
 
 ### Read Signatures
 
-Read signatures are a fundamental concept in UNITS that enable secure, time-limited authorization for reading data. They prevent unauthorized access while allowing legitimate users to prove their right to read specific information.
+Read signatures are a fundamental concept in UNITS that enable secure, time-limited authorization for reading data.
+They prevent unauthorized access while allowing legitimate users to prove their right to read specific information.
 
 #### What is a Read Signature?
 
@@ -85,7 +88,7 @@ Every read operation requires signing a `ReadData` object with the following com
 
 #### Read Verifier Types
 
-**ACCOUNT Verifier**
+##### ACCOUNT Verifier
 
 - Simplest form where the signer address is the same as the address with read permissions
 - Use case: Direct account access
@@ -97,10 +100,11 @@ Every read operation requires signing a `ReadData` object with the following com
 }
 ```
 
-**IDENTITY Verifier**
+##### IDENTITY Verifier
 
 - Allows delegation where a signer can act on behalf of an identity contract
-- **Identity** here refers to [ONCHAINID](https://github.com/NethermindEth/onchain_id_starknet), a Starknet implementation for on-chain identity management
+- **Identity** here refers to [ONCHAINID](https://github.com/NethermindEth/onchain_id_starknet), a Starknet
+  implementation for on-chain identity management
 - The identity contract must have a method to verify the signer is authorized
 - Use case: Multi-sig wallets, corporate accounts, delegation
 - **If you're not using ONCHAINID, use the ACCOUNT verifier**
@@ -115,7 +119,7 @@ Every read operation requires signing a `ReadData` object with the following com
 
 #### Read Types
 
-**NONCE**
+##### NONCE
 
 - Used to read an account's nonce
 - The `nonce` field contains the account address whose nonce you want to read
@@ -127,7 +131,7 @@ Every read operation requires signing a `ReadData` object with the following com
 }
 ```
 
-**TRANSACTION_RECEIPT**
+##### TRANSACTION_RECEIPT
 
 - Used to read transaction receipts
 - The `transaction_hash` field contains the transaction hash
@@ -139,7 +143,7 @@ Every read operation requires signing a `ReadData` object with the following com
 }
 ```
 
-**CLASS**
+##### CLASS
 
 - Used to read declared class/contract code
 - The `class_hash` field contains the class hash
@@ -151,7 +155,7 @@ Every read operation requires signing a `ReadData` object with the following com
 }
 ```
 
-**CALL**
+##### CALL
 
 - Used to call view functions on contracts
 - Most complex type as it includes contract address, function, and calldata
@@ -169,7 +173,7 @@ Every read operation requires signing a `ReadData` object with the following com
 
 Signatures must have an expiration to prevent replay attacks. You can use either:
 
-**Block-based expiry**
+##### Block-based expiry
 
 ```json
 {
@@ -178,7 +182,7 @@ Signatures must have an expiration to prevent replay attacks. You can use either
 }
 ```
 
-**Timestamp-based expiry**
+##### Timestamp-based expiry
 
 ```json
 {
@@ -298,7 +302,10 @@ Any Declare ACL contract must implement three core functions:
 
 UNITS provides a reference implementation at `crates/handlers/starknet/src/tests/get_program/test_contracts/src/declare_acl.cairo`.
 
-**Important**: This reference implementation is NOT audited and is provided as-is without any warranties. Users of UNITS are free to use their own Declare ACL implementation for production or use our reference implementation at their own risk. We do not take responsibility for any issues, vulnerabilities, or losses that may arise from using this code. For production deployments, we strongly recommend having any ACL contract professionally audited and thoroughly tested.
+**Important**: This reference implementation is NOT audited and is provided as-is without any warranties. Users of UNITS
+are free to use their own Declare ACL implementation for production or use our reference implementation at their own
+risk. We do not take responsibility for any issues, vulnerabilities, or losses that may arise from using this code. For
+production deployments, we strongly recommend having any ACL contract professionally audited and thoroughly tested.
 
 **How the Reference Implementation Works:**
 

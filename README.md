@@ -49,7 +49,8 @@ UNITS unique.
 
 ## Getting Started 🚀
 
-📖 **For comprehensive documentation on UNITS privacy features, RPC methods, and implementation patterns, see [Getting Started with UNITS Privacy](./docs/getting_started.md).**
+📖 **For comprehensive documentation on UNITS privacy features, RPC methods, and implementation patterns, see
+[Getting Started with UNITS Privacy](./docs/getting_started.md).**
 
 ### Prerequisites
 
@@ -91,8 +92,9 @@ Learn more about implementing privacy controls in the [Getting Started Guide](./
 
 ### UNITS RPC
 
-UNITS provides a custom RPC interface designed specifically for UNITS functionality. The RPC is built with privacy in mind from the ground up,
-allowing participants to define and enforce their own privacy rules while maintaining the benefits of verifiability.
+UNITS provides a custom RPC interface designed specifically for UNITS functionality. The RPC is built with privacy in mind
+from the ground up, allowing participants to define and enforce their own privacy rules while maintaining the benefits of
+verifiability.
 
 For detailed documentation on all UNITS RPC methods, read signatures, and privacy patterns, see the [Getting Started Guide](./docs/getting_started.md).
 

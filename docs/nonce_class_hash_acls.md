@@ -1,10 +1,10 @@
-# ⚠️ DEPRECATED - Please refer to [getting_started.md](./getting_started.md)
+# Default Read ACLs for Starknet Contracts - DEPRECATED
 
-> **Note**: This document is deprecated and will be removed in a future release. Please refer to [getting_started.md](./getting_started.md) for the most up-to-date and comprehensive documentation on UNITS privacy features.
+> **⚠️ DEPRECATED**: This document is deprecated and will be removed in a future release.
+> Please refer to [getting_started.md](./getting_started.md) for the most up-to-date and comprehensive
+> documentation on UNITS privacy features.
 
 ---
-
-# Default Read ACLs for Starknet Contracts
 
 By default, Starknet RPCs allow any user to fetch certain basic information about contracts, including:
 
