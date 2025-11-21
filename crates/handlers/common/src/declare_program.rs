@@ -28,19 +28,20 @@ pub async fn declare_program(
         },
     };
 
-    if program_exists {
-        // Set the ACL before declaring. This is a hacky fix, the ideal
-        // solution might be to have an indexer sync the chain and set ACLs
-        // after we know a declaration has been made OR to add atomicity in Madara
-        // for declare and invoke transactions.
-        handler
-            .set_program_visibility(
-                program_hash,
-                params.class_visibility,
-                params.account_address,
-            )
-            .await?;
+    // Set the ACL before declaring. This is a hacky fix, the idea
+    // solution might be to have an indexer sync the chain and set ACLs
+    // after we know a declaration has been made OR to add atomicity in Madara
+    // for declare and invoke transactions.
+    handler
+        .set_program_visibility(
+            program_hash,
+            params.class_visibility,
+            params.account_address,
+        )
+        .await?;
 
+    if program_exists {
+        // Don't declare again
         return Ok(DeclareTransactionResult {
             program_hash,
             transaction_hash: None,
