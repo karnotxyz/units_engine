@@ -312,7 +312,6 @@ production deployments, we strongly recommend having any ACL contract profession
 The reference implementation uses a counter-based approach with four storage structures:
 
 1. **`class_visibility`** (Map: class_hash → counter)
-
    - Determines if a class is Public (counter > 0) or ACL/private (counter = 0)
    - When someone declares with Public visibility: counter increments by 1
    - When someone declares with ACL visibility:
@@ -321,13 +320,11 @@ The reference implementation uses a counter-based approach with four storage str
    - Result: A class is Public if ANY declarer made it public and hasn't revoked
 
 2. **`visibility_granters`** (Map: class_hash → granter_address → bool)
-
    - Tracks which addresses have set a class to public
    - Prevents double-granting (can't increment counter twice from same granter)
    - Enforces "only revoke what you granted" rule
 
 3. **`class_acl_map`** (Map: class_hash → account_address → counter)
-
    - Stores which addresses have access to ACL-protected classes
    - Counter increments when a unique granter gives access to an address
    - Counter decrements when a granter who previously gave access removes it
@@ -620,7 +617,6 @@ Get the receipt of a transaction with privacy controls for events.
 **Privacy Enforcement**:
 
 1. **Transaction-level**: Only the transaction sender can fetch the receipt
-
    - UNITS checks if `signed_read_data.read_address == transaction.sender_address`
    - This ensures you can only read receipts for your own transactions
 
