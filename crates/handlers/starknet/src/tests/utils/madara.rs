@@ -1,7 +1,5 @@
 #![allow(clippy::print_stdout, clippy::print_stderr)]
 
-use super::starknet::PREDEPLOYED_ACCOUNT_CLASS_HASH;
-use crate::utils::{deploy_account, BuildAccount};
 use crate::{StarknetProvider, StarknetWallet};
 use anyhow::{anyhow, Result};
 use reqwest::Client;
@@ -22,16 +20,16 @@ use std::{
 use tokio::time::sleep;
 use units_tests_utils::port::{get_free_port, PortAllocation};
 use units_tests_utils::units::ChainBackend;
-use units_tests_utils::workspace::WORKSPACE_ROOT;
 use url::Url;
 use uuid::Uuid;
 
-const MADARA_BINARY_PATH: &str = "crates/handlers/starknet/src/tests/build/madara";
+const MADARA_DOCKER_IMAGE: &str = "ghcr.io/madara-alliance/madara:manual-2ba7dbd";
 
 pub struct MadaraRunner {
     port_allocation: Option<PortAllocation>,
     process: Option<Child>,
     temp_dir: Option<PathBuf>,
+    container_id: Option<String>,
 }
 
 impl MadaraRunner {
@@ -40,6 +38,7 @@ impl MadaraRunner {
             port_allocation: None,
             process: None,
             temp_dir: None,
+            container_id: None,
         })
     }
 
@@ -52,27 +51,50 @@ impl MadaraRunner {
         let temp_dir = std::env::temp_dir().join(format!("madara-{}", Uuid::new_v4()));
         fs::create_dir_all(&temp_dir)?;
 
-        // Get binary path from workspace root
-        let madara_path = WORKSPACE_ROOT.join(MADARA_BINARY_PATH);
-        println!("madara_path: {}", madara_path.display());
+        // Pull the latest Madara Docker image
+        println!("Pulling Madara Docker image: {MADARA_DOCKER_IMAGE}");
+        let pull_output = Command::new("docker")
+            .arg("pull")
+            .arg("--platform")
+            .arg("amd64")
+            .arg(MADARA_DOCKER_IMAGE)
+            .output()?;
 
-        // Start the Madara process
-        let mut process = Command::new(madara_path)
+        if !pull_output.status.success() {
+            return Err(anyhow!(
+                "Failed to pull Madara Docker image: {}",
+                String::from_utf8_lossy(&pull_output.stderr)
+            ));
+        }
+
+        // Generate a unique container name
+        let container_name = format!("madara-test-{}", Uuid::new_v4());
+
+        // Start the Madara Docker container
+        let mut process = Command::new("docker")
+            .arg("run")
+            .arg("--rm")
+            .arg("--name")
+            .arg(&container_name)
+            .arg("-p")
+            .arg(format!("{port}:9944"))
+            .arg("-v")
+            .arg(format!("{}:/data", temp_dir.to_str().unwrap()))
+            .arg(MADARA_DOCKER_IMAGE)
             .arg("--devnet")
             .arg("--rpc-port")
-            .arg(port.to_string())
+            .arg("9944")
+            .arg("--rpc-external") // Use the internal port, Docker will map it
             .arg("--base-path")
-            .arg(temp_dir.to_str().unwrap())
-            .arg("--gas-price")
-            .arg("0")
+            .arg("/data")
+            .arg("--l1-gas-price")
+            .arg("1")
             .arg("--blob-gas-price")
-            .arg("0")
-            .arg("--strk-gas-price")
-            .arg("0")
-            .arg("--strk-blob-gas-price")
-            .arg("0")
+            .arg("1")
+            .arg("--strk-per-eth")
+            .arg("1")
             .arg("--chain-config-override")
-            .arg("pending_block_update_time=200ms,block_time=2s")
+            .arg("block_time=2s,l2_gas_price.type=fixed,l2_gas_price.price=2500")
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()?;
@@ -85,31 +107,33 @@ impl MadaraRunner {
         thread::spawn(move || {
             let reader = BufReader::new(stdout);
             for line in reader.lines().map_while(Result::ok) {
-                println!("[MADARA] {}", line);
+                println!("[MADARA] {line}");
             }
         });
 
         thread::spawn(move || {
             let reader = BufReader::new(stderr);
             for line in reader.lines().map_while(Result::ok) {
-                eprintln!("[MADARA] {}", line);
+                eprintln!("[MADARA] {line}");
             }
         });
 
         self.process = Some(process);
         self.port_allocation = Some(port_allocation);
         self.temp_dir = Some(temp_dir);
+        self.container_id = Some(container_name);
 
         // Wait for Madara to be ready by polling the health endpoint
         let client = Client::new();
-        let url = format!("http://localhost:{}/health", port);
+        let url = format!("http://localhost:{port}/health");
 
         let mut attempts = 0;
-        const MAX_ATTEMPTS: u32 = 10;
+        const MAX_ATTEMPTS: u32 = 10; // Increased timeout for Docker startup
 
         while attempts < MAX_ATTEMPTS {
             match client.get(&url).send().await {
                 Ok(response) if response.status().is_success() => {
+                    println!("Madara is ready on port {port}");
                     return Ok(());
                 }
                 _ => {
@@ -120,8 +144,7 @@ impl MadaraRunner {
         }
 
         Err(anyhow!(
-            "Madara failed to start after {} seconds",
-            MAX_ATTEMPTS
+            "Madara failed to start after {MAX_ATTEMPTS} seconds",
         ))
     }
 
@@ -140,11 +163,21 @@ impl MadaraRunner {
 
 impl Drop for MadaraRunner {
     fn drop(&mut self) {
+        // Stop the Docker container
+        if let Some(container_id) = self.container_id.take() {
+            println!("Stopping Madara container: {container_id}");
+            let _ = Command::new("docker")
+                .arg("stop")
+                .arg(&container_id)
+                .output();
+        }
+
         if let Some(mut process) = self.process.take() {
             // Try to kill the process gracefully
             let _ = process.kill();
             let _ = process.wait(); // Wait for the process to be killed
         }
+
         // Clean up the temporary directory
         if let Some(temp_dir) = self.temp_dir.take() {
             let _ = fs::remove_dir_all(temp_dir);
@@ -194,6 +227,7 @@ impl StarknetWalletWithPrivateKey {
 
 /// Returns a running Madara node, configured Starknet provider, and a vector of deployed accounts
 #[fixture]
+#[cfg(test)]
 pub async fn madara_node_with_accounts(
     #[default(1)] num_accounts: u32,
 ) -> (
@@ -201,6 +235,9 @@ pub async fn madara_node_with_accounts(
     Arc<StarknetProvider>,
     Vec<StarknetWalletWithPrivateKey>,
 ) {
+    use super::starknet::PREDEPLOYED_ACCOUNT_CLASS_HASH;
+    use crate::utils::{deploy_account, BuildAccount};
+
     let (runner, provider) = madara_node().await;
 
     let mut accounts = Vec::new();

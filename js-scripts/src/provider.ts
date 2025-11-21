@@ -71,6 +71,17 @@ export interface TransactionReceipt {
 
 export type ClassVisibility = "PUBLIC" | "ACL";
 
+export interface ResourceBounds {
+  max_amount: number;
+  max_price_per_unit: number;
+}
+
+export interface ResourceBoundsMapping {
+  l1_gas: ResourceBounds;
+  l1_data_gas: ResourceBounds;
+  l2_gas: ResourceBounds;
+}
+
 class UnitsProvider {
   private rpcUrl: string;
 
@@ -107,7 +118,8 @@ class UnitsProvider {
     nonce: Nonce,
     program: any,
     visibility: ClassVisibility,
-    compiledProgramHash?: Bytes32,
+    compiledProgramHash: Bytes32 | undefined,
+    resourceBounds: ResourceBoundsMapping,
   ): Promise<{ transaction_hash: Bytes32 }> {
     return this.makeRequest("declareProgram", {
       declare_program: {
@@ -117,6 +129,7 @@ class UnitsProvider {
         program: program,
         compiled_program_hash: compiledProgramHash,
         class_visibility: visibility,
+        resource_bounds: resourceBounds,
       },
     });
   }
@@ -126,6 +139,7 @@ class UnitsProvider {
     signature: Bytes32[],
     nonce: Nonce,
     calldata: Bytes32[],
+    resourceBounds: ResourceBoundsMapping,
   ): Promise<{ transaction_hash: Bytes32 }> {
     return this.makeRequest("sendTransaction", {
       send_transaction: {
@@ -133,6 +147,7 @@ class UnitsProvider {
         signature: signature,
         nonce: nonce,
         calldata: calldata,
+        resource_bounds: resourceBounds,
       },
     });
   }
@@ -143,6 +158,7 @@ class UnitsProvider {
     constructorCalldata: Bytes32[],
     programHash: Bytes32,
     accountAddressSalt: Bytes32,
+    resourceBounds: ResourceBoundsMapping,
   ): Promise<{ transaction_hash: Bytes32 }> {
     return this.makeRequest("deployAccount", {
       deploy_account: {
@@ -151,6 +167,7 @@ class UnitsProvider {
         constructor_calldata: constructorCalldata,
         program_hash: programHash,
         account_address_salt: accountAddressSalt,
+        resource_bounds: resourceBounds,
       },
     });
   }

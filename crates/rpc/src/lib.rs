@@ -3,7 +3,6 @@ use std::sync::Arc;
 use jsonrpsee::RpcModule;
 use units_primitives::context::GlobalContext;
 
-mod starknet;
 mod units;
 
 /// A Starknet RPC server for Madara
@@ -21,17 +20,6 @@ impl RpcContext {
 /// Returns the RpcModule merged with all the supported RPC versions.
 pub fn rpc_api_user(rpc_ctx: &RpcContext) -> anyhow::Result<RpcModule<()>> {
     let mut rpc_api = RpcModule::new(());
-
-    // Starknet
-    rpc_api.merge(starknet::v0_7_1::StarknetReadRpcApiV0_7_1Server::into_rpc(
-        rpc_ctx.clone(),
-    ))?;
-    rpc_api.merge(starknet::v0_7_1::StarknetWriteRpcApiV0_7_1Server::into_rpc(
-        rpc_ctx.clone(),
-    ))?;
-    rpc_api.merge(starknet::v0_7_1::StarknetTraceRpcApiV0_7_1Server::into_rpc(
-        rpc_ctx.clone(),
-    ))?;
 
     // Units
     rpc_api.merge(units::v0_1_0::UnitsReadRpcApiV0_1_0Server::into_rpc(

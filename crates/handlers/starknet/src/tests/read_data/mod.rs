@@ -2,7 +2,7 @@ use assert_matches::assert_matches;
 use rstest::*;
 use starknet::{
     accounts::Account,
-    core::types::{BlockId, BlockTag, BlockWithTxHashes, MaybePendingBlockWithTxHashes},
+    core::types::{BlockId, BlockTag, BlockWithTxHashes, MaybePreConfirmedBlockWithTxHashes},
 };
 
 use crate::tests::utils::{
@@ -188,10 +188,10 @@ mod tests {
                 .await
             {
                 Ok(block) => match block {
-                    MaybePendingBlockWithTxHashes::PendingBlock(_) => {
+                    MaybePreConfirmedBlockWithTxHashes::PreConfirmedBlock(_) => {
                         unreachable!("Asked for latest but received pending block")
                     }
-                    MaybePendingBlockWithTxHashes::Block(block) => {
+                    MaybePreConfirmedBlockWithTxHashes::Block(block) => {
                         if block.block_number >= block_number {
                             return Ok(block);
                         }
@@ -279,8 +279,6 @@ mod tests {
                     purpose,         // purposes
                 ],
             }])
-            .gas(0)
-            .gas_price(0)
             .send()
             .await
             .unwrap();

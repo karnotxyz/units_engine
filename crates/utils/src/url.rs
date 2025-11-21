@@ -20,7 +20,7 @@ mod tests {
     #[case("://invalid.com", false)]
     fn test_parse_url(#[case] url: &str, #[case] should_pass: bool) {
         let result = parse_url(url);
-        assert_eq!(result.is_ok(), should_pass, "URL: {}", url);
+        assert_eq!(result.is_ok(), should_pass, "URL: {url}");
 
         if should_pass {
             let parsed_url = result.unwrap();

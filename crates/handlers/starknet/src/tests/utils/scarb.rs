@@ -45,10 +45,7 @@ pub async fn scarb_build(#[default(".")] path: impl AsRef<Path>) -> ArtifactsMap
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
         let stdout = String::from_utf8_lossy(&output.stdout);
-        eprintln!(
-            "Scarb build failed!\nStdout: {}\nStderr: {}",
-            stdout, stderr
-        );
+        eprintln!("Scarb build failed!\nStdout: {stdout}\nStderr: {stderr}",);
         panic!("Scarb build failed");
     }
 
@@ -157,7 +154,7 @@ impl Artifacts {
         let class_hash = self.class_hash;
         if account
             .provider()
-            .get_class(BlockId::Tag(BlockTag::Pending), class_hash)
+            .get_class(BlockId::Tag(BlockTag::PreConfirmed), class_hash)
             .await
             .is_ok()
         {

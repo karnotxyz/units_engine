@@ -100,8 +100,6 @@ async fn test_get_program(
                 owner_account.address(),
             ],
         }])
-        .gas(0)
-        .gas_price(0)
         .send()
         .await
         .unwrap()
@@ -137,8 +135,6 @@ async fn test_get_program(
                 owner_account.address(),
             ],
         }])
-        .gas(0)
-        .gas_price(0)
         .send()
         .await
         .unwrap()
@@ -185,8 +181,6 @@ async fn test_get_program(
                 owner_account.address(),
             ],
         }])
-        .gas(0)
-        .gas_price(0)
         .send()
         .await
         .unwrap()

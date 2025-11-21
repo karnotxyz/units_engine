@@ -1,7 +1,10 @@
 use rstest::*;
 use starknet::{
     accounts::Account,
-    core::types::{BlockId, BlockTag, FunctionCall},
+    core::{
+        types::{BlockId, BlockTag, FunctionCall},
+        utils::get_selector_from_name,
+    },
 };
 
 use crate::utils::WaitForReceipt;
@@ -14,7 +17,6 @@ use crate::{
     },
     StarknetContext,
 };
-use starknet::macros::selector;
 use std::sync::Arc;
 use units_primitives::{
     context::GlobalContext,
@@ -28,8 +30,10 @@ use units_handlers_common::declare_program::declare_program;
 
 #[cfg(feature = "testing")]
 mod tests {
+    #![allow(unsafe_code, unsafe_op_in_unsafe_fn)]
 
     use starknet::accounts::ConnectedAccount;
+    use units_primitives::rpc::ResourceBoundsMappingParams;
 
     use crate::tests::utils::scarb::Artifacts;
 
@@ -99,7 +103,7 @@ mod tests {
         // Verify the class was declared by retrieving it
         let declared_class = provider
             .get_class(
-                BlockId::Tag(BlockTag::Pending),
+                BlockId::Tag(BlockTag::PreConfirmed),
                 starknet_declare_txn.class_hash,
             )
             .await
@@ -119,15 +123,15 @@ mod tests {
                         .get_declare_acl_address()
                         .try_into()
                         .unwrap(),
-                    entry_point_selector: selector!("get_visibility"),
+                    entry_point_selector: get_selector_from_name("get_visibility").unwrap(),
                     calldata: vec![starknet_declare_txn.class_hash],
                 },
-                BlockId::Tag(BlockTag::Pending),
+                BlockId::Tag(BlockTag::PreConfirmed),
             )
             .await
             .unwrap();
 
-        assert_eq!(visibility, vec![ClassVisibility::Acl.into()]);
+        assert_eq!(visibility, vec![Felt::from(ClassVisibility::Acl)]);
 
         // Wait for a new block to be sure the ACL transaction from previous
         // declare is on chain (otherwise we get a nonce issue)
@@ -175,7 +179,7 @@ mod tests {
                 break;
             }
             if start_time.elapsed() >= timeout {
-                panic!("Block not found after {:?} timeout", timeout);
+                panic!("Block not found after {timeout:?} timeout");
             }
             tokio::time::sleep(retry_delay).await;
         }
@@ -189,14 +193,14 @@ mod tests {
                         .get_declare_acl_address()
                         .try_into()
                         .unwrap(),
-                    entry_point_selector: selector!("get_visibility"),
+                    entry_point_selector: get_selector_from_name("get_visibility").unwrap(),
                     calldata: vec![starknet_declare_txn.class_hash],
                 },
-                BlockId::Tag(BlockTag::Pending),
+                BlockId::Tag(BlockTag::PreConfirmed),
             )
             .await
             .unwrap();
-        assert_eq!(visibility, vec![ClassVisibility::Public.into()]);
+        assert_eq!(visibility, vec![Felt::from(ClassVisibility::Public)]);
     }
 
     async fn build_declare_txn(
@@ -206,19 +210,31 @@ mod tests {
     ) -> DeclareProgramParams {
         let provider = account.account.provider();
         let nonce = provider
-            .get_nonce(BlockId::Tag(BlockTag::Pending), account.account.address())
+            .get_nonce(
+                BlockId::Tag(BlockTag::PreConfirmed),
+                account.account.address(),
+            )
             .await
             .unwrap();
-
+        // Not doing a fee estimate here because UNITS allows to declare programs multiple times with
+        // different visibility levels. So, a 2nd call to `build_declare_txn` in the test case will
+        // fail if we call `estimate_fee`
+        let mut resource_bounds = ResourceBoundsMappingParams::default();
+        resource_bounds.l2_gas.max_amount = 10000000; // uses 9278720, so proving a little extra
         let declare_tx = account
             .account
             .declare_v3(
                 Arc::new(artifact.contract_class.clone().flatten().unwrap()),
                 artifact.compiled_class_hash,
             )
-            .gas(0)
-            .gas_price(0)
             .nonce(nonce)
+            .l1_gas_price(resource_bounds.l1_gas.max_price_per_unit)
+            .l1_gas(resource_bounds.l1_gas.max_amount)
+            .l2_gas_price(resource_bounds.l2_gas.max_price_per_unit)
+            .l2_gas(resource_bounds.l2_gas.max_amount)
+            .l1_data_gas_price(resource_bounds.l1_data_gas.max_price_per_unit)
+            .l1_data_gas(resource_bounds.l1_data_gas.max_amount)
+            .tip(0)
             .prepared()
             .unwrap();
         let tx_hash = declare_tx.transaction_hash(false);
@@ -232,6 +248,7 @@ mod tests {
             program: serde_json::to_value(flattened_contract_class.clone()).unwrap(),
             compiled_program_hash: Some(artifact.compiled_class_hash.into()),
             class_visibility,
+            resource_bounds,
         }
     }
 }

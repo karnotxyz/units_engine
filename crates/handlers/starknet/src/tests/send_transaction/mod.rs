@@ -58,7 +58,7 @@ async fn test_add_invoke_transaction(
     // Sign the message
     let nonce = provider
         .get_nonce(
-            BlockId::Tag(BlockTag::Pending),
+            BlockId::Tag(BlockTag::PreConfirmed),
             accounts[0].account.address(),
         )
         .await
@@ -68,11 +68,19 @@ async fn test_add_invoke_transaction(
         selector: selector!("hello_world"),
         calldata: vec![],
     }];
+
+    let execution = accounts[0].account.execute_v3(calls.clone());
+    let fee_estimate = execution.estimate_fee().await.unwrap();
     let txn_hash = accounts[0]
         .account
         .execute_v3(calls.clone())
-        .gas(0)
-        .gas_price(0)
+        .l1_gas_price(fee_estimate.l1_gas_price)
+        .l1_gas(fee_estimate.l1_gas_consumed)
+        .l2_gas_price(fee_estimate.l2_gas_price)
+        .l2_gas(fee_estimate.l2_gas_consumed)
+        .l1_data_gas_price(fee_estimate.l1_data_gas_price)
+        .l1_data_gas(fee_estimate.l1_data_gas_consumed)
+        .tip(0)
         .nonce(nonce)
         .prepared()
         .unwrap()
@@ -89,6 +97,7 @@ async fn test_add_invoke_transaction(
                 .into_iter()
                 .map(|x| x.into())
                 .collect(),
+            resource_bounds: fee_estimate.into(),
         },
     )
     .await

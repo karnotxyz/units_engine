@@ -10,13 +10,15 @@ import {
   ec,
   selector,
   constants,
-  transaction,
+  Deployer,
+  legacyDeployer,
 } from "starknet";
 import {
   ClassVisibility,
   hashReadData,
   ReadData,
   ReadType,
+  ResourceBoundsMapping,
   SignedReadData,
   TransactionReceipt,
   UnitsProvider,
@@ -27,6 +29,42 @@ type DeployAccountParams = {
   salt: string;
   constructorArgs: string[];
 };
+
+// Helper function to get default resource bounds
+function getDefaultResourceBounds(): ResourceBoundsMapping {
+  return {
+    l1_gas: {
+      max_amount: 10000,
+      max_price_per_unit: 200,
+    },
+    l1_data_gas: {
+      max_amount: 10000,
+      max_price_per_unit: 200,
+    },
+    l2_gas: {
+      max_amount: 10000000,
+      max_price_per_unit: 2500,
+    },
+  };
+}
+
+// Helper function to convert ResourceBoundsMapping to BigInt format for starknet.js
+function convertResourceBoundsToBigInt(resourceBounds: ResourceBoundsMapping) {
+  return {
+    l1_gas: {
+      max_amount: BigInt(resourceBounds.l1_gas.max_amount),
+      max_price_per_unit: BigInt(resourceBounds.l1_gas.max_price_per_unit),
+    },
+    l1_data_gas: {
+      max_amount: BigInt(resourceBounds.l1_data_gas.max_amount),
+      max_price_per_unit: BigInt(resourceBounds.l1_data_gas.max_price_per_unit),
+    },
+    l2_gas: {
+      max_amount: BigInt(resourceBounds.l2_gas.max_amount),
+      max_price_per_unit: BigInt(resourceBounds.l2_gas.max_price_per_unit),
+    },
+  };
+}
 
 class UnitsAccount {
   private unitsProvider: UnitsProvider;
@@ -73,13 +111,13 @@ class UnitsAccount {
     let provider = new Provider({
       nodeUrl: "",
     });
-    this.starknetAccount = new Account(
+    this.starknetAccount = new Account({
       provider,
-      this.address,
-      this.privateKey,
-      "1",
-      "0x3",
-    );
+      address: this.address,
+      signer: this.privateKey,
+      cairoVersion: "1",
+      transactionVersion: "0x3",
+    });
   }
 
   getProvider(): UnitsProvider {
@@ -91,21 +129,13 @@ class UnitsAccount {
   }
 
   async buildInvokeSignerDetails(
+    resourceBounds: ResourceBoundsMapping,
     nonce?: number,
   ): Promise<InvocationsSignerDetails> {
     return {
       version: "0x3",
       nonce: nonce !== undefined ? nonce : await this.getNonce(),
-      resourceBounds: {
-        l1_gas: {
-          max_amount: "0",
-          max_price_per_unit: "0",
-        },
-        l2_gas: {
-          max_amount: "0",
-          max_price_per_unit: "0",
-        },
-      },
+      resourceBounds: convertResourceBoundsToBigInt(resourceBounds),
       tip: "0",
       paymasterData: [],
       accountDeploymentData: [],
@@ -128,8 +158,10 @@ class UnitsAccount {
     program: any,
     compiledProgramHash: string,
     visibility: ClassVisibility,
+    resourceBounds?: ResourceBoundsMapping,
   ): Promise<{ transaction_hash: string }> {
-    const signerDetails = await this.buildInvokeSignerDetails();
+    const bounds = resourceBounds || getDefaultResourceBounds();
+    const signerDetails = await this.buildInvokeSignerDetails(bounds);
     const declarePayload = await this.starknetAccount.buildDeclarePayload(
       {
         contract: program,
@@ -151,6 +183,7 @@ class UnitsAccount {
       },
       visibility,
       compiledProgramHash,
+      bounds,
     );
     return programId;
   }
@@ -159,10 +192,12 @@ class UnitsAccount {
     programHash: string,
     constructorArgs: string[],
     salt: string,
+    resourceBounds?: ResourceBoundsMapping,
   ): Promise<{ transaction_hash: string; program_address: string }> {
     const unique = true;
 
-    const udcDeployPayload = transaction.buildUDCCall(
+    const deployer = legacyDeployer;
+    const udcDeployPayload = deployer.buildDeployerCall(
       {
         classHash: programHash,
         constructorCalldata: constructorArgs,
@@ -173,6 +208,7 @@ class UnitsAccount {
     );
     const sendTransactionResponse = await this.sendTransaction(
       udcDeployPayload.calls,
+      resourceBounds,
     );
 
     const receipt = await this.waitForTransaction(
@@ -187,8 +223,10 @@ class UnitsAccount {
 
   async sendTransaction(
     calldata: Array<Call>,
+    resourceBounds?: ResourceBoundsMapping,
   ): Promise<{ transaction_hash: string }> {
-    const signerDetails = await this.buildInvokeSignerDetails();
+    const bounds = resourceBounds || getDefaultResourceBounds();
+    const signerDetails = await this.buildInvokeSignerDetails(bounds);
     const invocation = await this.starknetAccount.buildInvocation(
       calldata,
       signerDetails,
@@ -205,12 +243,14 @@ class UnitsAccount {
       buildSignature(invocation.signature),
       Number(signerDetails.nonce),
       calldataString,
+      bounds,
     );
     return sendTransactionResponse;
   }
 
-  async deploySelf() {
-    const signerDetails = await this.buildInvokeSignerDetails(0);
+  async deploySelf(resourceBounds?: ResourceBoundsMapping) {
+    const bounds = resourceBounds || getDefaultResourceBounds();
+    const signerDetails = await this.buildInvokeSignerDetails(bounds, 0);
     const deloyAccountPayload =
       await this.starknetAccount.buildAccountDeployPayload(
         {
@@ -227,6 +267,7 @@ class UnitsAccount {
       this.deployAccountParams.constructorArgs,
       this.deployAccountParams.programHash,
       this.deployAccountParams.salt,
+      bounds,
     );
 
     return deployAccountResponse;
@@ -340,4 +381,4 @@ function buildSignature(signature?: Signature) {
     : [toHex(signature.r), toHex(signature.s)];
 }
 
-export { UnitsAccount };
+export { UnitsAccount, getDefaultResourceBounds };

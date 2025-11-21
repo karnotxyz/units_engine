@@ -1,13 +1,14 @@
-use crate::utils::{deploy_account, wait_for_receipt, BuildAccount};
+use crate::utils::wait_for_receipt;
 use crate::{StarknetContext, StarknetProvider, StarknetWallet};
+use anyhow::Context;
+use starknet::providers::Provider;
 use starknet::{
     accounts::{Account, ConnectedAccount, ExecutionEncoding, SingleOwnerAccount},
     core::types::{
-        Call, CallType, ComputationResources, ContractClass, DataAvailabilityResources,
-        DataResources, DeclareTransactionTrace, DeployAccountTransactionTrace, EntryPointType,
-        ExecuteInvocation, ExecutionResources, Felt, FlattenedSierraClass, FunctionInvocation,
-        InvokeTransactionResult, InvokeTransactionTrace, L1HandlerTransactionTrace,
-        TransactionReceiptWithBlockInfo,
+        Call, CallType, ContractClass, DeclareTransactionTrace, DeployAccountTransactionTrace,
+        EntryPointType, ExecuteInvocation, ExecutionResources, Felt, FlattenedSierraClass,
+        FunctionInvocation, InnerCallExecutionResources, InvokeTransactionResult,
+        InvokeTransactionTrace, L1HandlerTransactionTrace, TransactionReceiptWithBlockInfo,
     },
     macros::selector,
     providers::jsonrpc::HttpTransport,
@@ -19,75 +20,65 @@ use url::Url;
 
 pub const PREDEPLOYED_ACCOUNT_CLASS_HASH: &str =
     "0x00e2eb8f5672af4e6a4e8a8f1b44989685e668489b0a25437733756c5a34a1d6";
-pub const ETH_TOKEN_ADDRESS: &str =
-    "0x49d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7";
+pub const STRK_TOKEN_ADDRESS: &str =
+    "0x04718f5a0Fc34cC1AF16A1cdee98fFB20C31f5cD61D6Ab07201858f4287c938D";
 pub const PREDEPLOYED_ACCOUNT_ADDRESS: &str =
     "0x055be462e718c4166d656d11f89e341115b8bc82389c3762a10eade04fcb225d";
-
-pub async fn deploy_dummy_account(
-    provider: Arc<StarknetProvider>,
-) -> anyhow::Result<Arc<StarknetWallet>> {
-    let private_key = Felt::ONE;
-    deploy_account(
-        provider.clone(),
-        private_key,
-        Felt::from_hex_unchecked(PREDEPLOYED_ACCOUNT_CLASS_HASH),
-    )
-    .await
-    .expect("Failed to deploy account")
-    .wait_for_receipt_and_build_account(provider.clone(), private_key)
-    .await
-}
+pub const PREDEPLOYED_ACCOUNT_PRIVATE_KEY: &str =
+    "0x077e56c6dc32d40a67f6f7e6625c8dc5e570abe49c0a24e9202e4ae906abcc07";
 
 pub async fn dummy_transfer(
     wallet: Arc<SingleOwnerAccount<Arc<StarknetProvider>, Arc<LocalWallet>>>,
+    recipient: Felt,
+    amount: Felt,
 ) -> anyhow::Result<(InvokeTransactionResult, TransactionReceiptWithBlockInfo)> {
     let txn = wallet
         .execute_v3(vec![Call {
-            to: Felt::from_hex_unchecked(ETH_TOKEN_ADDRESS),
+            to: Felt::from_hex_unchecked(STRK_TOKEN_ADDRESS),
             selector: selector!("transfer"),
             calldata: vec![
-                Felt::from_hex_unchecked("0x1"), // recipient
-                Felt::from_hex_unchecked("0x0"), // amount_low
+                recipient,                       // recipient
+                amount,                          // amount_low
                 Felt::from_hex_unchecked("0x0"), // amount_high
             ],
         }])
-        .gas(0)
-        .gas_price(0)
         .send()
-        .await?;
+        .await
+        .context("Failed to transfer")?;
     let receipt = wait_for_receipt(wallet.provider().clone(), txn.transaction_hash, None).await?;
     Ok((txn, receipt))
 }
 
-pub fn build_computation_resources() -> ComputationResources {
-    ComputationResources {
-        steps: 0,
-        memory_holes: None,
-        range_check_builtin_applications: None,
-        pedersen_builtin_applications: None,
-        poseidon_builtin_applications: None,
-        ec_op_builtin_applications: None,
-        ecdsa_builtin_applications: None,
-        bitwise_builtin_applications: None,
-        keccak_builtin_applications: None,
-        segment_arena_builtin: None,
-    }
-}
-
-pub fn build_data_resources() -> DataResources {
-    DataResources {
-        data_availability: DataAvailabilityResources {
-            l1_gas: 0,
-            l1_data_gas: 0,
-        },
-    }
+pub async fn fund_account_devnet(
+    provider: Arc<StarknetProvider>,
+    account_address: Felt,
+) -> anyhow::Result<()> {
+    // Funding account using predeployed devnet account
+    let signer =
+        SigningKey::from_secret_scalar(Felt::from_hex_unchecked(PREDEPLOYED_ACCOUNT_PRIVATE_KEY));
+    let local_wallet = Arc::new(LocalWallet::from(signer));
+    let predeployed_account_devnet = SingleOwnerAccount::new(
+        provider.clone(),
+        local_wallet,
+        Felt::from_hex_unchecked(PREDEPLOYED_ACCOUNT_ADDRESS),
+        provider.chain_id().await?,
+        ExecutionEncoding::New,
+    );
+    dummy_transfer(
+        Arc::new(predeployed_account_devnet),
+        account_address,
+        Felt::from_dec_str("1000000000000000000").unwrap(), // 10^18
+    )
+    .await
+    .context("Failed to fund account")?;
+    Ok(())
 }
 
 pub fn build_execution_resources() -> ExecutionResources {
     ExecutionResources {
-        computation_resources: build_computation_resources(),
-        data_resources: build_data_resources(),
+        l1_gas: 0,
+        l1_data_gas: 0,
+        l2_gas: 0,
     }
 }
 
@@ -104,7 +95,11 @@ pub fn build_function_invocation() -> FunctionInvocation {
         calls: vec![],
         events: vec![],
         messages: vec![],
-        execution_resources: build_computation_resources(),
+        execution_resources: InnerCallExecutionResources {
+            l1_gas: 0,
+            l2_gas: 0,
+        },
+        is_reverted: false,
     }
 }
 
@@ -139,7 +134,7 @@ pub fn build_deploy_account_trace() -> DeployAccountTransactionTrace {
 
 pub fn build_l1_handler_trace() -> L1HandlerTransactionTrace {
     L1HandlerTransactionTrace {
-        function_invocation: build_function_invocation(),
+        function_invocation: ExecuteInvocation::Success(build_function_invocation()),
         state_diff: None,
         execution_resources: build_execution_resources(),
     }

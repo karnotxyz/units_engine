@@ -141,6 +141,14 @@
               "$ref": "#/components/schemas/BYTES32"
             }
           }
+        },
+        {
+          "name": "resource_bounds",
+          "description": "Resource bounds for the transaction",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/RESOURCE_BOUNDS_MAPPING"
+          }
         }
       ],
       "result": {
@@ -304,6 +312,14 @@
           "required": true,
           "schema": {
             "$ref": "#/components/schemas/BYTES32"
+          }
+        },
+        {
+          "name": "resource_bounds",
+          "description": "Resource bounds for the deployment",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/RESOURCE_BOUNDS_MAPPING"
           }
         }
       ],
@@ -624,6 +640,37 @@
             "required": ["type", "error"]
           }
         ]
+      },
+      "RESOURCE_BOUNDS": {
+        "type": "object",
+        "properties": {
+          "max_amount": {
+            "type": "integer",
+            "format": "uint64",
+            "description": "Maximum amount of the resource"
+          },
+          "max_price_per_unit": {
+            "type": "integer",
+            "format": "uint128",
+            "description": "Maximum price per unit of the resource"
+          }
+        },
+        "required": ["max_amount", "max_price_per_unit"]
+      },
+      "RESOURCE_BOUNDS_MAPPING": {
+        "type": "object",
+        "properties": {
+          "l1_gas": {
+            "$ref": "#/components/schemas/RESOURCE_BOUNDS"
+          },
+          "l1_data_gas": {
+            "$ref": "#/components/schemas/RESOURCE_BOUNDS"
+          },
+          "l2_gas": {
+            "$ref": "#/components/schemas/RESOURCE_BOUNDS"
+          }
+        },
+        "required": ["l1_gas", "l1_data_gas", "l2_gas"]
       }
     }
   }

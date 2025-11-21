@@ -26,6 +26,28 @@ use crate::tests::utils::starknet::ProviderToDummyGlobalContext;
 use units_handlers_common::get_transaction_receipt::GetTransactionReceiptError;
 use units_primitives::rpc::ExecutionStatus;
 
+use crate::tests::utils::starknet::STRK_TOKEN_ADDRESS;
+
+/// Helper function to assert that a fee transfer event is present
+/// The fee transfer event should be the last event in the events array
+fn assert_fee_transfer_event(events: &[units_primitives::rpc::Event]) {
+    assert!(
+        !events.is_empty(),
+        "Expected at least one event (fee transfer)"
+    );
+    let last_event = &events[events.len() - 1];
+    assert_eq!(
+        last_event.keys[0],
+        selector!("Transfer").into(),
+        "Last event should be a Transfer event"
+    );
+    assert_eq!(
+        last_event.from_address,
+        Felt::from_hex_unchecked(STRK_TOKEN_ADDRESS).into(),
+        "Fee transfer should be from STRK token address"
+    );
+}
+
 #[rstest]
 #[tokio::test]
 #[cfg(feature = "testing")]
@@ -58,8 +80,6 @@ async fn test_get_receipt_fails_with_different_sender(
             selector: selector!("emit_event"),
             calldata: vec![],
         }])
-        .gas(0)
-        .gas_price(0)
         .send()
         .await
         .unwrap();
@@ -132,8 +152,6 @@ async fn test_get_receipt_fails_with_invalid_read_signature(
             selector: selector!("emit_event"),
             calldata: vec![],
         }])
-        .gas(0)
-        .gas_price(0)
         .send()
         .await
         .unwrap();
@@ -221,8 +239,6 @@ async fn test_get_receipt_without_can_read_event(
             selector: selector!("emit_event"),
             calldata: vec![],
         }])
-        .gas(0)
-        .gas_price(0)
         .send()
         .await
         .unwrap();
@@ -259,12 +275,15 @@ async fn test_get_receipt_without_can_read_event(
     .await
     .unwrap();
 
-    // Since contract doesn't implement can_read_event, receipt should have one event
-    assert_eq!(receipt.events.len(), 1);
+    // Since contract doesn't implement can_read_event, receipt should have two events (one `TestEvent` and one fee `Transfer` event)
+    assert_eq!(receipt.events.len(), 2);
     assert_eq!(receipt.events[0].data[0], Felt::from(1).into()); // TestEvent data
     assert_eq!(receipt.events[0].keys[0], selector!("TestEvent").into());
     assert_matches!(receipt.execution_status, ExecutionStatus::Succeeded);
     assert_eq!(receipt.transaction_hash, result.transaction_hash.into());
+
+    // Check that the fee transfer event is present
+    assert_fee_transfer_event(&receipt.events);
 }
 
 #[rstest]
@@ -302,8 +321,6 @@ async fn test_get_receipt_with_can_read_event(
             selector: selector!("emit_event_one"),
             calldata: vec![],
         }])
-        .gas(0)
-        .gas_price(0)
         .send()
         .await
         .unwrap();
@@ -340,7 +357,9 @@ async fn test_get_receipt_with_can_read_event(
     .await
     .unwrap();
 
-    assert_eq!(receipt.events.len(), 0);
+    // Should have 1 event (fee transfer) since we haven't given permission for contract events
+    assert_eq!(receipt.events.len(), 1);
+    assert_fee_transfer_event(&receipt.events);
 
     // Update ACL to allow reading TestEventOne
     let result = account_with_private_key
@@ -353,8 +372,6 @@ async fn test_get_receipt_with_can_read_event(
                 account_with_private_key.account.address(),
             ],
         }])
-        .gas(0)
-        .gas_price(0)
         .send()
         .await
         .unwrap();
@@ -364,7 +381,7 @@ async fn test_get_receipt_with_can_read_event(
         .await
         .unwrap();
 
-    // Get receipt again - should now have the event
+    // Get receipt again - should now have the event plus fee transfer
     let receipt = get_transaction_receipt(
         global_ctx.clone(),
         GetTransactionReceiptParams {
@@ -375,9 +392,10 @@ async fn test_get_receipt_with_can_read_event(
     .await
     .unwrap();
 
-    assert_eq!(receipt.events.len(), 1);
+    assert_eq!(receipt.events.len(), 2);
     assert_eq!(receipt.events[0].data[0], Felt::from(1).into()); // TestEventOne data
     assert_eq!(receipt.events[0].keys[0], selector!("TestEventOne").into());
+    assert_fee_transfer_event(&receipt.events);
 
     // Call emit_event_one_and_two
     let emit_one_and_two_result = account_with_private_key
@@ -387,8 +405,6 @@ async fn test_get_receipt_with_can_read_event(
             selector: selector!("emit_event_one_and_two"),
             calldata: vec![],
         }])
-        .gas(0)
-        .gas_price(0)
         .send()
         .await
         .unwrap();
@@ -414,7 +430,7 @@ async fn test_get_receipt_with_can_read_event(
         .await
         .unwrap();
 
-    // Get receipt - should only have TestEventOne since we only have permission for it
+    // Get receipt - should have TestEventOne and fee transfer since we only have permission for TestEventOne
     let receipt = get_transaction_receipt(
         global_ctx.clone(),
         GetTransactionReceiptParams {
@@ -425,9 +441,10 @@ async fn test_get_receipt_with_can_read_event(
     .await
     .unwrap();
 
-    assert_eq!(receipt.events.len(), 1);
+    assert_eq!(receipt.events.len(), 2);
     assert_eq!(receipt.events[0].data[0], Felt::from(1).into()); // TestEventOne data
     assert_eq!(receipt.events[0].keys[0], selector!("TestEventOne").into());
+    assert_fee_transfer_event(&receipt.events);
 
     // Update ACL to allow reading TestEventTwo
     let result = account_with_private_key
@@ -440,8 +457,6 @@ async fn test_get_receipt_with_can_read_event(
                 account_with_private_key.account.address(),
             ],
         }])
-        .gas(0)
-        .gas_price(0)
         .send()
         .await
         .unwrap();
@@ -451,7 +466,7 @@ async fn test_get_receipt_with_can_read_event(
         .await
         .unwrap();
 
-    // Get receipt again - should now have both events
+    // Get receipt again - should now have both contract events plus fee transfer
     let receipt = get_transaction_receipt(
         global_ctx.clone(),
         GetTransactionReceiptParams {
@@ -462,11 +477,12 @@ async fn test_get_receipt_with_can_read_event(
     .await
     .unwrap();
 
-    assert_eq!(receipt.events.len(), 2);
+    assert_eq!(receipt.events.len(), 3);
     assert_eq!(receipt.events[0].data[0], Felt::from(1).into()); // TestEventOne data
     assert_eq!(receipt.events[0].keys[0], selector!("TestEventOne").into());
     assert_eq!(receipt.events[1].data[0], Felt::from(2).into()); // TestEventTwo data
     assert_eq!(receipt.events[1].keys[0], selector!("TestEventTwo").into());
+    assert_fee_transfer_event(&receipt.events);
 }
 
 #[rstest]
@@ -482,7 +498,7 @@ async fn test_get_receipt_reverted_transaction(
         Vec<StarknetWalletWithPrivateKey>,
     ),
 ) {
-    use units_primitives::rpc::ExecutionStatus;
+    use units_primitives::rpc::{ExecutionStatus, ResourceBoundsMappingParams};
 
     let (_runner, provider, accounts_with_private_key) = madara_node_with_accounts.await;
     let account_with_private_key = &accounts_with_private_key[0];
@@ -499,15 +515,21 @@ async fn test_get_receipt_reverted_transaction(
         .await;
 
     // Call panic function to generate a reverted transaction
-    let result = account_with_private_key
-        .account
-        .execute_v3(vec![Call {
-            to: contract_address,
-            selector: selector!("panic"),
-            calldata: vec![],
-        }])
-        .gas(0)
-        .gas_price(0)
+    let execution = account_with_private_key.account.execute_v3(vec![Call {
+        to: contract_address,
+        selector: selector!("panic"),
+        calldata: vec![],
+    }]);
+    // submit default resource bounds to avoud a fee estimate because it would fail
+    let resource_bounds_default = ResourceBoundsMappingParams::default();
+    let result = execution
+        .l1_gas_price(resource_bounds_default.l1_gas.max_price_per_unit)
+        .l1_gas(resource_bounds_default.l1_gas.max_amount)
+        .l2_gas_price(resource_bounds_default.l2_gas.max_price_per_unit)
+        .l2_gas(600000) // the txn uses 590720, so proving a little extra
+        .l1_data_gas_price(resource_bounds_default.l1_data_gas.max_price_per_unit)
+        .l1_data_gas(resource_bounds_default.l1_data_gas.max_amount)
+        .tip(0)
         .send()
         .await
         .unwrap();
@@ -544,9 +566,11 @@ async fn test_get_receipt_reverted_transaction(
     .await
     .unwrap();
 
-    // Receipt should have no events since transaction reverted
+    // Receipt should have one event (fee transfer) since transaction reverted
     assert_matches!(receipt.execution_status, ExecutionStatus::Reverted { .. });
-    assert_eq!(receipt.events.len(), 0);
+    assert_eq!(receipt.events.len(), 1);
+    assert_fee_transfer_event(&receipt.events);
+    assert_eq!(receipt.transaction_hash, result.transaction_hash.into());
 }
 
 #[rstest]
@@ -603,9 +627,10 @@ async fn test_get_receipt_declare_transaction(
     .await
     .unwrap();
 
-    // Declare transaction should have no events
+    // Declare transaction should have one event (fee transfer)
     assert_matches!(receipt.execution_status, ExecutionStatus::Succeeded);
-    assert_eq!(receipt.events.len(), 0);
+    assert_eq!(receipt.events.len(), 1);
+    assert_fee_transfer_event(&receipt.events);
     assert_eq!(
         receipt.transaction_hash,
         declare_result.transaction_hash.into()
@@ -661,11 +686,13 @@ async fn test_get_receipt_deploy_account_transaction(
     .await
     .unwrap();
 
-    // Declare transaction should have no events
+    // Deploy account transaction should have OwnerAdded event and fee transfer event
     assert_matches!(receipt.execution_status, ExecutionStatus::Succeeded);
-    assert_eq!(receipt.events.len(), 1);
+    assert_eq!(receipt.events.len(), 2);
     // OwnerAdded event
     assert_eq!(receipt.events[0].keys[0], selector!("OwnerAdded").into());
+    // Fee transfer event
+    assert_fee_transfer_event(&receipt.events);
 }
 
 #[rstest]
@@ -705,8 +732,6 @@ async fn test_get_receipt_missing_required_read_type(
             selector: selector!("emit_event"),
             calldata: vec![],
         }])
-        .gas(0)
-        .gas_price(0)
         .send()
         .await
         .unwrap();

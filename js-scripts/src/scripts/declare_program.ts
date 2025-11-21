@@ -1,5 +1,5 @@
 import { hash } from "starknet";
-import { UnitsAccount } from "../account";
+import { getDefaultResourceBounds, UnitsAccount } from "../account";
 import { UnitsProvider } from "../provider";
 import dotenv from "dotenv";
 import fs from "fs";
@@ -14,10 +14,13 @@ async function declare_program(programJson: any, compiledProgramJson: any) {
     process.env.PRIVATE_KEY,
   );
 
+  const resourceBounds = getDefaultResourceBounds();
+  resourceBounds.l2_gas.max_amount = 100000000; // setting a high value to avoud gas issues
   const declareProgramResponse = await unitsAccount.declareProgram(
     programJson,
     hash.computeCompiledClassHash(compiledProgramJson),
     "ACL",
+    resourceBounds,
   );
 
   console.log("ℹ️ Class hash: ", hash.computeContractClassHash(programJson));
