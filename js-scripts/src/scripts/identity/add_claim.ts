@@ -11,13 +11,13 @@ async function add_claim(user: string, topic: string) {
   const unitsAccount = new UnitsAccount(
     unitsProvider,
     process.env.ACCOUNT_ADDRESS,
-    process.env.PRIVATE_KEY
+    process.env.PRIVATE_KEY,
   );
 
   let { result } = await unitsAccount.call(
     process.env.IDENTITY_REGISTRY,
     "get_identity",
-    [user]
+    [user],
   );
 
   let { transaction_hash } = await unitsAccount.sendTransaction([

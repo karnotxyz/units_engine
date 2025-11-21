@@ -12,13 +12,13 @@ async function deploy_compliance_token(
   owner: string,
   initial_supply: string,
   name: string,
-  symbol: string
+  symbol: string,
 ) {
   const unitsProvider = new UnitsProvider(process.env.UNITS_RPC);
   const unitsAccount = new UnitsAccount(
     unitsProvider,
     process.env.ACCOUNT_ADDRESS,
-    process.env.PRIVATE_KEY
+    process.env.PRIVATE_KEY,
   );
 
   console.log("Deploying compliant token...");
@@ -35,7 +35,7 @@ async function deploy_compliance_token(
   const deployProgramResponse = await unitsAccount.deployProgram(
     classHash,
     calldata,
-    unixTime.toString()
+    unixTime.toString(),
   );
 
   console.log("✅ Deploy program response: ", deployProgramResponse);
@@ -45,7 +45,7 @@ async function deploy_compliance_token(
 
 if (process.argv.length < 6) {
   console.error(
-    "Usage: ts-node deploy_compliant_token.ts <owner> <initial_supply> <name> <symbol>"
+    "Usage: ts-node deploy_compliant_token.ts <owner> <initial_supply> <name> <symbol>",
   );
   process.exit(1);
 }
@@ -60,5 +60,5 @@ deploy_compliance_token(
   owner,
   initial_supply,
   name,
-  symbol
+  symbol,
 );

@@ -11,7 +11,7 @@ async function deploy_identity_registry(classHash: string) {
   const unitsAccount = new UnitsAccount(
     unitsProvider,
     process.env.ACCOUNT_ADDRESS,
-    process.env.PRIVATE_KEY
+    process.env.PRIVATE_KEY,
   );
 
   console.log("Deploying identity registry");
@@ -20,13 +20,13 @@ async function deploy_identity_registry(classHash: string) {
   const deployProgramResponse = await unitsAccount.deployProgram(
     classHash,
     ["0x1ed4238eea00b51c0719043413e3e12dcd8e8be2cc29750820b6da8a8cc64f4"],
-    unixTime.toString()
+    unixTime.toString(),
   );
 
   console.log("✅ Deploy program response: ", deployProgramResponse);
 
   const receipt = await unitsAccount.waitForTransaction(
-    deployProgramResponse.transaction_hash
+    deployProgramResponse.transaction_hash,
   );
   assert(receipt.execution_status.type == "SUCCEEDED");
 
@@ -41,5 +41,5 @@ if (process.argv.length < 2) {
 }
 
 deploy_identity_registry(
-  "0x005daafa4df27b37dfef5cc79b67fb1b9cb1ea050fb9b77fc43bedaa507a0342"
+  "0x005daafa4df27b37dfef5cc79b67fb1b9cb1ea050fb9b77fc43bedaa507a0342",
 );

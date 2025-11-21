@@ -7,13 +7,13 @@ dotenv.config();
 async function call(
   contractAddress: string,
   entrypoint: string,
-  calldata: string[]
+  calldata: string[],
 ) {
   const unitsProvider = new UnitsProvider(process.env.UNITS_RPC);
   const unitsAccount = new UnitsAccount(
     unitsProvider,
     process.env.ACCOUNT_ADDRESS,
-    process.env.PRIVATE_KEY
+    process.env.PRIVATE_KEY,
   );
 
   const tx = await unitsAccount.call(contractAddress, entrypoint, calldata);

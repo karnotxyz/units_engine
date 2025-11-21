@@ -9,14 +9,14 @@ async function deploy_program(classHash: string) {
   const unitsAccount = new UnitsAccount(
     unitsProvider,
     process.env.ACCOUNT_ADDRESS,
-    process.env.PRIVATE_KEY
+    process.env.PRIVATE_KEY,
   );
 
   // Then deploy the program
   const deployProgramResponse = await unitsAccount.deployProgram(
     classHash,
     [],
-    "0x" + new Date().getTime().toString(16)
+    "0x" + new Date().getTime().toString(16),
   );
 
   console.log("✅ Deploy program response: ", deployProgramResponse);

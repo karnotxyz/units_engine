@@ -10,7 +10,7 @@ async function deploy_compliance_contract(classHash: string, fee: string) {
   const unitsAccount = new UnitsAccount(
     unitsProvider,
     process.env.ACCOUNT_ADDRESS,
-    process.env.PRIVATE_KEY
+    process.env.PRIVATE_KEY,
   );
 
   console.log("Deploying Compliance fee module...");
@@ -20,13 +20,13 @@ async function deploy_compliance_contract(classHash: string, fee: string) {
   const deployProgramResponse = await unitsAccount.deployProgram(
     classHash,
     [fee],
-    unixTime.toString()
+    unixTime.toString(),
   );
 
   console.log("✅ Deploy program response: ", deployProgramResponse);
 
   const receipt = await unitsAccount.waitForTransaction(
-    deployProgramResponse.transaction_hash
+    deployProgramResponse.transaction_hash,
   );
   assert(receipt.execution_status.type == "SUCCEEDED");
 
@@ -43,5 +43,5 @@ const fee = process.argv[2];
 
 deploy_compliance_contract(
   "0x042f2a472daae05481b88ada14be4c9c180b9d96b07874842c8d70cec28ff320",
-  fee
+  fee,
 );
