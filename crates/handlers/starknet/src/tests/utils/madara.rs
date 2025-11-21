@@ -52,7 +52,7 @@ impl MadaraRunner {
         fs::create_dir_all(&temp_dir)?;
 
         // Pull the latest Madara Docker image
-        println!("Pulling Madara Docker image: {}", MADARA_DOCKER_IMAGE);
+        println!("Pulling Madara Docker image: {MADARA_DOCKER_IMAGE}");
         let pull_output = Command::new("docker")
             .arg("pull")
             .arg("--platform")
@@ -77,7 +77,7 @@ impl MadaraRunner {
             .arg("--name")
             .arg(&container_name)
             .arg("-p")
-            .arg(format!("{}:9944", port))
+            .arg(format!("{port}:9944"))
             .arg("-v")
             .arg(format!("{}:/data", temp_dir.to_str().unwrap()))
             .arg(MADARA_DOCKER_IMAGE)
@@ -107,14 +107,14 @@ impl MadaraRunner {
         thread::spawn(move || {
             let reader = BufReader::new(stdout);
             for line in reader.lines().map_while(Result::ok) {
-                println!("[MADARA] {}", line);
+                println!("[MADARA] {line}");
             }
         });
 
         thread::spawn(move || {
             let reader = BufReader::new(stderr);
             for line in reader.lines().map_while(Result::ok) {
-                eprintln!("[MADARA] {}", line);
+                eprintln!("[MADARA] {line}");
             }
         });
 
@@ -125,7 +125,7 @@ impl MadaraRunner {
 
         // Wait for Madara to be ready by polling the health endpoint
         let client = Client::new();
-        let url = format!("http://localhost:{}/health", port);
+        let url = format!("http://localhost:{port}/health");
 
         let mut attempts = 0;
         const MAX_ATTEMPTS: u32 = 10; // Increased timeout for Docker startup
@@ -133,7 +133,7 @@ impl MadaraRunner {
         while attempts < MAX_ATTEMPTS {
             match client.get(&url).send().await {
                 Ok(response) if response.status().is_success() => {
-                    println!("Madara is ready on port {}", port);
+                    println!("Madara is ready on port {port}");
                     return Ok(());
                 }
                 _ => {
@@ -144,8 +144,7 @@ impl MadaraRunner {
         }
 
         Err(anyhow!(
-            "Madara failed to start after {} seconds",
-            MAX_ATTEMPTS
+            "Madara failed to start after {MAX_ATTEMPTS} seconds",
         ))
     }
 
@@ -166,7 +165,7 @@ impl Drop for MadaraRunner {
     fn drop(&mut self) {
         // Stop the Docker container
         if let Some(container_id) = self.container_id.take() {
-            println!("Stopping Madara container: {}", container_id);
+            println!("Stopping Madara container: {container_id}");
             let _ = Command::new("docker")
                 .arg("stop")
                 .arg(&container_id)

@@ -332,7 +332,7 @@ struct ValueVisitor {
 impl Visit for ValueVisitor {
     fn record_debug(&mut self, field: &Field, value: &dyn fmt::Debug) {
         if field.name() == self.field_name {
-            self.value = format!("{:?}", value);
+            self.value = format!("{value:?}");
         }
     }
 

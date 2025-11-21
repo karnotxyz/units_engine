@@ -563,7 +563,7 @@ mod tests {
         {
             Ok(_) => {}
             Err(e) => {
-                panic!("Failed to get contract class: {:?}", e);
+                panic!("Failed to get contract class: {e:?}");
             }
         }
     }

@@ -269,7 +269,7 @@ pub(crate) fn try_into_cors(
 
 pub(crate) fn format_cors(maybe_cors: Option<&Vec<String>>) -> String {
     if let Some(cors) = maybe_cors {
-        format!("{:?}", cors)
+        format!("{cors:?}")
     } else {
         format!("{:?}", ["*"])
     }

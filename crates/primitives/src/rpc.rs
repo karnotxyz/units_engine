@@ -35,7 +35,7 @@ impl Bytes32 {
         let hex_str = hex_str.strip_prefix("0x").unwrap_or(hex_str);
         // If hex string has odd length, prefix with '0' to make it even
         let hex_str = if hex_str.len() % 2 != 0 {
-            format!("0{}", hex_str)
+            format!("0{hex_str}")
         } else {
             hex_str.to_string()
         };
@@ -370,7 +370,7 @@ mod tests {
             Err(error) => match (error, expected_error) {
                 (Bytes32Error::TooLong, Bytes32Error::TooLong) => (),
                 (Bytes32Error::InvalidHex(e1), Bytes32Error::InvalidHex(e2)) => {
-                    assert_eq!(format!("{:?}", e1), format!("{:?}", e2))
+                    assert_eq!(format!("{e1:?}"), format!("{:?}", e2))
                 }
                 _ => panic!("Unexpected error"),
             },

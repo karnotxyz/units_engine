@@ -20,7 +20,7 @@ async fn test_chain_id(
     runner.run().await?;
     let url = runner.rpc_url().unwrap();
 
-    println!("Units URL: {}", url);
+    println!("Units URL: {url}");
 
     // Make JSON-RPC request to get chain ID
     let client = reqwest::Client::new();

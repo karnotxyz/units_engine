@@ -179,7 +179,7 @@ mod tests {
                 break;
             }
             if start_time.elapsed() >= timeout {
-                panic!("Block not found after {:?} timeout", timeout);
+                panic!("Block not found after {timeout:?} timeout");
             }
             tokio::time::sleep(retry_delay).await;
         }

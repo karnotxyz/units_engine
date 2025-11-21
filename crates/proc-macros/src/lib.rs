@@ -38,8 +38,8 @@
 //! **Arguments:**
 //! - `name`: rpc method name, must not be a duplicate in the current namespace.
 //! - `and_versions`: implementations of this method will also work for the
-//!     supplied versions. Note that these versions must not already contain
-//!     a method with the same name.
+//!   supplied versions. Note that these versions must not already contain
+//!   a method with the same name.
 //!
 //! # Example:
 //!
@@ -291,7 +291,7 @@ pub fn versioned_rpc(attr: TokenStream, input: TokenStream) -> TokenStream {
                     if let syn::Expr::Lit(syn::ExprLit { lit: syn::Lit::Str(version), attrs }) = elem {
                         let version_str = version.value();
                         validate_version(&version_str)?;
-                        let method_with_version = format!("{namespace}_{}_{method}", version_str);
+                        let method_with_version = format!("{namespace}_{version_str}_{method}");
 
                         let lit = syn::Expr::Lit(syn::ExprLit {
                             lit: syn::Lit::Str(syn::LitStr::new(&method_with_version, version.span())),

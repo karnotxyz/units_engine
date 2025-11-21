@@ -67,7 +67,7 @@ pub async fn fund_account_devnet(
     dummy_transfer(
         Arc::new(predeployed_account_devnet),
         account_address,
-        Felt::from(Felt::from_dec_str("1000000000000000000").unwrap()), // 10^18
+        Felt::from_dec_str("1000000000000000000").unwrap(), // 10^18
     )
     .await
     .context("Failed to fund account")?;

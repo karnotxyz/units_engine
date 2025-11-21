@@ -77,14 +77,14 @@ impl<T: ChainBackend> UnitsRunner<T> {
         thread::spawn(move || {
             let reader = BufReader::new(stdout);
             for line in reader.lines().map_while(Result::ok) {
-                println!("[UNITS] {}", line);
+                println!("[UNITS] {line}");
             }
         });
 
         thread::spawn(move || {
             let reader = BufReader::new(stderr);
             for line in reader.lines().map_while(Result::ok) {
-                eprintln!("[UNITS] {}", line);
+                eprintln!("[UNITS] {line}");
             }
         });
 
@@ -92,7 +92,7 @@ impl<T: ChainBackend> UnitsRunner<T> {
 
         // Wait for the Units service to be ready
         let client = Client::new();
-        let url = format!("http://localhost:{}/health", units_port);
+        let url = format!("http://localhost:{units_port}/health");
 
         let mut attempts = 0;
         const MAX_ATTEMPTS: u32 = 10;
