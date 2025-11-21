@@ -25,10 +25,6 @@ jobs:
   build-units-engine:
     uses: ./.github/workflows/task-build-units-engine.yml
 
-  # Build Madara binary
-  build-madara:
-    uses: ./.github/workflows/task-build-madara.yml
-
   # Run linters for code style and quality
   lint-code-style:
     uses: ./.github/workflows/task-lint-code-style.yml
@@ -39,9 +35,8 @@ jobs:
 
   # Run Units Engine tests and generate coverage reports
   test-units-engine:
-    needs: [build-units-engine, build-madara]
+    needs: [build-units-engine]
     uses: ./.github/workflows/task-test-coverage.yml
     with:
       units-engine-binary-hash: ${{ needs.build-units-engine.outputs.units-engine-binary-hash }}
-      madara-binary-hash: ${{ needs.build-madara.outputs.madara-binary-hash }}
     secrets: inherit
