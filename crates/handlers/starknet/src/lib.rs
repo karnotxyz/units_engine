@@ -119,6 +119,9 @@ impl ChainHandler for StarknetContext {
     ) -> Result<Bytes32, ChainHandlerError> {
         let class: FlattenedSierraClass = serde_json::from_value(params.program.clone())
             .map_err(|e| ChainHandlerError::InvalidProgram(e.to_string()))?;
+
+        // We don't call `estimate_fee` here because UNITS allows to declare programs multiple times with
+        // different visibility levels. So, if we call `estimate_fee` here, the 2nd call to `declare_program` will fail.
         let declare_class_transaction = BroadcastedDeclareTransactionV3 {
             sender_address: params.account_address.to_felt()?,
             compiled_class_hash: params
@@ -133,16 +136,16 @@ impl ChainHandler for StarknetContext {
             account_deployment_data: vec![],
             resource_bounds: ResourceBoundsMapping {
                 l1_gas: ResourceBounds {
-                    max_amount: 10000,
-                    max_price_per_unit: 1,
+                    max_amount: params.resource_bounds.l1_gas.max_amount,
+                    max_price_per_unit: params.resource_bounds.l1_gas.max_price_per_unit,
                 },
                 l1_data_gas: ResourceBounds {
-                    max_amount: 10000,
-                    max_price_per_unit: 1,
+                    max_amount: params.resource_bounds.l1_data_gas.max_amount,
+                    max_price_per_unit: params.resource_bounds.l1_data_gas.max_price_per_unit,
                 },
                 l2_gas: ResourceBounds {
-                    max_amount: 10000000,
-                    max_price_per_unit: 2214382549775320,
+                    max_amount: params.resource_bounds.l2_gas.max_amount,
+                    max_price_per_unit: params.resource_bounds.l2_gas.max_price_per_unit,
                 },
             },
             tip: 0,
@@ -172,16 +175,16 @@ impl ChainHandler for StarknetContext {
             account_deployment_data: vec![],
             resource_bounds: ResourceBoundsMapping {
                 l1_gas: ResourceBounds {
-                    max_amount: 10000,
-                    max_price_per_unit: 1,
+                    max_amount: params.resource_bounds.l1_gas.max_amount,
+                    max_price_per_unit: params.resource_bounds.l1_gas.max_price_per_unit,
                 },
                 l1_data_gas: ResourceBounds {
-                    max_amount: 10000,
-                    max_price_per_unit: 1,
+                    max_amount: params.resource_bounds.l1_data_gas.max_amount,
+                    max_price_per_unit: params.resource_bounds.l1_data_gas.max_price_per_unit,
                 },
                 l2_gas: ResourceBounds {
-                    max_amount: 10000000,
-                    max_price_per_unit: 2214382549775320,
+                    max_amount: params.resource_bounds.l2_gas.max_amount,
+                    max_price_per_unit: params.resource_bounds.l2_gas.max_price_per_unit,
                 },
             },
             tip: 0,
@@ -214,16 +217,16 @@ impl ChainHandler for StarknetContext {
             class_hash: params.program_hash.to_felt()?,
             resource_bounds: ResourceBoundsMapping {
                 l1_gas: ResourceBounds {
-                    max_amount: 10000,
-                    max_price_per_unit: 1,
+                    max_amount: params.resource_bounds.l1_gas.max_amount,
+                    max_price_per_unit: params.resource_bounds.l1_gas.max_price_per_unit,
                 },
                 l1_data_gas: ResourceBounds {
-                    max_amount: 10000,
-                    max_price_per_unit: 1,
+                    max_amount: params.resource_bounds.l1_data_gas.max_amount,
+                    max_price_per_unit: params.resource_bounds.l1_data_gas.max_price_per_unit,
                 },
                 l2_gas: ResourceBounds {
-                    max_amount: 10000000,
-                    max_price_per_unit: 2214382549775320,
+                    max_amount: params.resource_bounds.l2_gas.max_amount,
+                    max_price_per_unit: params.resource_bounds.l2_gas.max_price_per_unit,
                 },
             },
             tip: 0,

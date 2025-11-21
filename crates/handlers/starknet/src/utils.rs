@@ -4,9 +4,7 @@ use std::{
 };
 
 use starknet::{
-    accounts::{
-        Account, AccountFactory, ExecutionEncoding, OpenZeppelinAccountFactory, SingleOwnerAccount,
-    },
+    accounts::{Account, ExecutionEncoding, SingleOwnerAccount},
     contract::ContractFactory,
     core::{
         crypto::compute_hash_on_elements,
@@ -150,23 +148,6 @@ pub async fn wait_for_receipt(
     }
 }
 
-pub async fn deploy_account(
-    provider: Arc<StarknetProvider>,
-    private_key: Felt,
-    class_hash: Felt,
-) -> anyhow::Result<DeployAccountTransactionResult> {
-    let signer = Arc::new(LocalWallet::from(SigningKey::from_secret_scalar(
-        private_key,
-    )));
-    let chain_id = provider.chain_id().await?;
-    let account_factory =
-        OpenZeppelinAccountFactory::new(class_hash, chain_id, signer.clone(), provider.clone())
-            .await?;
-
-    // Create a deploy account transaction
-    Ok(account_factory.deploy_v3(Felt::ONE).send().await?)
-}
-
 #[allow(async_fn_in_trait)]
 pub trait BuildAccount: WaitForReceipt {
     async fn build_account(
@@ -227,6 +208,7 @@ pub async fn deploy_contract(
     salt: Felt,
     unique: bool,
 ) -> anyhow::Result<(InvokeTransactionResult, Felt)> {
+    #[allow(deprecated)]
     let contract_factory = ContractFactory::new(class_hash, account.clone());
     let deployment = contract_factory.deploy_v3(constructor_calldata, salt, unique);
     let deployed_address = deployment.deployed_address();
@@ -517,6 +499,33 @@ impl ToFelt<Vec<Felt>, ChainHandlerError> for Vec<Bytes32> {
 }
 
 #[cfg(test)]
+pub async fn deploy_account(
+    provider: Arc<StarknetProvider>,
+    private_key: Felt,
+    class_hash: Felt,
+) -> anyhow::Result<DeployAccountTransactionResult> {
+    use starknet::accounts::{AccountFactory, OpenZeppelinAccountFactory};
+
+    use crate::tests::utils::starknet::fund_account_devnet;
+
+    let signer = Arc::new(LocalWallet::from(SigningKey::from_secret_scalar(
+        private_key,
+    )));
+    let chain_id = provider.chain_id().await?;
+    let account_factory =
+        OpenZeppelinAccountFactory::new(class_hash, chain_id, signer.clone(), provider.clone())
+            .await?;
+    let account_deployment = account_factory.deploy_v3(Felt::ONE);
+    let account_address = account_deployment.address();
+
+    // Funding account before deployment
+    fund_account_devnet(provider.clone(), account_address).await?;
+
+    // Create a deploy account transaction
+    Ok(account_deployment.send().await?)
+}
+
+#[cfg(test)]
 mod tests {
     use super::*;
     use crate::tests::utils::{
@@ -534,8 +543,7 @@ mod tests {
     use starknet::{
         accounts::Account,
         core::types::{
-            BlockTag, ExecutionResult, FeeEstimate, InvokeTransactionTrace, PriceUnit,
-            RevertedInvocation,
+            BlockTag, ExecutionResult, FeeEstimate, InvokeTransactionTrace, RevertedInvocation,
         },
         macros::selector,
     };
@@ -734,7 +742,9 @@ mod tests {
         let account = accounts_with_private_key[0].account.clone();
 
         // Do a simple transfer
-        let (execution, _) = dummy_transfer(account.clone()).await.unwrap();
+        let (execution, _) = dummy_transfer(account.clone(), Felt::ONE, Felt::ZERO)
+            .await
+            .unwrap();
 
         // Wait for receipt
         let receipt = wait_for_receipt(provider, execution.transaction_hash, None)

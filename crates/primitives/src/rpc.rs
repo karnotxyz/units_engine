@@ -3,6 +3,7 @@ use std::{fmt::Display, str::FromStr};
 
 use crate::{read_data::SignedReadData, types::ClassVisibility};
 use serde::{Deserialize, Serialize};
+use starknet::core::types::FeeEstimate;
 use starknet_crypto::Felt;
 
 // TODO: Move away from using Felt and standardize on Bytes32 throughout the codebase.
@@ -168,6 +169,7 @@ pub struct DeclareProgramParams {
     pub program: serde_json::Value,
     pub compiled_program_hash: Option<Bytes32>,
     pub class_visibility: ClassVisibility,
+    pub resource_bounds: ResourceBoundsMappingParams,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -175,6 +177,60 @@ pub struct DeclareTransactionResult {
     pub transaction_hash: Option<Bytes32>,
     pub program_hash: Bytes32,
     pub acl_updated: bool,
+}
+
+/// Resource bounds for a transaction
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ResourceBoundsParams {
+    pub max_amount: u64,
+    pub max_price_per_unit: u128,
+}
+
+/// Resource bounds mapping for L1 gas, L1 data gas, and L2 gas
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ResourceBoundsMappingParams {
+    pub l1_gas: ResourceBoundsParams,
+    pub l1_data_gas: ResourceBoundsParams,
+    pub l2_gas: ResourceBoundsParams,
+}
+
+impl Default for ResourceBoundsMappingParams {
+    fn default() -> Self {
+        Self {
+            l1_gas: ResourceBoundsParams {
+                max_amount: 10000,
+                max_price_per_unit: 1,
+            },
+            l1_data_gas: ResourceBoundsParams {
+                max_amount: 10000,
+                max_price_per_unit: 1,
+            },
+            l2_gas: ResourceBoundsParams {
+                max_amount: 520000,
+                max_price_per_unit: 2500,
+            },
+        }
+    }
+}
+
+impl From<FeeEstimate> for ResourceBoundsMappingParams {
+    fn from(fee_estimate: FeeEstimate) -> Self {
+        Self {
+            l1_gas: ResourceBoundsParams {
+                max_amount: fee_estimate.l1_gas_consumed,
+                max_price_per_unit: fee_estimate.l1_gas_price,
+            },
+
+            l1_data_gas: ResourceBoundsParams {
+                max_amount: fee_estimate.l1_data_gas_consumed,
+                max_price_per_unit: fee_estimate.l1_data_gas_price,
+            },
+            l2_gas: ResourceBoundsParams {
+                max_amount: fee_estimate.l2_gas_consumed,
+                max_price_per_unit: fee_estimate.l2_gas_price,
+            },
+        }
+    }
 }
 
 /// Parameters and result for deploying an account
@@ -185,6 +241,7 @@ pub struct DeployAccountParams {
     pub constructor_calldata: Vec<Bytes32>,
     pub program_hash: Bytes32,
     pub account_address_salt: Bytes32,
+    pub resource_bounds: ResourceBoundsMappingParams,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -200,6 +257,7 @@ pub struct SendTransactionParams {
     pub signature: Vec<Bytes32>,
     pub nonce: Nonce,
     pub calldata: Vec<Bytes32>,
+    pub resource_bounds: ResourceBoundsMappingParams,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

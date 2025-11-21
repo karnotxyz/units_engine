@@ -33,6 +33,7 @@ mod tests {
     #![allow(unsafe_code, unsafe_op_in_unsafe_fn)]
 
     use starknet::accounts::ConnectedAccount;
+    use units_primitives::rpc::ResourceBoundsMappingParams;
 
     use crate::tests::utils::scarb::Artifacts;
 
@@ -72,9 +73,9 @@ mod tests {
         // Create a starknet context with the declare ACL contract address and the account
         let starknet_ctx = StarknetContext::new_with_provider(
             provider.clone(),
-            unsafe { declare_acl_address.into() },
-            unsafe { declare_acl_owner.private_key.into() },
-            unsafe { declare_acl_owner.account.address().into() },
+            declare_acl_address.into(),
+            declare_acl_owner.private_key.into(),
+            declare_acl_owner.account.address().into(),
         )
         .await
         .unwrap();
@@ -215,7 +216,11 @@ mod tests {
             )
             .await
             .unwrap();
-
+        // Not doing a fee estimate here because UNITS allows to declare programs multiple times with
+        // different visibility levels. So, a 2nd call to `build_declare_txn` in the test case will
+        // fail if we call `estimate_fee`
+        let mut resource_bounds = ResourceBoundsMappingParams::default();
+        resource_bounds.l2_gas.max_amount = 10000000; // uses 9278720, so proving a little extra
         let declare_tx = account
             .account
             .declare_v3(
@@ -223,6 +228,13 @@ mod tests {
                 artifact.compiled_class_hash,
             )
             .nonce(nonce)
+            .l1_gas_price(resource_bounds.l1_gas.max_price_per_unit)
+            .l1_gas(resource_bounds.l1_gas.max_amount)
+            .l2_gas_price(resource_bounds.l2_gas.max_price_per_unit)
+            .l2_gas(resource_bounds.l2_gas.max_amount)
+            .l1_data_gas_price(resource_bounds.l1_data_gas.max_price_per_unit)
+            .l1_data_gas(resource_bounds.l1_data_gas.max_amount)
+            .tip(0)
             .prepared()
             .unwrap();
         let tx_hash = declare_tx.transaction_hash(false);
@@ -231,11 +243,12 @@ mod tests {
         let flattened_contract_class = artifact.contract_class.flatten().unwrap();
         DeclareProgramParams {
             account_address: account.account.address().into(),
-            signature: vec![unsafe { signature.r.into() }, unsafe { signature.s.into() }],
+            signature: vec![signature.r.into(), signature.s.into()],
             nonce: nonce.try_into().unwrap(),
             program: serde_json::to_value(flattened_contract_class.clone()).unwrap(),
             compiled_program_hash: Some(artifact.compiled_class_hash.into()),
             class_visibility,
+            resource_bounds,
         }
     }
 }

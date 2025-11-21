@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use crate::tests::utils::{
     madara::{madara_node, MadaraRunner},
-    starknet::{ProviderToDummyGlobalContext, PREDEPLOYED_ACCOUNT_CLASS_HASH},
+    starknet::{fund_account_devnet, ProviderToDummyGlobalContext, PREDEPLOYED_ACCOUNT_CLASS_HASH},
 };
 use crate::utils::wait_for_receipt;
 use crate::StarknetProvider;
@@ -37,9 +37,22 @@ async fn test_add_deploy_account_transaction(
     .unwrap();
     let salt = Felt::ONE;
     let account_address = account_factory.deploy_v3(salt).address();
+    let fee_estimate = account_factory
+        .deploy_v3(salt)
+        .nonce(Felt::ZERO)
+        .estimate_fee()
+        .await
+        .unwrap();
     let prepared_deployment = account_factory
         .deploy_v3(salt)
         .nonce(Felt::ZERO)
+        .l1_gas_price(fee_estimate.l1_gas_price)
+        .l1_gas(fee_estimate.l1_gas_consumed)
+        .l2_gas_price(fee_estimate.l2_gas_price)
+        .l2_gas(fee_estimate.l2_gas_consumed)
+        .l1_data_gas_price(fee_estimate.l1_data_gas_price)
+        .l1_data_gas(fee_estimate.l1_data_gas_consumed)
+        .tip(0)
         .prepared()
         .unwrap();
     let tx_hash = prepared_deployment.transaction_hash(false);
@@ -50,8 +63,12 @@ async fn test_add_deploy_account_transaction(
         account_address_salt: salt.into(),
         constructor_calldata: vec![verifying_key.scalar().into()],
         program_hash: Felt::from_hex_unchecked(PREDEPLOYED_ACCOUNT_CLASS_HASH).into(),
+        resource_bounds: fee_estimate.into(),
     };
 
+    fund_account_devnet(starknet_provider.clone(), account_address)
+        .await
+        .unwrap();
     let result = deploy_account(global_ctx, deploy_account_transaction)
         .await
         .unwrap();
