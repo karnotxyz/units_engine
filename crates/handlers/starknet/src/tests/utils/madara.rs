@@ -128,7 +128,7 @@ impl MadaraRunner {
         let url = format!("http://localhost:{port}/health");
 
         let mut attempts = 0;
-        const MAX_ATTEMPTS: u32 = 10; // Increased timeout for Docker startup
+        const MAX_ATTEMPTS: u32 = 30; // Increased timeout for Docker startup
 
         while attempts < MAX_ATTEMPTS {
             match client.get(&url).send().await {

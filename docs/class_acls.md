@@ -1,4 +1,10 @@
-# Class Visibility and Access Control Lists (ACLs)
+# Class Visibility and Access Control Lists (ACLs) - DEPRECATED
+
+> **⚠️ DEPRECATED**: This document is deprecated and will be removed in a future release.
+> Please refer to [getting_started.md](./getting_started.md) for the most up-to-date and comprehensive
+> documentation on UNITS privacy features.
+
+---
 
 ## Default Visibility
 

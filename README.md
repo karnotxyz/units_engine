@@ -3,7 +3,7 @@
 UNITS (Universal Information Tokenisation System) Engine is a confidentiality layer built on top of [Madara](https://docs.madara.build),
 designed to offer transaction privacy while maintaining verifiability through Zero-Knowledge proofs. Together, UNITS Engine and Madara
 form a complete UNITS implementation, providing both the high-performance ZK infrastructure and the privacy layer needed for confidential
-transactions. UNITS is an integral part of the [Finternet](https://finternetlab.io/).
+transactions.
 
 ## Overview 🌟
 
@@ -15,7 +15,6 @@ that allows for controlled data visibility while maintaining the benefits of ver
 
 - **Confidential Transactions**: UNITS enables private transactions while maintaining verifiability
 - **Flexible Privacy Rules**: Participants can define custom privacy rules that the operator enforces
-- **Starknet Compatibility**: Supports Starknet RPC for tooling compatibility
 - **Custom UNITS RPC**: Dedicated RPC interface designed specifically for UNITS functionality
 
 ## Architecture 🏗️
@@ -42,15 +41,16 @@ UNITS unique.
 - **DB**: Database interaction layer for persistent storage
 - **UNITS Primitives**: Core primitives and types used across multiple crates
 - **Utils**: Basic utility functions and helpers shared across crates
-- **RPC**: Dual RPC implementation:
-  - Starknet RPC for tooling compatibility
-  - UNITS RPC for native functionality
+- **RPC**: UNITS RPC implementation for native functionality
 - **Telemetry**: OpenTelemetry integration for metrics and monitoring
 - **Proc Macros**: Procedural macros for code generation
 - **Test Utils**: Testing utilities and helpers
 - **E2E Tests**: End-to-end test suite
 
 ## Getting Started 🚀
+
+📖 **For comprehensive documentation on UNITS privacy features, RPC methods, and implementation patterns, see
+[Getting Started with UNITS Privacy](./docs/getting_started.md).**
 
 ### Prerequisites
 
@@ -86,17 +86,17 @@ UNITS engine implements a trusted operator model where:
 - The operator can see all data (by design)
 - Future integration with Fully Homomorphic Encryption (FHE) is possible as the technology matures
 
+Learn more about implementing privacy controls in the [Getting Started Guide](./docs/getting_started.md).
+
 ## RPC Support 🔌
-
-### Starknet RPC
-
-UNITS supports the standard Starknet RPC interface for compatibility with existing tools. However, some calls might fail if users don't
-have the required access rights due to privacy constraints.
 
 ### UNITS RPC
 
-A custom RPC interface designed specifically for UNITS functionality. This is the recommended interface for new applications as it's built
-with privacy in mind from the ground up.
+UNITS provides a custom RPC interface designed specifically for UNITS functionality. The RPC is built with privacy in mind
+from the ground up, allowing participants to define and enforce their own privacy rules while maintaining the benefits of
+verifiability.
+
+For detailed documentation on all UNITS RPC methods, read signatures, and privacy patterns, see the [Getting Started Guide](./docs/getting_started.md).
 
 ## Performance Benchmarks 📊
 
