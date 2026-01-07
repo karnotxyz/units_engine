@@ -1,9 +1,12 @@
 {
-  "name": "@karnot/units-sdk",
+  "name": "units-sdk",
   "version": "1.0.0",
   "description": "SDK for interacting with Karnot Units Engine",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "publishConfig": {
+    "access": "public"
+  },
   "files": [
     "dist"
   ],
