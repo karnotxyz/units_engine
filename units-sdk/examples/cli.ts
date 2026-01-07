@@ -34,7 +34,7 @@ async function main() {
     const privateKey = process.env.PRIVATE_KEY;
     if (!address || !privateKey) {
       console.error(
-        "ACCOUNT_ADDRESS and PRIVATE_KEY environment variables are required for this command."
+        "ACCOUNT_ADDRESS and PRIVATE_KEY environment variables are required for this command.",
       );
       process.exit(1);
     }
@@ -46,7 +46,7 @@ async function main() {
       case "call":
         if (args.length < 2) {
           console.error(
-            "Usage: call <contract-address> <entrypoint> [calldata...]"
+            "Usage: call <contract-address> <entrypoint> [calldata...]",
           );
           process.exit(1);
         }
@@ -55,7 +55,7 @@ async function main() {
           getAccount(),
           callContract,
           callEntry,
-          callData
+          callData,
         );
         console.log("✅ Call response:", result);
         break;
@@ -68,7 +68,7 @@ async function main() {
       case "declare_program":
         if (args.length < 2) {
           console.error(
-            "Usage: declare_program <program-json-path> <compiled-program-json-path>"
+            "Usage: declare_program <program-json-path> <compiled-program-json-path>",
           );
           process.exit(1);
         }
@@ -78,7 +78,7 @@ async function main() {
         const declareRes = await declareProgram(
           getAccount(),
           programJson,
-          compiledJson
+          compiledJson,
         );
         console.log("ℹ️ Class hash:", declareRes.classHash);
         console.log("✅ Declare program response:", declareRes.response);
@@ -113,7 +113,7 @@ async function main() {
       case "send_transaction":
         if (args.length < 2) {
           console.error(
-            "Usage: send_transaction <contract-address> <entrypoint> [calldata...]"
+            "Usage: send_transaction <contract-address> <entrypoint> [calldata...]",
           );
           process.exit(1);
         }
@@ -122,7 +122,7 @@ async function main() {
           getAccount(),
           sendContract,
           sendEntry,
-          sendData
+          sendData,
         );
         console.log("✅ Send transaction response:", sendRes.tx);
         console.log("✅ Transaction receipt:", sendRes.receipt);
@@ -131,7 +131,7 @@ async function main() {
       default:
         console.error(`Unknown command: ${command}`);
         console.error(
-          "Available commands: call, chain_id, declare_program, deploy_account, deploy_program, get_receipt, send_transaction"
+          "Available commands: call, chain_id, declare_program, deploy_account, deploy_program, get_receipt, send_transaction",
         );
         process.exit(1);
     }

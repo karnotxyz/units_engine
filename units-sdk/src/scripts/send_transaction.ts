@@ -4,7 +4,7 @@ export async function sendTransaction(
   unitsAccount: UnitsAccount,
   contractAddress: string,
   entrypoint: string,
-  calldata: string[]
+  calldata: string[],
 ) {
   const tx = await unitsAccount.sendTransaction([
     {

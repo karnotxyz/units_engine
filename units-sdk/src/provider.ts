@@ -119,7 +119,7 @@ class UnitsProvider {
     program: any,
     visibility: ClassVisibility,
     compiledProgramHash: Bytes32 | undefined,
-    resourceBounds: ResourceBoundsMapping
+    resourceBounds: ResourceBoundsMapping,
   ): Promise<{ transaction_hash: Bytes32 }> {
     return this.makeRequest("declareProgram", {
       declare_program: {
@@ -139,7 +139,7 @@ class UnitsProvider {
     signature: Bytes32[],
     nonce: Nonce,
     calldata: Bytes32[],
-    resourceBounds: ResourceBoundsMapping
+    resourceBounds: ResourceBoundsMapping,
   ): Promise<{ transaction_hash: Bytes32 }> {
     return this.makeRequest("sendTransaction", {
       send_transaction: {
@@ -158,7 +158,7 @@ class UnitsProvider {
     constructorCalldata: Bytes32[],
     programHash: Bytes32,
     accountAddressSalt: Bytes32,
-    resourceBounds: ResourceBoundsMapping
+    resourceBounds: ResourceBoundsMapping,
   ): Promise<{ transaction_hash: Bytes32 }> {
     return this.makeRequest("deployAccount", {
       deploy_account: {
@@ -184,7 +184,7 @@ class UnitsProvider {
 
   async getNonce(
     accountAddress: AccountAddress,
-    signedReadData?: SignedReadData
+    signedReadData?: SignedReadData,
   ): Promise<{ nonce: number }> {
     return this.makeRequest("getNonce", {
       get_nonce: {
@@ -196,7 +196,7 @@ class UnitsProvider {
 
   async getTransactionReceipt(
     transactionHash: Bytes32,
-    signedReadData: SignedReadData
+    signedReadData: SignedReadData,
   ): Promise<TransactionReceipt> {
     return this.makeRequest("getTransactionReceipt", {
       get_transaction_receipt: {
@@ -214,7 +214,7 @@ class UnitsProvider {
     contractAddress: Bytes32,
     entrypoint: Bytes32,
     calldata: Bytes32[],
-    signedReadData: SignedReadData
+    signedReadData: SignedReadData,
   ): Promise<{ result: Bytes32[] }> {
     return this.makeRequest("call", {
       call: {

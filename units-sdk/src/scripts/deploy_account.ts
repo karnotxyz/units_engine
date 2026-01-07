@@ -5,7 +5,7 @@ import crypto from "crypto";
 
 export async function deployAccount(
   unitsProvider: UnitsProvider,
-  funderAccount: UnitsAccount
+  funderAccount: UnitsAccount,
 ) {
   const privateKey = "0x" + crypto.randomBytes(31).toString("hex");
   const signer = new Signer(privateKey);
@@ -14,7 +14,7 @@ export async function deployAccount(
     "0xe2eb8f5672af4e6a4e8a8f1b44989685e668489b0a25437733756c5a34a1d6", // pre declared account class hash on Dev
     "0x0",
     [await signer.getPubKey()],
-    privateKey
+    privateKey,
   );
 
   await fundAccount(funderAccount, unitsAccount.getAddress());
@@ -39,7 +39,7 @@ async function fundAccount(ownerAccount: UnitsAccount, accountAddress: string) {
   ]);
 
   const receipt = await ownerAccount.waitForTransaction(
-    fundAccountResponse.transaction_hash
+    fundAccountResponse.transaction_hash,
   );
   return receipt;
 }

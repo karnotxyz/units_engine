@@ -80,13 +80,13 @@ class UnitsAccount {
     programHash: string,
     salt: string,
     constructorArgs: string[],
-    privateKey: string
+    privateKey: string,
   ): UnitsAccount {
     const address = hash.calculateContractAddressFromHash(
       salt,
       programHash,
       constructorArgs,
-      "0x0"
+      "0x0",
     );
     return new UnitsAccount(unitsProvider, address, privateKey, {
       programHash,
@@ -99,7 +99,7 @@ class UnitsAccount {
     unitsProvider: UnitsProvider,
     address: string,
     privateKey: string,
-    deployAccountParams?: DeployAccountParams
+    deployAccountParams?: DeployAccountParams,
   ) {
     this.unitsProvider = unitsProvider;
     this.address = address;
@@ -130,7 +130,7 @@ class UnitsAccount {
 
   async buildInvokeSignerDetails(
     resourceBounds: ResourceBoundsMapping,
-    nonce?: number
+    nonce?: number,
   ): Promise<InvocationsSignerDetails> {
     return {
       version: "0x3",
@@ -158,7 +158,7 @@ class UnitsAccount {
     program: any,
     compiledProgramHash: string,
     visibility: ClassVisibility,
-    resourceBounds?: ResourceBoundsMapping
+    resourceBounds?: ResourceBoundsMapping,
   ): Promise<{ transaction_hash: string }> {
     const bounds = resourceBounds || getDefaultResourceBounds();
     const signerDetails = await this.buildInvokeSignerDetails(bounds);
@@ -167,7 +167,7 @@ class UnitsAccount {
         contract: program,
         compiledClassHash: compiledProgramHash,
       },
-      signerDetails
+      signerDetails,
     );
 
     const programId = await this.unitsProvider.declareProgram(
@@ -178,12 +178,12 @@ class UnitsAccount {
         ...declarePayload.contract,
         sierra_program: stark.decompressProgram(
           // @ts-ignore
-          declarePayload.contract.sierra_program
+          declarePayload.contract.sierra_program,
         ),
       },
       visibility,
       compiledProgramHash,
-      bounds
+      bounds,
     );
     return programId;
   }
@@ -192,7 +192,7 @@ class UnitsAccount {
     programHash: string,
     constructorArgs: string[],
     salt: string,
-    resourceBounds?: ResourceBoundsMapping
+    resourceBounds?: ResourceBoundsMapping,
   ): Promise<{ transaction_hash: string; program_address: string }> {
     const unique = true;
 
@@ -204,15 +204,15 @@ class UnitsAccount {
         salt,
         unique,
       },
-      this.address
+      this.address,
     );
     const sendTransactionResponse = await this.sendTransaction(
       udcDeployPayload.calls,
-      resourceBounds
+      resourceBounds,
     );
 
     const receipt = await this.waitForTransaction(
-      sendTransactionResponse.transaction_hash
+      sendTransactionResponse.transaction_hash,
     );
 
     return {
@@ -223,13 +223,13 @@ class UnitsAccount {
 
   async sendTransaction(
     calldata: Array<Call>,
-    resourceBounds?: ResourceBoundsMapping
+    resourceBounds?: ResourceBoundsMapping,
   ): Promise<{ transaction_hash: string }> {
     const bounds = resourceBounds || getDefaultResourceBounds();
     const signerDetails = await this.buildInvokeSignerDetails(bounds);
     const invocation = await this.starknetAccount.buildInvocation(
       calldata,
-      signerDetails
+      signerDetails,
     );
     let calldataString: string[] = [];
     if (Array.isArray(invocation.calldata)) {
@@ -243,7 +243,7 @@ class UnitsAccount {
       buildSignature(invocation.signature),
       Number(signerDetails.nonce),
       calldataString,
-      bounds
+      bounds,
     );
     return sendTransactionResponse;
   }
@@ -261,7 +261,7 @@ class UnitsAccount {
           constructorCalldata: this.deployAccountParams.constructorArgs,
           addressSalt: this.deployAccountParams.salt,
         },
-        signerDetails
+        signerDetails,
       );
 
     const deployAccountResponse = await this.unitsProvider.deployAccount(
@@ -270,14 +270,14 @@ class UnitsAccount {
       this.deployAccountParams.constructorArgs,
       this.deployAccountParams.programHash,
       this.deployAccountParams.salt,
-      bounds
+      bounds,
     );
 
     return deployAccountResponse;
   }
 
   async getTransactionReceipt(
-    transactionHash: string
+    transactionHash: string,
   ): Promise<TransactionReceipt> {
     const signedReadData = await this.buildSignedReadData([
       {
@@ -287,14 +287,14 @@ class UnitsAccount {
     ]);
     return this.unitsProvider.getTransactionReceipt(
       transactionHash,
-      signedReadData
+      signedReadData,
     );
   }
 
   async call(
     contractAddress: string,
     entrypoint: string,
-    calldata: string[]
+    calldata: string[],
   ): Promise<{ result: string[] }> {
     const entrypointSelector = selector.getSelectorFromName(entrypoint);
     const signedReadData = await this.buildSignedReadData([
@@ -309,12 +309,12 @@ class UnitsAccount {
       contractAddress,
       entrypoint,
       calldata,
-      signedReadData
+      signedReadData,
     );
   }
 
   async waitForTransaction(
-    transactionHash: string
+    transactionHash: string,
   ): Promise<TransactionReceipt> {
     const MAX_ATTEMPTS = 10;
     const SLEEP_TIME_MS = 200;
@@ -332,7 +332,7 @@ class UnitsAccount {
 
     if (!receipt) {
       throw new Error(
-        `Failed to get transaction receipt after ${MAX_ATTEMPTS} attempts`
+        `Failed to get transaction receipt after ${MAX_ATTEMPTS} attempts`,
       );
     }
 
@@ -357,7 +357,7 @@ class UnitsAccount {
 
     const signature = ec.starkCurve.sign(
       hashReadData(read_data),
-      this.privateKey
+      this.privateKey,
     );
 
     return {

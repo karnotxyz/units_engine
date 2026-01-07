@@ -4,7 +4,7 @@ import { getDefaultResourceBounds, UnitsAccount } from "../account.js";
 export async function declareProgram(
   unitsAccount: UnitsAccount,
   programJson: any,
-  compiledProgramJson: any
+  compiledProgramJson: any,
 ) {
   const resourceBounds = getDefaultResourceBounds();
   resourceBounds.l2_gas.max_amount = 100000000; // setting a high value to avoud gas issues
@@ -13,7 +13,7 @@ export async function declareProgram(
     programJson,
     hash.computeCompiledClassHash(compiledProgramJson),
     "ACL",
-    resourceBounds
+    resourceBounds,
   );
 
   return {
