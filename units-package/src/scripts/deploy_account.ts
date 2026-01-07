@@ -1,16 +1,13 @@
 import { Signer } from "starknet";
-import { UnitsAccount } from "../account";
-import { UnitsProvider } from "../provider";
-import dotenv from "dotenv";
+import { UnitsAccount } from "../account.js";
+import { UnitsProvider } from "../provider.js";
 import crypto from "crypto";
 
-dotenv.config();
-
-async function deploy_account() {
-  const unitsProvider = new UnitsProvider(process.env.UNITS_RPC);
-
+export async function deployAccount(
+  unitsProvider: UnitsProvider,
+  funderAccount: UnitsAccount
+) {
   const privateKey = "0x" + crypto.randomBytes(31).toString("hex");
-  console.log("🔑 Private key: ", privateKey);
   const signer = new Signer(privateKey);
   const unitsAccount = UnitsAccount.newUndeployedAccount(
     unitsProvider,
@@ -19,23 +16,22 @@ async function deploy_account() {
     [await signer.getPubKey()],
     privateKey,
   );
-  await fund_account(unitsProvider, unitsAccount.getAddress());
+  
+  await fundAccount(funderAccount, unitsAccount.getAddress());
 
   const deployAccountResponse = await unitsAccount.deploySelf();
 
-  console.log("✅ Deploy account response: ", deployAccountResponse);
+  return {
+    privateKey,
+    address: unitsAccount.getAddress(),
+    response: deployAccountResponse
+  };
 }
 
-async function fund_account(
-  unitsProvider: UnitsProvider,
+async function fundAccount(
+  ownerAccount: UnitsAccount,
   accountAddress: string,
 ) {
-  const ownerAccount = new UnitsAccount(
-    unitsProvider,
-    process.env.ACCOUNT_ADDRESS,
-    process.env.PRIVATE_KEY,
-  );
-
   const fundAccountResponse = await ownerAccount.sendTransaction([
     {
       contractAddress:
@@ -48,7 +44,5 @@ async function fund_account(
   const receipt = await ownerAccount.waitForTransaction(
     fundAccountResponse.transaction_hash,
   );
-  console.log("✅ Fund account response: ", receipt);
+  return receipt;
 }
-
-deploy_account();

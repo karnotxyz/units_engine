@@ -22,7 +22,7 @@ import {
   SignedReadData,
   TransactionReceipt,
   UnitsProvider,
-} from "./provider";
+} from "./provider.js";
 
 type DeployAccountParams = {
   programHash: string;
@@ -34,7 +34,7 @@ type DeployAccountParams = {
 function getDefaultResourceBounds(): ResourceBoundsMapping {
   return {
     l1_gas: {
-      max_amount: 10000,
+      max_amount: 100000,
       max_price_per_unit: 200,
     },
     l1_data_gas: {
@@ -73,7 +73,7 @@ class UnitsAccount {
   private starknetAccount: Account;
 
   // Optional fields available when creating account with `newUndeployedAccount`
-  private deployAccountParams: DeployAccountParams;
+  private deployAccountParams?: DeployAccountParams;
 
   static newUndeployedAccount(
     unitsProvider: UnitsProvider,
@@ -249,6 +249,9 @@ class UnitsAccount {
   }
 
   async deploySelf(resourceBounds?: ResourceBoundsMapping) {
+    if (!this.deployAccountParams) {
+      throw new Error("Account is already deployed or missing deploy params");
+    }
     const bounds = resourceBounds || getDefaultResourceBounds();
     const signerDetails = await this.buildInvokeSignerDetails(bounds, 0);
     const deloyAccountPayload =

@@ -1,0 +1,33 @@
+{
+  "name": "@karnot/units-sdk",
+  "version": "1.0.0",
+  "description": "SDK for interacting with Karnot Units Engine",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
+    "cli": "tsx examples/cli.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "starknet",
+    "karnot",
+    "units"
+  ],
+  "author": "Karnot",
+  "license": "ISC",
+  "dependencies": {
+    "@types/node": "^22.15.3",
+    "dotenv": "^16.5.0",
+    "starknet": "next"
+  },
+  "type": "module",
+  "devDependencies": {
+    "tsx": "^4.19.4",
+    "typescript": "^5.7.3"
+  }
+}

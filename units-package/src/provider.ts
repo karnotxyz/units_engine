@@ -244,10 +244,12 @@ function hashReadVerifier(verifier: ReadVerifier): string {
   if (verifier.type === "ACCOUNT") {
     return hashMany([stringToHex("account"), verifier.signer_address]);
   } else {
+    // Ensure identity_address is defined when type is IDENTITY
+    const identityAddr = verifier.identity_address || "0x0";
     return hashMany([
       stringToHex("identity"),
       verifier.signer_address,
-      verifier.identity_address,
+      identityAddr,
     ]);
   }
 }
@@ -277,11 +279,13 @@ function hashReadType(readType: ReadType): string {
 // Hash function for ReadValidity
 function hashReadValidity(validity: ReadValidity): string {
   if (validity.type === "BLOCK") {
-    return hashMany([stringToHex("block"), `0x${validity.block.toString(16)}`]);
+    const block = validity.block !== undefined ? validity.block : 0;
+    return hashMany([stringToHex("block"), `0x${block.toString(16)}`]);
   } else {
+    const timestamp = validity.timestamp !== undefined ? validity.timestamp : 0;
     return hashMany([
       stringToHex("timestamp"),
-      `0x${validity.timestamp.toString(16)}`,
+      `0x${timestamp.toString(16)}`,
     ]);
   }
 }

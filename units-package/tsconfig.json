@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "es2020",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "declaration": true,
+    "outDir": "./dist",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true
+  },
+  "include": [
+    "src/account.ts",
+    "src/provider.ts",
+    "src/index.ts",
+    "src/scripts/**/*",
+    "examples/**/*"
+  ],
+  "exclude": ["node_modules", "src/contracts"]
+}
