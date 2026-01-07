@@ -33,7 +33,9 @@ async function main() {
     const address = process.env.ACCOUNT_ADDRESS;
     const privateKey = process.env.PRIVATE_KEY;
     if (!address || !privateKey) {
-      console.error("ACCOUNT_ADDRESS and PRIVATE_KEY environment variables are required for this command.");
+      console.error(
+        "ACCOUNT_ADDRESS and PRIVATE_KEY environment variables are required for this command."
+      );
       process.exit(1);
     }
     return new UnitsAccount(provider, address, privateKey);
@@ -43,11 +45,18 @@ async function main() {
     switch (command) {
       case "call":
         if (args.length < 2) {
-          console.error("Usage: call <contract-address> <entrypoint> [calldata...]");
+          console.error(
+            "Usage: call <contract-address> <entrypoint> [calldata...]"
+          );
           process.exit(1);
         }
         const [callContract, callEntry, ...callData] = args;
-        const result = await call(getAccount(), callContract, callEntry, callData);
+        const result = await call(
+          getAccount(),
+          callContract,
+          callEntry,
+          callData
+        );
         console.log("✅ Call response:", result);
         break;
 
@@ -58,13 +67,19 @@ async function main() {
 
       case "declare_program":
         if (args.length < 2) {
-          console.error("Usage: declare_program <program-json-path> <compiled-program-json-path>");
+          console.error(
+            "Usage: declare_program <program-json-path> <compiled-program-json-path>"
+          );
           process.exit(1);
         }
         const [progPath, compiledPath] = args;
         const programJson = JSON.parse(fs.readFileSync(progPath, "utf8"));
         const compiledJson = JSON.parse(fs.readFileSync(compiledPath, "utf8"));
-        const declareRes = await declareProgram(getAccount(), programJson, compiledJson);
+        const declareRes = await declareProgram(
+          getAccount(),
+          programJson,
+          compiledJson
+        );
         console.log("ℹ️ Class hash:", declareRes.classHash);
         console.log("✅ Declare program response:", declareRes.response);
         break;
@@ -97,18 +112,27 @@ async function main() {
 
       case "send_transaction":
         if (args.length < 2) {
-          console.error("Usage: send_transaction <contract-address> <entrypoint> [calldata...]");
+          console.error(
+            "Usage: send_transaction <contract-address> <entrypoint> [calldata...]"
+          );
           process.exit(1);
         }
         const [sendContract, sendEntry, ...sendData] = args;
-        const sendRes = await sendTransaction(getAccount(), sendContract, sendEntry, sendData);
+        const sendRes = await sendTransaction(
+          getAccount(),
+          sendContract,
+          sendEntry,
+          sendData
+        );
         console.log("✅ Send transaction response:", sendRes.tx);
         console.log("✅ Transaction receipt:", sendRes.receipt);
         break;
 
       default:
         console.error(`Unknown command: ${command}`);
-        console.error("Available commands: call, chain_id, declare_program, deploy_account, deploy_program, get_receipt, send_transaction");
+        console.error(
+          "Available commands: call, chain_id, declare_program, deploy_account, deploy_program, get_receipt, send_transaction"
+        );
         process.exit(1);
     }
   } catch (error) {
@@ -118,4 +142,3 @@ async function main() {
 }
 
 main();
-

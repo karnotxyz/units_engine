@@ -25,11 +25,11 @@ const account = new starknet.Account({
 async function deploy_declare_acl() {
   const sierraPath = resolve(
     __dirname,
-    "../../crates/handlers/starknet/src/tests/get_program/test_contracts/target/dev/get_nonce_test_contracts_DeclareAclContract.contract_class.json",
+    "../../crates/handlers/starknet/src/tests/get_program/test_contracts/target/dev/get_nonce_test_contracts_DeclareAclContract.contract_class.json"
   );
   const casmPath = resolve(
     __dirname,
-    "../../crates/handlers/starknet/src/tests/get_program/test_contracts/target/dev/get_nonce_test_contracts_DeclareAclContract.compiled_contract_class.json",
+    "../../crates/handlers/starknet/src/tests/get_program/test_contracts/target/dev/get_nonce_test_contracts_DeclareAclContract.compiled_contract_class.json"
   );
 
   const sierra = JSON.parse(readFileSync(sierraPath, "utf-8"));
@@ -42,7 +42,7 @@ async function deploy_declare_acl() {
     });
     console.log(
       "This is the declare and deploy result - ",
-      declareAndDeployResult,
+      declareAndDeployResult
     );
   } catch (err) {
     console.log("Error declaring and deploying contract - ", err);

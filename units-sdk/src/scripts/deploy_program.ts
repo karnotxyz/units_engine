@@ -8,7 +8,7 @@ export async function deployProgram(
   const deployProgramResponse = await unitsAccount.deployProgram(
     classHash,
     [],
-    "0x" + new Date().getTime().toString(16),
+    "0x" + new Date().getTime().toString(16)
   );
 
   return deployProgramResponse;

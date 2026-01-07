@@ -8,16 +8,16 @@ export async function declareProgram(
 ) {
   const resourceBounds = getDefaultResourceBounds();
   resourceBounds.l2_gas.max_amount = 100000000; // setting a high value to avoud gas issues
-  
+
   const declareProgramResponse = await unitsAccount.declareProgram(
     programJson,
     hash.computeCompiledClassHash(compiledProgramJson),
     "ACL",
-    resourceBounds,
+    resourceBounds
   );
 
   return {
     classHash: hash.computeContractClassHash(programJson),
-    response: declareProgramResponse
+    response: declareProgramResponse,
   };
 }

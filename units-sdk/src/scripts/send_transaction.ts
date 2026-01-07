@@ -4,7 +4,7 @@ export async function sendTransaction(
   unitsAccount: UnitsAccount,
   contractAddress: string,
   entrypoint: string,
-  calldata: string[],
+  calldata: string[]
 ) {
   const tx = await unitsAccount.sendTransaction([
     {
@@ -16,9 +16,9 @@ export async function sendTransaction(
 
   // Wait for receipt
   const receipt = await unitsAccount.waitForTransaction(tx.transaction_hash);
-  
+
   return {
     tx,
-    receipt
+    receipt,
   };
 }
