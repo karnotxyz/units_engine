@@ -7,7 +7,7 @@ export async function declareProgram(
   compiledProgramJson: any,
 ) {
   const resourceBounds = getDefaultResourceBounds();
-  resourceBounds.l2_gas.max_amount = 100000000; // setting a high value to avoud gas issues
+  resourceBounds.l2_gas.max_amount = 100000000; // setting a high value to avoid gas issues
 
   const declareProgramResponse = await unitsAccount.declareProgram(
     programJson,
