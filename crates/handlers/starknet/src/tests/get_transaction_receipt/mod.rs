@@ -520,7 +520,7 @@ async fn test_get_receipt_reverted_transaction(
         selector: selector!("panic"),
         calldata: vec![],
     }]);
-    // submit default resource bounds to avoud a fee estimate because it would fail
+    // submit default resource bounds to avoid a fee estimate because it would fail
     let resource_bounds_default = ResourceBoundsMappingParams::default();
     let result = execution
         .l1_gas_price(resource_bounds_default.l1_gas.max_price_per_unit)
